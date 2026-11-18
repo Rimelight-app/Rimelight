@@ -46,7 +46,7 @@ Installers are attached to each [release](https://github.com/tonihk00/ClearPlay/
 
 ## CI
 
-GitHub Actions builds Linux and Windows packages on every push and tag, and attaches them as workflow artifacts. Tags starting with `v` also create a GitHub release.
+GitHub Actions builds Linux and Windows packages on every push and attaches them as workflow artifacts. When a push to `main` carries a `version` in `package.json` that has no release yet, the workflow tags it (`v<version>`) and publishes a GitHub release with the installers. To release: bump the version, add a CHANGELOG entry, push.
 
 ## Licence
 

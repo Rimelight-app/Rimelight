@@ -65,18 +65,43 @@ jobs:
           retention-days: 14
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Publishes a GitHub release for the version in package.json, once per
+    # version: on a v* tag, or on a push to main whose version has no tag yet.
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Decide release tag
+        id: tag
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          elif git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null; then
+            echo "Release ${TAG} already exists; nothing to publish."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/download-artifact@v4
+        if: steps.tag.outputs.publish == 'true'
         with:
           path: release
           merge-multiple: true
 
       - uses: softprops/action-gh-release@v2
+        if: steps.tag.outputs.publish == 'true'
         with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: ClearPlay ${{ steps.tag.outputs.tag }}
           files: release/*
           generate_release_notes: true
