@@ -1,7 +1,7 @@
 # ClearPlay Glass for Symfonium
 
-A colour theme for [Symfonium](https://symfonium.app) (Android) that matches the
-ClearPlay desktop player: graphite surfaces, soft-white accents and quiet, low-contrast
+A colour theme and a full application style for [Symfonium](https://symfonium.app)
+(Android) that match the ClearPlay desktop player: graphite surfaces, soft-white accents and quiet, low-contrast
 outlines.
 
 File: [`ClearPlay-Glass.json`](ClearPlay-Glass.json) (Material Theme Builder JSON
@@ -31,18 +31,37 @@ Menu names can differ slightly between Symfonium versions.
 
 ## Full application style (frosted look)
 
-Symfonium can also import and save a whole **application style**: layout, now-playing
-screen and colours in one JSON file (Settings → Interface → Application style). Its file
-format isn't publicly documented, so this repository doesn't ship one yet. Writing one
-blind risks a file Symfonium rejects or that breaks layouts.
+[`ClearPlay-Glass-Style.json`](ClearPlay-Glass-Style.json) is a complete Symfonium
+application style. It contains the layout, the now-playing screen and the colours in one
+file:
 
-To get one made that matches ClearPlay:
+- **Blurred cover** behind the now-playing screen, with a lighter dark overlay so more of
+  the art shows through.
+- **Frosted panels:** the navigation bar, compact player, top bar, cards, chips and the
+  active row use translucent graphite and white instead of solid colours.
+- **Rounded shapes:** a rounded-rectangle floating mini player and rounded-square covers,
+  matching ClearPlay's corners.
+- **Lyrics** in bold Inter: the current line is large and bright, and the others shrink
+  to 82 % and fade.
+- **ClearPlay logo** in the home header.
 
-1. In Symfonium set up the look you like (with this colour theme and **Background
-   Style: Blur**).
-2. Settings → Interface → Application style → **Save**, then export or share the file.
-3. Open an issue or send the JSON. It can then be tuned (rounded covers, blur, overlay,
-   spacing) and published here next to the colour theme.
+### Install
+
+1. Copy `ClearPlay-Glass-Style.json` to your phone.
+2. Symfonium → **Settings → Interface → Application style → Import**, and pick the file.
+3. If you only want the colours, import `ClearPlay-Glass.json` as a custom theme
+   instead (see above).
+
+The style was made for Symfonium 15 (the version the base was exported from).
+
+### Credits
+
+Built on **TIDAL For Symfonium** by **Myke**
+([Symfonium Styles](https://styles.symfonium.app/styles/stellar-tidal-music)), version
+3.1.0. Its layout and now-playing structure are kept. ClearPlay changes the colours (new
+translucent glass theme), corner sizes, lyric fading and overlay strength, and replaces
+the TIDAL wordmark with the ClearPlay logo. TIDAL is a trademark of TIDAL Music AS; this
+style is not affiliated with TIDAL.
 
 ## Colours
 

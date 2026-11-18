@@ -2,6 +2,11 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
+## [Unreleased]
+
+### Added
+- ClearPlay Glass **full application style** for Symfonium (`themes/symfonium/ClearPlay-Glass-Style.json`), based on TIDAL For Symfonium by Myke: translucent glass colours, rounder player and covers, ClearPlay logo.
+
 ## [0.4.1] - 2026-11-19
 
 ### Added
