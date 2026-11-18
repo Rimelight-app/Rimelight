@@ -16,8 +16,13 @@ are used.
 ## Third-party components
 
 Dependencies are installed from npm and keep their own licences; see
-`package.json` and `pnpm-lock.yaml`. Fonts (Inter, SIL OFL 1.1) will be bundled
-with their licence files once added in the design stage.
+`package.json` and `pnpm-lock.yaml`.
+
+- **Inter** typeface, Copyright 2016 The Inter Project Authors, SIL Open Font
+  Licence 1.1 (`licenses/Inter-OFL-1.1.txt`), via `@fontsource-variable/inter`.
+- **Lucide** icons (ISC licence), via `lucide-react`.
+
+The ClearPlay logo (`src/app/components/glass/logo.tsx`) is original.
 
 The icons in `build/` and `resources/` are still the upstream Aonsoku icons and
 will be replaced with original ones.

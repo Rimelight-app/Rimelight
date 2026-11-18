@@ -12,10 +12,7 @@ export function MainRoutes() {
 
   return (
     <main className="flex h-full">
-      <ScrollArea
-        id="main-scroll-area"
-        className="w-full bg-background-foreground"
-      >
+      <ScrollArea id="main-scroll-area" className="w-full bg-transparent">
         <Outlet />
       </ScrollArea>
     </main>

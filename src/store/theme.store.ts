@@ -12,7 +12,7 @@ export const useThemeStore = createWithEqualityFn<IThemeContext>()(
     persist(
       devtools(
         immer((set) => ({
-          theme: appThemeFromEnv || Theme.Dark,
+          theme: appThemeFromEnv || Theme.Glass,
           setTheme: (theme: Theme) => {
             set((state) => {
               state.theme = theme
@@ -25,7 +25,11 @@ export const useThemeStore = createWithEqualityFn<IThemeContext>()(
       ),
       {
         name: 'theme_store',
-        version: 1,
+        version: 2,
+        migrate: (persisted) => ({
+          ...(persisted as object),
+          theme: Theme.Glass,
+        }),
         merge: (persistedState, currentState) => {
           if (appThemeFromEnv) {
             if (persistedState && typeof persistedState === 'object') {

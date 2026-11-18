@@ -211,8 +211,8 @@ export function Player() {
   }, [song, replayGainDefaultGain, replayGainPreAmp, replayGainType])
 
   return (
-    <footer className="border-t h-[--player-height] w-full flex items-center fixed bottom-0 left-0 right-0 z-40 bg-background">
-      <div className="w-full h-full grid grid-cols-player gap-2 px-4">
+    <footer className="glass-panel h-[76px] flex items-center fixed bottom-3 left-3 right-3 z-40 rounded-xl">
+      <div className="w-full h-full grid grid-cols-player gap-2 pl-3 pr-4">
         {/* Track Info */}
         <div className="flex items-center gap-2 w-full">
           {isSong && <MemoTrackInfo song={song} />}

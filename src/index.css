@@ -16,21 +16,23 @@
     @apply subpixel-antialiased;
   }
   :lang(ja) {
-    font-family: "Poppins", "Noto Sans JP", sans-serif;
+    font-family: "Inter Variable", "Noto Sans JP", sans-serif;
   }
   :lang(ko) {
-    font-family: "Poppins", "Noto Sans KR", sans-serif;
+    font-family: "Inter Variable", "Noto Sans KR", sans-serif;
   }
   :lang(zh) {
-    font-family: "Poppins", "Noto Sans SC", "Noto Sans HK", sans-serif;
+    font-family: "Inter Variable", "Noto Sans SC", "Noto Sans HK", sans-serif;
   }
   :lang(zh-Hant),
   :lang(yue-Hant) {
-    font-family: "Poppins", "Noto Sans HK", "Noto Sans SC", sans-serif;
+    font-family: "Inter Variable", "Noto Sans HK", "Noto Sans SC", sans-serif;
   }
   :root {
     --header-height: 44px;
-    --player-height: 96px;
+    --player-height: 100px;
+    --rail-width: 56px;
+    --content-inset-left: calc(var(--rail-width) + 24px);
     --content-height: calc(100vh - var(--header-height) - var(--player-height));
 
     --shadow-header-height: 80px;
@@ -58,6 +60,11 @@
 
 .electron-drag {
   app-region: drag;
+}
+
+.electron-no-drag,
+a {
+  app-region: no-drag;
 }
 
 button {
@@ -372,5 +379,27 @@ div[data-test-id="table-row"]:hover {
   & a,
   & span {
     @apply text-foreground;
+  }
+}
+
+/* ClearPlay glass surfaces */
+@layer components {
+  .glass-panel {
+    background: var(--glass-fill);
+    border: 1px solid var(--glass-stroke);
+    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    box-shadow:
+      0 10px 40px -12px rgb(0 0 0 / 0.45),
+      inset 0 1px 0 rgb(255 255 255 / 0.05);
+  }
+  .glass-chip {
+    background: var(--glass-fill-strong);
+    border: 1px solid var(--glass-stroke);
+    backdrop-filter: blur(16px);
+  }
+  .reduce-effects .glass-panel,
+  .reduce-effects .glass-chip {
+    backdrop-filter: none;
+    background: rgb(20 20 26 / 0.82);
   }
 }

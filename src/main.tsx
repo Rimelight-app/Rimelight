@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client'
 import 'react-lazy-load-image-component/src/effects/opacity.css'
 import 'react-toastify/dist/ReactToastify.css'
 
-import '@/fonts.css'
+import '@fontsource-variable/inter'
 import '@/themes.css'
 import '@/index.css'
 

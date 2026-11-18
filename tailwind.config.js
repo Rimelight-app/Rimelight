@@ -19,7 +19,8 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: [
-          'Poppins',
+          'Inter Variable',
+          'Inter',
           'Noto Sans SC',
           'Noto Sans HK',
           'Noto Sans JP',
@@ -37,43 +38,43 @@ module.exports = {
         toast: 'var(--toastify-toast-container-height)',
       },
       colors: {
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
+        border: 'hsl(var(--border) / calc(var(--border-a, 1) * <alpha-value>))',
+        input: 'hsl(var(--input) / calc(var(--input-a, 1) * <alpha-value>))',
+        ring: 'hsl(var(--ring) / calc(var(--ring-a, 1) * <alpha-value>))',
         background: {
-          DEFAULT: 'hsl(var(--background))',
-          foreground: 'hsl(var(--background-foreground))',
+          DEFAULT: 'hsl(var(--background) / calc(var(--background-a, 1) * <alpha-value>))',
+          foreground: 'hsl(var(--background-foreground) / calc(var(--background-foreground-a, 1) * <alpha-value>))',
         },
-        foreground: 'hsl(var(--foreground))',
+        foreground: 'hsl(var(--foreground) / calc(var(--foreground-a, 1) * <alpha-value>))',
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: 'hsl(var(--primary) / calc(var(--primary-a, 1) * <alpha-value>))',
+          foreground: 'hsl(var(--primary-foreground) / calc(var(--primary-foreground-a, 1) * <alpha-value>))',
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
+          DEFAULT: 'hsl(var(--secondary) / calc(var(--secondary-a, 1) * <alpha-value>))',
+          foreground: 'hsl(var(--secondary-foreground) / calc(var(--secondary-foreground-a, 1) * <alpha-value>))',
         },
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
+          DEFAULT: 'hsl(var(--destructive) / calc(var(--destructive-a, 1) * <alpha-value>))',
+          foreground: 'hsl(var(--destructive-foreground) / calc(var(--destructive-foreground-a, 1) * <alpha-value>))',
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
+          DEFAULT: 'hsl(var(--muted) / calc(var(--muted-a, 1) * <alpha-value>))',
+          foreground: 'hsl(var(--muted-foreground) / calc(var(--muted-foreground-a, 1) * <alpha-value>))',
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: 'hsl(var(--accent) / calc(var(--accent-a, 1) * <alpha-value>))',
+          foreground: 'hsl(var(--accent-foreground) / calc(var(--accent-foreground-a, 1) * <alpha-value>))',
         },
         popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
+          DEFAULT: 'hsl(var(--popover) / calc(var(--popover-a, 1) * <alpha-value>))',
+          foreground: 'hsl(var(--popover-foreground) / calc(var(--popover-foreground-a, 1) * <alpha-value>))',
         },
         card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
+          DEFAULT: 'hsl(var(--card) / calc(var(--card-a, 1) * <alpha-value>))',
+          foreground: 'hsl(var(--card-foreground) / calc(var(--card-foreground-a, 1) * <alpha-value>))',
         },
-        'windows-red': 'hsl(var(--windows-red))',
+        'windows-red': 'hsl(var(--windows-red) / calc(var(--windows-red-a, 1) * <alpha-value>))',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -104,6 +105,10 @@ module.exports = {
           from: { height: 'var(--radix-collapsible-content-height)' },
           to: { height: '0' },
         },
+        'backdrop-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -111,6 +116,7 @@ module.exports = {
         marquee: 'marquee var(--tw-marquee-time) linear 2s infinite',
         'slide-down': 'slide-down 0.3s ease-out',
         'slide-up': 'slide-up 0.3s ease-out',
+        'backdrop-in': 'backdrop-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) both',
       },
       gridTemplateColumns: {
         player:

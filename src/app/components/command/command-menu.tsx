@@ -33,7 +33,11 @@ export type CommandItemProps = {
   runCommand: (command: () => unknown) => void
 }
 
-export default function CommandMenu() {
+export default function CommandMenu({
+  showTrigger = true,
+}: {
+  showTrigger?: boolean
+}) {
   const { t } = useTranslation()
   const { state: sidebarState } = useMainSidebar()
   const { open, setOpen } = useAppStore((state) => state.command)
@@ -127,7 +131,7 @@ export default function CommandMenu() {
 
   return (
     <>
-      {sidebarOpen && (
+      {showTrigger && sidebarOpen && (
         <Button
           variant="outline"
           className="flex justify-start w-full px-2 gap-2 relative min-w-max active:scale-[98%] transition hover:bg-background-foreground/80"

@@ -4,7 +4,6 @@ import {
   type UpdateDownloadedEvent,
   type UpdateInfo,
 } from 'electron-updater'
-import { RpcPayload } from '../main/core/discordRpc'
 import { IDownloadPayload } from '../main/core/downloads'
 import { ISettingPayload } from '../main/core/settings'
 
@@ -24,8 +23,6 @@ export enum IpcChannels {
   DownloadFailed = 'download-failed',
   UpdatePlayerState = 'update-player-state',
   PlayerStateListener = 'player-state-listener',
-  SetDiscordRpcActivity = 'set-discord-rpc-activity',
-  ClearDiscordRpcActivity = 'clear-discord-rpc-activity',
   SaveAppSettings = 'save-app-settings',
   CheckForUpdates = 'check-for-updates',
   DownloadUpdate = 'download-update',
@@ -78,8 +75,6 @@ export interface IClearPlayAPI {
   playerStateListener: (
     func: (action: PlayerStateListenerActions) => void,
   ) => void
-  setDiscordRpcActivity: (payload: RpcPayload) => void
-  clearDiscordRpcActivity: () => void
   saveAppSettings: (payload: ISettingPayload) => void
   checkForUpdates: () => Promise<UpdateCheckResult | null>
   downloadUpdate: () => void

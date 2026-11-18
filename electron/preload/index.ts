@@ -53,12 +53,6 @@ const api: IClearPlayAPI = {
       (_, state: PlayerStateListenerActions) => func(state),
     )
   },
-  setDiscordRpcActivity: (payload) => {
-    ipcRenderer.send(IpcChannels.SetDiscordRpcActivity, payload)
-  },
-  clearDiscordRpcActivity: () => {
-    ipcRenderer.send(IpcChannels.ClearDiscordRpcActivity)
-  },
   saveAppSettings: (payload) => {
     ipcRenderer.send(IpcChannels.SaveAppSettings, payload)
   },

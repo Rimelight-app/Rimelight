@@ -557,3 +557,87 @@
     --ring: 180 51% 40%;
   }
 }
+
+/*
+ * ClearPlay "glass" theme.
+ * Every colour token can carry its own alpha (--<token>-a), so surfaces and
+ * text can stay translucent over the blurred cover backdrop.
+ * Defined after .dark on purpose: the root carries both classes.
+ */
+@layer base {
+  .glass {
+    --radius: 0.625rem;
+
+    --background: 240 14% 5%;
+    --background-a: 0;
+    --background-foreground: 240 12% 8%;
+    --background-foreground-a: 0;
+
+    --foreground: 0 0% 100%;
+    --card: 0 0% 100%;
+    --card-a: 0.05;
+    --card-foreground: 0 0% 100%;
+    --popover: 240 12% 9%;
+    --popover-a: 0.86;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 0 0% 96%;
+    --primary-foreground: 240 12% 8%;
+    --secondary: 0 0% 100%;
+    --secondary-a: 0.1;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 100%;
+    --muted-a: 0.06;
+    --muted-foreground: 0 0% 100%;
+    --muted-foreground-a: 0.58;
+    --accent: 0 0% 100%;
+    --accent-a: 0.09;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 100%;
+    --border-a: 0.08;
+    --input: 0 0% 100%;
+    --input-a: 0.12;
+    --ring: 0 0% 100%;
+    --ring-a: 0.35;
+
+    /* Text opacity scale and glass surfaces */
+    --text-strong: rgb(255 255 255 / 0.96);
+    --text-soft: rgb(255 255 255 / 0.72);
+    --text-faint: rgb(255 255 255 / 0.48);
+    --glass-fill: rgb(255 255 255 / 0.055);
+    --glass-fill-strong: rgb(255 255 255 / 0.09);
+    --glass-stroke: rgb(255 255 255 / 0.09);
+    --glass-blur: 28px;
+    --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+    color-scheme: dark;
+  }
+
+  .glass body {
+    background: hsl(240 14% 5%);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.006em;
+  }
+
+  /* Dialogs and sheets still need a solid-ish surface to stay readable. */
+  .glass [role='dialog'],
+  .glass [role='alertdialog'],
+  .glass [role='menu'],
+  .glass [role='listbox'],
+  .glass [data-radix-popper-content-wrapper] > * {
+    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  }
+  .glass [role='dialog'],
+  .glass [role='alertdialog'] {
+    background-color: hsl(240 12% 9% / 0.88);
+  }
+
+  /* Thumbs that used the page background would vanish on glass. */
+  .glass [role='switch'] > span,
+  .glass [role='slider'] {
+    background-color: rgb(255 255 255);
+  }
+}

@@ -13,8 +13,10 @@ export function ThemeObserver() {
 
     root.classList.remove(...appThemes)
     root.classList.add(theme)
+    // The glass theme is dark, so dark: variants must apply too.
+    if (theme === Theme.Glass) root.classList.add(Theme.Dark)
 
-    setDesktopTitleBarColors()
+    setDesktopTitleBarColors(theme === Theme.Glass)
   }, [theme])
 
   return null

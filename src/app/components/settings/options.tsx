@@ -1,5 +1,4 @@
 import {
-  CircleUserRound,
   EarthLock,
   FileText,
   Globe,
@@ -33,7 +32,6 @@ interface OptionsData {
   icon: ComponentType
 }
 
-const accountsOption: OptionsData = { id: 'accounts', icon: CircleUserRound }
 const desktopOption: OptionsData = { id: 'desktop', icon: LaptopIcon }
 
 const options: OptionsData[] = [
@@ -41,7 +39,7 @@ const options: OptionsData[] = [
   { id: 'language', icon: Globe },
   { id: 'audio', icon: Headphones },
   { id: 'content', icon: FileText },
-  ...(isDesktop() ? [accountsOption, desktopOption] : []),
+  ...(isDesktop() ? [desktopOption] : []),
   { id: 'privacy', icon: EarthLock },
 ]
 

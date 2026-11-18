@@ -9,11 +9,6 @@ import { isQuitting } from '../index'
 import { tray, updateTray } from '../tray'
 import { updateDockMenu } from './dockMenu'
 import { colorsState } from './colors'
-import {
-  clearDiscordRpcActivity,
-  RpcPayload,
-  setDiscordRpcActivity,
-} from './discordRpc'
 import { playerState } from './playerState'
 import { getAppSetting, ISettingPayload, saveAppSettings } from './settings'
 import { setTaskbarButtons } from './taskbar'
@@ -92,8 +87,6 @@ function resetIpcEvents() {
     IpcChannels.ThemeChanged,
     IpcChannels.UpdateNativeTheme,
     IpcChannels.UpdatePlayerState,
-    IpcChannels.SetDiscordRpcActivity,
-    IpcChannels.ClearDiscordRpcActivity,
     IpcChannels.SaveAppSettings,
   ]
 
@@ -167,14 +160,6 @@ export function setupIpcEvents(window: BrowserWindow | null) {
       }, 150)
     },
   )
-
-  ipcMain.on(IpcChannels.SetDiscordRpcActivity, (_, payload: RpcPayload) => {
-    setDiscordRpcActivity(payload)
-  })
-
-  ipcMain.on(IpcChannels.ClearDiscordRpcActivity, () => {
-    clearDiscordRpcActivity()
-  })
 
   ipcMain.on(IpcChannels.SaveAppSettings, (_, payload: ISettingPayload) => {
     saveAppSettings(payload)
