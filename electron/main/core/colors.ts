@@ -1,11 +1,11 @@
 import { electron } from '../../../package.json'
-import { AonsokuStore } from './store'
+import { ClearPlayStore } from './store'
 
 interface State {
   bgColor: string
 }
 
-const colorsStore = new AonsokuStore<State>({
+const colorsStore = new ClearPlayStore<State>({
   name: 'colors',
   defaults: {
     bgColor: electron.window.defaultBgColor,

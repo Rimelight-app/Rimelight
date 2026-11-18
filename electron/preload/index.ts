@@ -1,9 +1,9 @@
 import { electronAPI } from '@electron-toolkit/preload'
 import { contextBridge, ipcRenderer } from 'electron'
-import { IAonsokuAPI, IpcChannels, PlayerStateListenerActions } from './types'
+import { IClearPlayAPI, IpcChannels, PlayerStateListenerActions } from './types'
 
 // Custom APIs for renderer
-const api: IAonsokuAPI = {
+const api: IClearPlayAPI = {
   enterFullScreen: () => ipcRenderer.send(IpcChannels.ToggleFullscreen, true),
   exitFullScreen: () => ipcRenderer.send(IpcChannels.ToggleFullscreen, false),
   isFullScreen: () => ipcRenderer.invoke(IpcChannels.IsFullScreen),

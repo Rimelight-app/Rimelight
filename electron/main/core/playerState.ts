@@ -1,7 +1,7 @@
 import { PlayerStatePayload } from '../../preload/types'
-import { AonsokuStore } from './store'
+import { ClearPlayStore } from './store'
 
-const playerStore = new AonsokuStore<PlayerStatePayload>({
+const playerStore = new ClearPlayStore<PlayerStatePayload>({
   name: 'player',
   defaults: {
     isPlaying: false,

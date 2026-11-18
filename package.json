@@ -1,14 +1,14 @@
 {
-  "name": "aonsoku",
+  "name": "clearplay",
   "private": true,
-  "version": "0.15.0",
-  "description": "A modern desktop client for Navidrome/Subsonic servers.",
+  "version": "0.1.0",
+  "description": "A frosted-glass desktop player for Navidrome (OpenSubsonic) servers.",
   "author": {
-    "name": "Victor Alves"
+    "name": "tonihk00"
   },
   "main": "./out/main/index.js",
   "type": "module",
-  "productName": "Aonsoku",
+  "productName": "ClearPlay",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -24,16 +24,12 @@
     "electron:build": "electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "electron-builder --dir",
-    "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux",
-    "ci:build:win": "electron-builder --win --publish always",
-    "ci:build:mac": "electron-builder --mac --publish always",
-    "ci:build:linux": "electron-builder --linux --publish always",
+    "build:win": "electron-builder --win --x64",
+    "build:linux": "electron-builder --linux --x64",
     "prepare": "husky"
   },
   "repository": {
-    "url": "https://github.com/victoralvesf/aonsoku"
+    "url": "https://github.com/tonihk00/ClearPlay"
   },
   "dependencies": {
     "@chriscodesthings/random-css-hex-color": "^1.1.0",

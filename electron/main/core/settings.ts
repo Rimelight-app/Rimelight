@@ -1,10 +1,10 @@
-import { AonsokuStore } from './store'
+import { ClearPlayStore } from './store'
 
 export interface ISettingPayload {
   minimizeToTray: boolean
 }
 
-const settingsStore = new AonsokuStore<ISettingPayload>({
+const settingsStore = new ClearPlayStore<ISettingPayload>({
   name: 'settings',
   defaults: {
     minimizeToTray: false,

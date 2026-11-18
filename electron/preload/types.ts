@@ -57,7 +57,7 @@ export type PlayerStateListenerActions =
   | 'toggleShuffle'
   | 'toggleRepeat'
 
-export interface IAonsokuAPI {
+export interface IClearPlayAPI {
   enterFullScreen: () => void
   exitFullScreen: () => void
   isFullScreen: () => Promise<boolean>
