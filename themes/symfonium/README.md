@@ -54,6 +54,16 @@ file:
 
 The style was made for Symfonium 15 (the version the base was exported from).
 
+### Turn on the blurred background (one setting)
+
+The base keeps a solid adaptive colour behind Now Playing, and Symfonium's file format
+for the background choice isn't documented, so set this once by hand:
+
+**Settings → Interface → Now playing screens → Expanded player → Background Style →
+Blur.** The blur level in the style is already at maximum. On Android 13+ you can also
+try a blur option for the mini player background if your Symfonium version offers one.
+Then **Settings → Interface → Application style → Save** keeps it.
+
 ### Credits
 
 Built on **TIDAL For Symfonium** by **Myke**
