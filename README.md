@@ -1,64 +1,110 @@
+<div align="center">
+
+<img src="build/icon.svg" width="96" height="96" alt="ClearPlay logo">
+
 # ClearPlay
 
-A minimal, frosted-glass desktop player for self-hosted
-[Navidrome](https://www.navidrome.org/) (OpenSubsonic) servers.
-Linux (AppImage, deb) and Windows (installer).
+**A calm, frosted-glass desktop player for your [Navidrome](https://www.navidrome.org/) server.**
 
-> Status: 0.4.0. See `CHANGELOG.md`.
+Linux · Windows · works with any OpenSubsonic server
+
+[![Latest release](https://img.shields.io/github/v/release/tonihk00/ClearPlay?style=flat-square&label=download&color=0b0b0e)](https://github.com/tonihk00/ClearPlay/releases/latest)
+[![Build](https://img.shields.io/github/actions/workflow/status/tonihk00/ClearPlay/build.yml?style=flat-square&label=build)](https://github.com/tonihk00/ClearPlay/actions)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-0b0b0e?style=flat-square)](LICENSE.txt)
+
+<img src="docs/screenshots/album.jpg" alt="Album page in ClearPlay" width="900">
+
+</div>
+
+## Why ClearPlay
+
+You host your own music. Your player should feel as good as the streaming apps, without their clutter.
+
+- **Looks like your music.** The current cover, softly blurred, tints the whole window. Panels are frosted glass with rounded corners, the type is Inter, and the motion is slow and quiet.
+- **Lyrics that glide.** Time-synced lyrics from your own files, with the current line large and bright and the rest gently fading. They are available full screen or in a side panel on any page.
+- **Built for a home server.** Save your home and Tailscale addresses and switch with one click, or let ClearPlay pick the fastest one at start. Cap the streaming bitrate when you're away.
+- **Knows your listening.** A Now Playing page with the album, the artist and their discography, plus statistics: hours listened, top artists, genres, songs and decades.
+- **Plays well with your other apps.** Plays go to Navidrome (and on to Last.fm/ListenBrainz), queued and retried if you're offline. Your queue can sync through the server, so Symfonium on your phone can continue where the desktop stopped.
+
+## Screenshots
+
+| | |
+|---|---|
+| <img src="docs/screenshots/fullscreen.jpg" alt="Fullscreen player with synced lyrics"> | <img src="docs/screenshots/side-lyrics.jpg" alt="Lyrics side panel"> |
+| **Fullscreen player.** Moving cover blur, synced lyrics | **Side panel.** Lyrics or queue on any page |
+| <img src="docs/screenshots/now-playing.jpg" alt="Now playing details"> | <img src="docs/screenshots/stats.jpg" alt="Listening statistics"> |
+| **Now Playing.** Track, album, artist, discography | **Statistics.** Hours, plays, top artists and genres |
+| <img src="docs/screenshots/search.jpg" alt="Search"> | <img src="docs/screenshots/settings-audio.jpg" alt="Equalizer settings"> |
+| **Search.** As you type, songs, albums and artists | **Sound.** 10-band EQ, output device, speed |
+
+<sub>Screenshots use a generated demo library.</sub>
 
 ## Features
 
-- Frosted-glass interface over a blurred copy of the current cover, Inter font, rounded panels.
-- Icon rail (Home, Search, Library, Settings); library tabs for albums, artists, songs, playlists, favourites and genres.
-- Fullscreen now-playing view with a cover-colour gradient, and synced lyrics from your server.
-- Frosted side panel with lyrics or the queue on every page; full search page.
-- Streaming-quality cap for slow connections; scrobbling with retry and an activity log.
-- Audio quality (format, bit depth, sample rate, bitrate) in the player bar.
-- Now playing (who is listening on your server) and Statistics (hours listened, plays, top artists, genres, songs, albums).
-- Queue, shuffle, repeat, favourites, playlists, search (`Ctrl+K`), scrobbling to Navidrome.
-- OS media controls through the system media session (MPRIS on Linux, SMTC on Windows).
-- Settings → Appearance → *Reduce visual effects* for slower GPUs.
+**Listening**
+- Albums, artists, songs, playlists, favourites, genres; queue, shuffle, repeat; likes
+- Time-synced lyrics from your server (`.lrc` files or embedded); LRCLIB lookup is optional
+- Audio quality in the player bar: format, bit depth, sample rate, bitrate, plus a Hi-Res badge
+- 10-band equalizer with presets and preamp, output device selection, mono, playback speed
+- Sleep timer (minutes or end of song), ReplayGain
+- Keep playing similar music when the queue runs out (uses Navidrome's Last.fm data, or the same genre)
 
-Based on [Aonsoku](https://github.com/victoralvesf/aonsoku) (MIT). See `NOTICE.md` and `LICENSE.txt`.
+**Your server**
+- Several saved servers (home, Tailscale, a friend's) with latency check and one-click switching
+- Optional: connect to the fastest server automatically at start
+- Streaming-quality cap (Original, 320 to 96 kbps; Opus, MP3 or AAC) for mobile data
+- Scrobbling with an offline queue and an activity log
+- Play-queue sync with Navidrome (save, load, or automatic) and save queue as playlist
+- Who's listening now on the server; library and listening statistics
 
-## Run from source
-
-Requirements: Node.js 24, pnpm 11.9 (`corepack enable`).
-
-```bash
-pnpm install
-pnpm electron:dev        # development with hot reload
-pnpm lint                # lint
-pnpm exec tsc --noEmit   # typecheck
-```
-
-On first start, enter your server URL (for example your Tailscale address such as `http://100.x.y.z:4533`), username and password.
-
-## Build installers
-
-```bash
-pnpm electron:build      # compile main + renderer into out/
-pnpm build:linux         # dist/ClearPlay-v*-linux-x64.AppImage and .deb
-pnpm build:win           # Windows installer (best run on Windows or via CI)
-```
-
-The AppImage needs `libfuse2` on some distributions.
+**Desktop**
+- System media controls: MPRIS on Linux; media keys and SMTC on Windows (not yet confirmed on Windows)
+- Tray icon, mini player, keyboard shortcuts (`Ctrl+K` quick search)
+- Reduce-effects mode for older GPUs; adjustable background strength
 
 ## Download
 
-Installers are attached to each [release](https://github.com/tonihk00/ClearPlay/releases):
+Get the latest build from **[Releases](https://github.com/tonihk00/ClearPlay/releases/latest)**:
 
-- Linux: `.AppImage` (any distribution), `.deb` (Debian, Ubuntu, Mint), `.rpm` (Fedora, RHEL, openSUSE). On Fedora: `sudo dnf install ./ClearPlay-*.rpm`.
-- Windows: `.exe` installer.
-- Android: the ClearPlay Glass colour theme for Symfonium (`ClearPlay-Glass.json`), see [themes/symfonium](themes/symfonium/README.md).
+| System | File | Install |
+|---|---|---|
+| Any Linux | `ClearPlay-*.AppImage` | `chmod +x ClearPlay-*.AppImage && ./ClearPlay-*.AppImage` |
+| Debian, Ubuntu, Mint | `ClearPlay-*.deb` | `sudo apt install ./ClearPlay-*.deb` |
+| Fedora, RHEL, openSUSE | `ClearPlay-*.rpm` | `sudo dnf install ./ClearPlay-*.rpm` |
+| Windows 10/11 | `ClearPlay-*-win-x64.exe` | run the installer* |
+| Android (Symfonium) | `ClearPlay-Glass.json` | see [themes/symfonium](themes/symfonium/README.md) |
 
- 
-The Windows installer is unsigned, so SmartScreen may warn on first run (*More info → Run anyway*).
+<sub>*The Windows installer isn't code-signed, so SmartScreen may warn on first run: More info → Run anyway.</sub>
 
-## CI
+On first start, enter your server address (for example `http://192.168.1.10:4533` or your Tailscale address `http://100.x.y.z:4533`), username and password.
 
-GitHub Actions builds Linux and Windows packages on every push and attaches them as workflow artifacts. When a push to `main` carries a `version` in `package.json` that has no release yet, the workflow tags it (`v<version>`) and publishes a GitHub release with the installers. To release: bump the version, add a CHANGELOG entry, push.
+## Good to know
+
+- **Lyrics:** put `.lrc` files next to your music (same name as the track) or embed synced lyrics; Navidrome serves them.
+- **ListenBrainz / Last.fm:** link them in Navidrome (your user → Personal). ClearPlay reports plays to Navidrome, which forwards them.
+- **Similar songs:** needs a Last.fm API key in Navidrome; without it ClearPlay falls back to songs of the same genre.
+- **Bitrate cap:** needs transcoding (ffmpeg) enabled in Navidrome.
+- **Hi-res:** ClearPlay shows your files' real quality, but plays through Chromium's audio engine, which mixes at the system rate. Exclusive or bit-perfect output isn't possible in this app.
+
+## Build from source
+
+Requirements: Node.js 24 and pnpm 11 (`corepack enable`).
+
+```bash
+git clone https://github.com/tonihk00/ClearPlay.git
+cd ClearPlay
+pnpm install
+pnpm electron:dev                         # run with hot reload
+pnpm electron:build && pnpm build:linux   # AppImage, deb, rpm (rpm needs rpmbuild)
+pnpm build:win                            # Windows installer (best on Windows or CI)
+```
+
+Every push builds Linux and Windows packages in GitHub Actions. Bumping `version` in `package.json` publishes a release automatically.
+
+## Credits
+
+ClearPlay began as a fork of [Aonsoku](https://github.com/victoralvesf/aonsoku) by Victor Alves (MIT). The visual design, logo and the features listed above are ClearPlay's own. Inter typeface (SIL OFL 1.1), Lucide icons (ISC). See [NOTICE.md](NOTICE.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## Licence
 
-MIT. Copyright (c) 2026 Victor Alves (upstream Aonsoku); ClearPlay modifications by tonihk00.
+MIT

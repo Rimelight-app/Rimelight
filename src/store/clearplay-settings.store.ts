@@ -14,6 +14,10 @@ interface ClearPlaySettings {
   lyricsSize: LyricsSize
   backdrop: BackdropMode
   startPage: StartPage
+  /** Save the queue to the server so other apps (e.g. Symfonium) can continue it. */
+  syncQueue: boolean
+  /** Add similar songs when the queue is about to run out. */
+  autoDj: boolean
   set: (patch: Partial<Omit<ClearPlaySettings, 'set'>>) => void
 }
 
@@ -26,6 +30,8 @@ export const useClearPlaySettings = create<ClearPlaySettings>()(
       lyricsSize: 'm',
       backdrop: 'normal',
       startPage: '/',
+      syncQueue: false,
+      autoDj: false,
       set: (patch) => set(patch),
     }),
     { name: 'clearplay_settings' },

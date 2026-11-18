@@ -3,12 +3,14 @@ import { useAppSettings } from '@/store/app.store'
 import { Accounts } from './accounts'
 import { Appearance } from './appearance'
 import { Audio } from './audio'
+import { ServersSettings } from './clearplay/servers'
 import { Content } from './content'
 import { Desktop } from './desktop'
 import { Language } from './language'
 import { Privacy } from './privacy'
 
 const pages: Record<SettingsOptions, JSX.Element> = {
+  servers: <ServersSettings />,
   appearance: <Appearance />,
   audio: <Audio />,
   language: <Language />,

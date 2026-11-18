@@ -2,6 +2,19 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
+## [0.4.1] - 2026-11-19
+
+### Added
+- **Servers** settings: save several addresses (e.g. home network and Tailscale), see each one's latency, switch with one click, and optionally connect to the fastest one at start.
+- **Sound** settings: output device selection, 10-band equalizer with presets and preamp, mono, playback speed, and a readout of the rate ClearPlay mixes at.
+- **Sleep timer** in the player bar (15–90 minutes or end of the current song).
+- **Queue**: sync the play queue with Navidrome (save/load from the queue panel, or automatically), so other apps such as Symfonium can continue it; save the queue as a playlist; keep playing similar music when the queue runs out.
+- New README with screenshots and a feature overview.
+
+### Changed
+- Much lower GPU use in the fullscreen player: no live blur filters or blend modes on the moving background, lyrics animate only with transform/opacity and check the time 10 times a second instead of every frame, and the app behind the fullscreen view stops drawing while it is open.
+- Audio now runs through the browser's built-in audio engine (needed for output-device selection).
+
 ## [0.4.0] - 2026-11-18
 
 ### Added

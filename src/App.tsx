@@ -5,7 +5,10 @@ import { SettingsDialog } from '@/app/components/settings/dialog'
 import { EffectsObserver } from '@/app/observers/effects-observer'
 import { LangObserver } from '@/app/observers/lang-observer'
 import { MediaSessionObserver } from '@/app/observers/media-session-observer'
+import { QueueObserver } from '@/app/observers/queue-observer'
 import { ScrobbleObserver } from '@/app/observers/scrobble-observer'
+import { ServerObserver } from '@/app/observers/server-observer'
+import { SleepObserver } from '@/app/observers/sleep-observer'
 import { ThemeObserver } from '@/app/observers/theme-observer'
 import { ToastContainer } from '@/app/observers/toast-container'
 import { UpdateObserver } from '@/app/observers/update-observer'
@@ -24,6 +27,9 @@ function App() {
       <ThemeObserver />
       <EffectsObserver />
       <ScrobbleObserver />
+      <ServerObserver />
+      <SleepObserver />
+      <QueueObserver />
       <SettingsDialog />
       <RouterProvider router={router} />
       <ToastContainer />

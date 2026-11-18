@@ -67,10 +67,8 @@ export function SmoothLyrics({
 
   // Follow playback on animation frames; only re-render when the line changes.
   useEffect(() => {
-    let raf = 0
     let last = -2
     const tick = () => {
-      raf = requestAnimationFrame(tick)
       const ms = getTime() * 1000 + 150 // show a line a moment before it is sung
       let lo = 0
       let hi = lines.length - 1
@@ -87,8 +85,9 @@ export function SmoothLyrics({
         setActive(idx)
       }
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    tick()
+    const id = window.setInterval(tick, 100)
+    return () => window.clearInterval(id)
   }, [lines, getTime])
 
   const recenter = useCallback(() => {
@@ -158,17 +157,14 @@ export function SmoothLyrics({
               className={clsx(
                 'origin-left cursor-pointer',
                 compact ? 'py-2.5' : 'py-4',
-                'transition-[transform,color,opacity,filter] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                'transition-[transform,opacity] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
                 'motion-reduce:transition-none',
-                isActive ? 'text-white' : 'text-white/30 hover:text-white/60',
+                'text-white',
               )}
               style={{
                 transform: `scale(${isActive ? 1 : compact ? 0.9 : 0.82})`,
-                filter:
-                  isActive || compact
-                    ? 'none'
-                    : `blur(${Math.min(distance, 4) * 0.35}px)`,
-                opacity: isActive ? 1 : Math.max(0.35, 1 - distance * 0.12),
+                // Only transform + opacity change: both stay on the compositor.
+                opacity: isActive ? 1 : Math.max(0.18, 0.42 - distance * 0.05),
               }}
             >
               {line.text || '♪'}

@@ -9,6 +9,7 @@ import {
   useMainDrawerState,
   useQueueState,
 } from '@/store/player.store'
+import { QueueActions } from './queue-actions'
 
 const MemoLyrics = memo(LyricsTab)
 const MemoQueue = memo(FullscreenSongQueue)
@@ -86,7 +87,14 @@ export function SidePanel() {
             <MemoLyrics compact />
           </div>
         )}
-        {open && queueState && <MemoQueue />}
+        {open && queueState && (
+          <div className="flex h-full flex-col">
+            <QueueActions />
+            <div className="min-h-0 flex-1">
+              <MemoQueue />
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   )

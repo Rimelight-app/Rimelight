@@ -9,6 +9,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { toast } from 'react-toastify'
 import { useAudioContext } from '@/app/hooks/use-audio-context'
+import { useAudioFx } from '@/store/audio-fx.store'
 import {
   usePlayerActions,
   usePlayerIsPlaying,
@@ -139,6 +140,16 @@ export function AudioPlayer({
 
     return undefined
   }, [handleRadioError, handleSongError, isRadio, isSong])
+
+  // Playback speed (pitch is preserved by the browser).
+  const speed = useAudioFx((s) => s.speed)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-apply when the source changes
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio || !isSong) return
+    audio.defaultPlaybackRate = speed
+    audio.playbackRate = speed
+  }, [audioRef, speed, isSong, props.src])
 
   const crossOrigin = useMemo(() => {
     if (!isSong || replayGainError) return undefined

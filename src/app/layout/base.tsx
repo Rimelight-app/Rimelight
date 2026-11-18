@@ -18,6 +18,7 @@ import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import {
   useLyricsState,
   useMainDrawerState,
+  usePlayerFullscreen,
   useQueueState,
 } from '@/store/player.store'
 import { MainRoutes } from './main'
@@ -51,11 +52,16 @@ export default function BaseLayout() {
   const { lyricsState } = useLyricsState()
   const { queueState } = useQueueState()
   const panelOpen = mainDrawerState && (lyricsState || queueState)
+  const { isFullscreen } = usePlayerFullscreen()
 
   return (
     <div className="h-screen w-screen overflow-hidden">
-      <AppBackdrop />
-      <MainSidebarProvider className="bg-transparent">
+      <div className={cn(isFullscreen && 'cp-behind-fullscreen')}>
+        <AppBackdrop />
+      </div>
+      <MainSidebarProvider
+        className={cn('bg-transparent', isFullscreen && 'cp-behind-fullscreen')}
+      >
         <MemoHeader />
         <NavRail />
         <MainSidebarInset

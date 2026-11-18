@@ -35,7 +35,10 @@ export function GradientBackdrop() {
       style={{ backgroundColor: rgb(d, 1) }}
     >
       {cover && (
-        <div key={cover.length} className="absolute inset-0 animate-backdrop-in">
+        <div
+          key={cover.length}
+          className="absolute inset-0 animate-backdrop-in"
+        >
           {/* Two oversized copies of the pre-blurred cover turning very slowly
               in opposite directions: a soft, living blur. */}
           <div

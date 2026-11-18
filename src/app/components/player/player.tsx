@@ -33,6 +33,7 @@ import { PodcastInfo } from './podcast-info'
 import { PodcastPlaybackRate } from './podcast-playback-rate'
 import { PlayerProgress } from './progress'
 import { PlayerQueueButton } from './queue-button'
+import { SleepTimerButton } from './sleep-timer'
 import { PlayerVolume } from './volume'
 
 const MemoTrackInfo = memo(TrackInfo)
@@ -251,6 +252,7 @@ export function Player() {
               <>
                 <MemoLyricsButton disabled={!song} />
                 <MemoPlayerQueueButton disabled={!song} />
+                <SleepTimerButton />
               </>
             )}
             {isPodcast && <MemoPodcastPlaybackRate />}

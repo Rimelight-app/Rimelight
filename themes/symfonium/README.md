@@ -29,6 +29,21 @@ cover background comes from Symfonium's now-playing options:
 
 Menu names can differ slightly between Symfonium versions.
 
+## Full application style (frosted look)
+
+Symfonium can also import and save a whole **application style**: layout, now-playing
+screen and colours in one JSON file (Settings → Interface → Application style). Its file
+format isn't publicly documented, so this repository doesn't ship one yet. Writing one
+blind risks a file Symfonium rejects or that breaks layouts.
+
+To get one made that matches ClearPlay:
+
+1. In Symfonium set up the look you like (with this colour theme and **Background
+   Style: Blur**).
+2. Settings → Interface → Application style → **Save**, then export or share the file.
+3. Open an issue or send the JSON. It can then be tuned (rounded covers, blur, overlay,
+   spacing) and published here next to the colour theme.
+
 ## Colours
 
 | Role | Colour | Used for (per Symfonium's docs) |

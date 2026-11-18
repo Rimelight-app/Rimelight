@@ -628,7 +628,8 @@
       "content": "Content",
       "accounts": "Accounts",
       "desktop": "Desktop Application",
-      "privacy": "Privacy & Security"
+      "privacy": "Privacy & Security",
+      "servers": "Servers"
     },
     "appearance": {
       "general": {
@@ -973,6 +974,93 @@
       "less": "Show less",
       "similar": "Similar artists",
       "discography": "Discography"
+    },
+    "servers": {
+      "group": "Servers",
+      "description": "Save several addresses for your music, for example your home network and Tailscale, and switch with one click.",
+      "test": "Test",
+      "use": "Use",
+      "active": "Active",
+      "remove": "Remove",
+      "add": "Add server",
+      "name": "Name (optional)",
+      "save": "Check and save",
+      "cancel": "Cancel",
+      "failed": "Could not sign in. Check the address, username and password.",
+      "offline": "offline",
+      "fastest": {
+        "label": "Use the fastest server at start",
+        "info": "When ClearPlay starts, it pings your saved servers for this user and connects to the quickest one, so at home it uses the local address and away it uses Tailscale."
+      }
+    },
+    "sound": {
+      "group": "Sound",
+      "description": "Output, equalizer and playback.",
+      "device": {
+        "label": "Output device",
+        "info": "Send ClearPlay to a specific device (headphones, DAC, speakers) without changing the system default.",
+        "system": "System default",
+        "output": "Output"
+      },
+      "eq": "Equalizer",
+      "preamp": "Preamp",
+      "preampShort": "Pre",
+      "eqHint": "Drag a band to boost or cut it; double-click resets it. Lower the preamp if loud passages distort.",
+      "presets": {
+        "flat": "Flat",
+        "bass": "Bass boost",
+        "treble": "Treble boost",
+        "vocal": "Vocal",
+        "loudness": "Loudness",
+        "rock": "Rock",
+        "electronic": "Electronic",
+        "acoustic": "Acoustic",
+        "hiphop": "Hip-hop",
+        "night": "Late night",
+        "custom": "Custom"
+      },
+      "mono": {
+        "label": "Mono",
+        "info": "Mix both channels together, useful with one earbud."
+      },
+      "speed": {
+        "label": "Playback speed",
+        "info": "Changes speed without changing pitch."
+      },
+      "output": {
+        "label": "Output",
+        "rate": "mixing at {{khz}} kHz",
+        "idle": "starts when you play something",
+        "note": "ClearPlay plays through Chromium's audio engine, which mixes at the system rate. Exclusive or bit-perfect output (playing each file at its own sample rate) isn't possible in this app; the file's own quality is shown in the player bar."
+      }
+    },
+    "sleep": {
+      "title": "Sleep timer",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes",
+      "endOfTrack": "End of this song",
+      "off": "Turn off"
+    },
+    "queue": {
+      "group": "Queue",
+      "description": "Continue on other devices and keep the music going.",
+      "sync": {
+        "label": "Sync queue with the server",
+        "info": "Saves your queue and position to Navidrome when the song changes or you pause. Apps that read the server queue (for example Symfonium) can pick up where you left off, and vice versa with the load button in the queue panel."
+      },
+      "autoDj": {
+        "label": "Keep playing similar music",
+        "info": "When the last song in the queue starts, ClearPlay adds similar songs (from Navidrome's Last.fm data, or random songs of the same genre when that isn't set up)."
+      },
+      "save": "Save queue to server",
+      "load": "Load queue from server",
+      "asPlaylist": "Save queue as playlist",
+      "playlistName": "Playlist name",
+      "saved": "Queue saved to the server",
+      "loaded": "Queue loaded from the server",
+      "nothing": "No saved queue on the server",
+      "failed": "Something went wrong",
+      "playlistSaved": "Playlist “{{name}}” created"
     }
   }
 }
