@@ -60,9 +60,10 @@ The base keeps a solid adaptive colour behind Now Playing, and Symfonium's file 
 for the background choice isn't documented, so set this once by hand:
 
 **Settings → Interface → Now playing screens → Expanded player → Background Style →
-Blur.** The blur level in the style is already at maximum. On Android 13+ you can also
-try a blur option for the mini player background if your Symfonium version offers one.
-Then **Settings → Interface → Application style → Save** keeps it.
+Blur.** The blur level in the style is already at Symfonium's maximum (256). The mini
+player has no blur option (Default, Primary color, Primary container color, Theme
+tertiary container, Solid adaptive color); keep **Default**, which uses the theme's
+translucent graphite. Then **Settings → Interface → Application style → Save** keeps it.
 
 ### Credits
 
