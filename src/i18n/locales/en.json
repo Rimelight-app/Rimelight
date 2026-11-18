@@ -882,6 +882,74 @@
       "minutesAgo_other": "{{count}} min ago",
       "nav": "Now playing"
     },
-    "statsNav": "Statistics"
+    "statsNav": "Statistics",
+    "search": {
+      "placeholder": "Search songs, albums and artists",
+      "hint": "Type to search your whole library.",
+      "none": "Nothing found for “{{query}}”."
+    },
+    "settings": {
+      "streaming": {
+        "group": "Streaming quality",
+        "description": "Useful away from home or on slow connections (e.g. over Tailscale on mobile data).",
+        "quality": {
+          "label": "Maximum bitrate",
+          "info": "Above this bitrate your server converts the music on the fly. Needs transcoding (ffmpeg) enabled in Navidrome."
+        },
+        "format": {
+          "label": "Format when converting",
+          "info": "Opus sounds best at low bitrates. Your server must have a transcoding for the chosen format."
+        },
+        "original": "Original"
+      },
+      "scrobbling": {
+        "group": "Scrobbling",
+        "description": "Your plays are reported to Navidrome, which forwards them to Last.fm or ListenBrainz if you linked them in Navidrome.",
+        "enabled": {
+          "label": "Report plays to the server",
+          "info": "A play counts after half the song or 4 minutes, whichever comes first. Turning this off also stops “now playing”."
+        },
+        "pending_one": "{{count}} listen waiting to be sent",
+        "pending_other": "{{count}} listens waiting to be sent",
+        "retry": "Send now",
+        "recent": "Recent activity",
+        "none": "Nothing sent yet.",
+        "kind": {
+          "nowPlaying": "now playing",
+          "listen": "listen"
+        },
+        "status": {
+          "sent": "sent",
+          "queued": "queued",
+          "failed": "failed"
+        },
+        "hint": "If listens show “sent” here but not on ListenBrainz, check Navidrome → your user → Personal → ListenBrainz, and the Navidrome log."
+      },
+      "interface": {
+        "group": "ClearPlay",
+        "description": "Layout and look.",
+        "startPage": {
+          "label": "Open on start"
+        },
+        "backdrop": {
+          "label": "Cover background",
+          "info": "How strongly the blurred album art tints the window.",
+          "vivid": "Vivid",
+          "normal": "Normal",
+          "dim": "Dim",
+          "off": "Off (plain dark)"
+        },
+        "lyricsSize": {
+          "label": "Lyrics size (fullscreen)",
+          "s": "Small",
+          "m": "Medium",
+          "l": "Large"
+        },
+        "showQuality": {
+          "label": "Show audio quality in the player bar",
+          "info": "Format, bit depth, sample rate and bitrate under the artist."
+        }
+      }
+    }
   }
 }

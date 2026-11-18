@@ -10,6 +10,7 @@ import { MarqueeTitle } from '@/app/components/fullscreen/marquee-title'
 import { ImageLoader } from '@/app/components/image-loader'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/routes/routesList'
+import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { usePlayerFullscreen, useSongColor } from '@/store/player.store'
 import { ISong } from '@/types/responses/song'
 import { getAudioQuality } from '@/utils/audioQuality'
@@ -130,6 +131,10 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
 
 function TrackQuality({ song }: { song: ISong }) {
   const { format, details, lossless, hiRes } = getAudioQuality(song)
+  const { showQuality, maxBitRate, streamFormat } = useClearPlaySettings()
+  if (!showQuality) return null
+  const limit = Number(maxBitRate)
+  const converted = limit > 0 && (song.bitRate ?? 0) > limit
 
   return (
     <div
@@ -148,7 +153,15 @@ function TrackQuality({ song }: { song: ISong }) {
       >
         {hiRes ? `${format} · HI-RES` : format}
       </span>
-      <span className="truncate tabular-nums">{details.join(' · ')}</span>
+      <span className="truncate tabular-nums">
+        {details.join(' · ')}
+        {converted && (
+          <span className="text-white/70">
+            {' '}
+            → {streamFormat.toUpperCase()} {limit} kbps
+          </span>
+        )}
+      </span>
     </div>
   )
 }

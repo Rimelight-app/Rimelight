@@ -1,0 +1,33 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+export type StreamFormat = 'opus' | 'mp3' | 'aac'
+export type LyricsSize = 's' | 'm' | 'l'
+export type BackdropMode = 'off' | 'dim' | 'normal' | 'vivid'
+export type StartPage = '/' | '/library/albums' | '/search' | '/stats'
+
+interface ClearPlaySettings {
+  /** '0' = original quality, otherwise a kbps cap the server transcodes to. */
+  maxBitRate: string
+  streamFormat: StreamFormat
+  showQuality: boolean
+  lyricsSize: LyricsSize
+  backdrop: BackdropMode
+  startPage: StartPage
+  set: (patch: Partial<Omit<ClearPlaySettings, 'set'>>) => void
+}
+
+export const useClearPlaySettings = create<ClearPlaySettings>()(
+  persist(
+    (set) => ({
+      maxBitRate: '0',
+      streamFormat: 'opus',
+      showQuality: true,
+      lyricsSize: 'm',
+      backdrop: 'normal',
+      startPage: '/',
+      set: (patch) => set(patch),
+    }),
+    { name: 'clearplay_settings' },
+  ),
+)

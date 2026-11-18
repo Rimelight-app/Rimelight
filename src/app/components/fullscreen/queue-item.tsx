@@ -23,9 +23,9 @@ export function QueueItem({
   return (
     <div
       className={clsx([
-        'flex items-center w-[calc(100%-10px)] h-16 text-sm rounded-md cursor-pointer',
-        'bg-black/0 hover:bg-foreground/20',
-        'data-[state=active]:bg-foreground data-[state=active]:text-secondary',
+        'flex items-center w-[calc(100%-10px)] h-16 text-sm rounded-2xl cursor-pointer',
+        'text-white/85 transition-colors duration-200 hover:bg-white/[0.08]',
+        'data-[state=active]:bg-white/[0.14] data-[state=active]:text-white data-[state=active]:ring-1 data-[state=active]:ring-white/10',
       ])}
       style={{
         backfaceVisibility: 'visible',
@@ -38,7 +38,7 @@ export function QueueItem({
         {isPlaying ? (
           <div className="w-6 flex items-center">
             <div className="w-6 h-6 flex items-center justify-center">
-              <EqualizerBars size={20} className="text-secondary mb-1" />
+              <EqualizerBars size={20} className="text-white mb-1" />
             </div>
           </div>
         ) : (
@@ -47,25 +47,25 @@ export function QueueItem({
           </div>
         )}
       </div>
-      <div className="flex flex-1 items-center">
-        <div className="w-10 h-10 bg-accent rounded mr-2">
+      <div className="flex min-w-0 flex-1 items-center">
+        <div className="w-10 h-10 bg-white/5 rounded-[10px] overflow-hidden mr-3 shrink-0">
           <ImageLoader id={song.coverArt} type="song" size={100}>
             {(src) => (
               <LazyLoadImage
                 src={src}
                 effect="opacity"
-                className="w-10 h-10 rounded text-transparent"
+                className="w-10 h-10 rounded-[10px] object-cover text-transparent"
                 alt={`${song.title} - ${song.artist}`}
               />
             )}
           </ImageLoader>
         </div>
-        <div className="flex flex-col">
-          <span className="font-semibold">{song.title}</span>
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate font-semibold">{song.title}</span>
           <QueueArtists song={song} />
         </div>
       </div>
-      <div className="w-[100px] text-center">
+      <div className="w-[84px] shrink-0 text-center text-white/55 tabular-nums">
         {convertSecondsToTime(song.duration)}
       </div>
     </div>

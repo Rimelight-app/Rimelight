@@ -5,7 +5,6 @@ import {
   type IGainNode,
   type IMediaElementAudioSourceNode,
 } from 'standardized-audio-context'
-import { visualizerBus } from '@/lib/visualizer-bus'
 import { usePlayerMediaType, useReplayGainState } from '@/store/player.store'
 import { logger } from '@/utils/logger'
 import { ReplayGainParams } from '@/utils/replayGain'
@@ -39,23 +38,12 @@ export function useAudioContext(audio: HTMLAudioElement | null) {
       sourceNodeRef.current.connect(gainNodeRef.current)
       // And then we can connect the gainNode to the destination
       gainNodeRef.current.connect(audioContext.destination)
-
-      // ClearPlay visualiser: a passive tap after the gain node.
-      const analyser = audioContext.createAnalyser()
-      analyser.fftSize = 2048
-      analyser.smoothingTimeConstant = 0.78
-      gainNodeRef.current.connect(analyser)
-      visualizerBus.set(analyser)
     }
   }, [audio, isSong, replayGainError])
 
   const resumeContext = useCallback(async () => {
-    if (!isSong) return
-    // Build the graph on first play so the visualiser has a source even
-    // when no gain change ever triggered setupGain().
-    if (!audioContextRef.current) setupAudioContext()
     const audioContext = audioContextRef.current
-    if (!audioContext) return
+    if (!audioContext || !isSong) return
 
     logger.info('AudioContext State', { state: audioContext.state })
 
@@ -94,7 +82,6 @@ export function useAudioContext(audio: HTMLAudioElement | null) {
   )
 
   const resetRefs = useCallback(() => {
-    visualizerBus.set(null)
     if (sourceNodeRef.current) {
       sourceNodeRef.current.disconnect()
       sourceNodeRef.current = null

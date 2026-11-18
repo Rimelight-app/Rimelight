@@ -1106,10 +1106,25 @@ usePlayerStore.subscribe((state, prevState) => {
   if (progress >= 1 && prevProgress < 1 && !hasSynced) {
     usePlayerStore.getState().actions.setHasSyncedTheCurrentTrack(true)
 
-    scrobble.send(currentSong.id, false)
+    scrobble.send(currentSong, false)
   }
 
   const timeDelta = progress - prevProgress
+
+  // Looping the same track (repeat one) jumps back to the start without a
+  // song change: treat it as a new listen.
+  if (
+    prevProgress > 5 &&
+    progress <= 1 &&
+    duration > 0 &&
+    prevProgress >= duration - 3 &&
+    state.playerState.loopState === LoopState.One
+  ) {
+    const { actions } = usePlayerStore.getState()
+    actions.resetAccumulatedTime()
+    actions.setHasScrobbledTheCurrentTrack(false)
+    actions.setHasSyncedTheCurrentTrack(false)
+  }
 
   if (isPlaying && timeDelta > 0 && timeDelta <= 2) {
     usePlayerStore.getState().actions.incrementAccumulatedTime(timeDelta)
@@ -1127,7 +1142,7 @@ usePlayerStore.subscribe((state, prevState) => {
   if (duration > 0 && accumulatedTime >= targetTime && !hasScrobbled) {
     usePlayerStore.getState().actions.setHasScrobbledTheCurrentTrack(true)
 
-    scrobble.send(currentSong.id, true)
+    scrobble.send(currentSong, true)
   }
 })
 

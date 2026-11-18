@@ -32,6 +32,7 @@
     --header-height: 44px;
     --player-height: 100px;
     --rail-width: 56px;
+    --side-panel-width: 360px;
     --content-inset-left: calc(var(--rail-width) + 24px);
     --content-height: calc(100vh - var(--header-height) - var(--player-height));
 
@@ -495,4 +496,13 @@ div[data-test-id="table-row"]:hover {
 }
 ::selection {
   background: rgb(255 255 255 / 0.22);
+}
+
+/* Switches on glass: dark thumb on a light track when on, light thumb on a
+   faint track when off. */
+.glass [role='switch'][data-state='checked'] > span {
+  background-color: rgb(18 18 22);
+}
+.glass [role='switch'][data-state='unchecked'] {
+  background-color: rgb(255 255 255 / 0.14);
 }

@@ -2,6 +2,27 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
+## [0.3.0] - 2026-11-18
+
+### Added
+- Frosted side panel with synced lyrics or the queue, available on every page (lyrics and queue buttons in the player bar); the page makes room for it.
+- Search page (rail → Search): searches as you type and shows up to 60 songs, 18 albums and 12 artists, with Play all. `Ctrl+K` quick search shows more songs and reacts faster.
+- Settings → Player & Audio:
+  - **Streaming quality**: maximum bitrate (Original, 320–96 kbps) and the format to convert to (Opus, MP3, AAC). Only songs above the cap are converted; the player bar shows the conversion.
+  - **Scrobbling**: turn reporting on or off, see recent activity (now playing / listen, sent / queued) and listens waiting to be sent, and send them now.
+- Settings → Appearance: page to open on start, cover background strength (Vivid, Normal, Dim, Off), fullscreen lyrics size, show/hide audio quality in the player bar.
+
+### Changed
+- Fullscreen player: larger cover (up to 540 px on tall screens), larger title, progress and controls.
+- Listens that fail to reach the server (offline, VPN drop, server restart) are kept and retried every minute and when the network returns, with their original time. Repeat-one loops now count as new listens.
+
+### Removed
+- Visualiser.
+
+### Fixed
+- The current song in the fullscreen queue was a white block that hid its title.
+- Switches that are on were hard to see.
+
 ## [0.2.0] - 2026-11-18
 
 ### Added

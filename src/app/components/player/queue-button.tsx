@@ -46,6 +46,7 @@ export function PlayerQueueButton({ disabled }: PlayerSongListButtonProps) {
             )}
             disabled={disabled}
             onClick={handleClick}
+            data-testid="player-queue-button"
             onContextMenu={(e) => {
               e.preventDefault()
               setOpenPopover(!openPopover)

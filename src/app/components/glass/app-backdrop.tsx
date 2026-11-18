@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getSimpleCoverArtUrl } from '@/api/httpClient'
+import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { usePaletteStore } from '@/store/palette.store'
 import { usePlayerCurrentSong } from '@/store/player.store'
 import { blurredCoverUrl, extractPalette, loadCover } from '@/utils/coverImage'
@@ -15,6 +16,7 @@ export function AppBackdrop() {
   const coverArt = song?.coverArt
   const setPalette = usePaletteStore((s) => s.setPalette)
   const [layers, setLayers] = useState<Layer[]>([])
+  const mode = useClearPlaySettings((s) => s.backdrop)
 
   useEffect(() => {
     if (!coverArt) return
@@ -43,15 +45,24 @@ export function AppBackdrop() {
     >
       <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_20%_0%,rgb(70_70_90/0.35),transparent_60%),radial-gradient(90%_70%_at_100%_100%,rgb(40_40_60/0.4),transparent_60%)]" />
 
-      {layers.map((layer) => (
-        <div
-          key={layer.id}
-          className="absolute -inset-[6%] bg-cover bg-center animate-backdrop-in"
-          style={{ backgroundImage: `url(${layer.url})` }}
-        />
-      ))}
+      {mode !== 'off' &&
+        layers.map((layer) => (
+          <div
+            key={layer.id}
+            className="absolute -inset-[6%] bg-cover bg-center animate-backdrop-in"
+            style={{ backgroundImage: `url(${layer.url})` }}
+          />
+        ))}
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/45 to-black/65" />
+      <div
+        className={
+          mode === 'vivid'
+            ? 'absolute inset-0 bg-gradient-to-b from-black/15 via-black/25 to-black/50'
+            : mode === 'dim'
+              ? 'absolute inset-0 bg-gradient-to-b from-black/55 via-black/65 to-black/80'
+              : 'absolute inset-0 bg-gradient-to-b from-black/35 via-black/45 to-black/65'
+        }
+      />
     </div>
   )
 }

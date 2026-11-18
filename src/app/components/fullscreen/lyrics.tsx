@@ -9,6 +9,7 @@ import {
   scrollAreaViewportSelector,
 } from '@/app/components/ui/scroll-area'
 import { subsonic } from '@/service/subsonic'
+import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { useLang } from '@/store/lang.store'
 import { usePlayerRef, usePlayerSonglist } from '@/store/player.store'
 import { ILyric } from '@/types/responses/song'
@@ -26,9 +27,11 @@ function resolveLyricsLang(
 
 interface LyricProps {
   lyrics: ILyric
+  compact?: boolean
 }
 
-export function LyricsTab() {
+/** compact: smaller type for the side panel. */
+export function LyricsTab({ compact = false }: { compact?: boolean }) {
   const { currentSong } = usePlayerSonglist()
   const { t } = useTranslation()
 
@@ -52,16 +55,23 @@ export function LyricsTab() {
     return <CenteredMessage>{loadingLyrics}</CenteredMessage>
   } else if (lyrics && lyrics.value) {
     return areLyricsSynced(lyrics) ? (
-      <SyncedLyrics lyrics={lyrics} />
+      <SyncedLyrics lyrics={lyrics} compact={compact} />
     ) : (
-      <UnsyncedLyrics lyrics={lyrics} />
+      <UnsyncedLyrics lyrics={lyrics} compact={compact} />
     )
   } else {
     return <CenteredMessage>{noLyricsFound}</CenteredMessage>
   }
 }
 
-function SyncedLyrics({ lyrics }: LyricProps) {
+const LYRICS_SIZES = {
+  s: 'text-[22px] leading-tight 2xl:text-[26px]',
+  m: 'text-[28px] leading-tight 2xl:text-[34px]',
+  l: 'text-[34px] leading-tight 2xl:text-[42px]',
+}
+
+function SyncedLyrics({ lyrics, compact }: LyricProps) {
+  const lyricsSize = useClearPlaySettings((s) => s.lyricsSize)
   const playerRef = usePlayerRef()
   const { langCode } = useLang()
   const [progress, setProgress] = useState(0)
@@ -83,7 +93,13 @@ function SyncedLyrics({ lyrics }: LyricProps) {
   }
 
   return (
-    <div className="w-full h-full text-left font-bold tracking-tight text-[28px] leading-tight 2xl:text-[34px] px-2 lrc-box maskImage-big-player-lyrics">
+    <div
+      className={clsx(
+        'w-full h-full text-left font-bold tracking-tight px-2 lrc-box maskImage-big-player-lyrics',
+        compact ? 'text-[19px] leading-snug' : LYRICS_SIZES[lyricsSize],
+        'cp-lyrics',
+      )}
+    >
       <Lrc
         lrc={lyrics.value!}
         recoverAutoScrollInterval={1500}
@@ -95,7 +111,8 @@ function SyncedLyrics({ lyrics }: LyricProps) {
           <p
             onClick={() => skipToTime(line.startMillisecond)}
             className={clsx(
-              'my-6 origin-left cursor-pointer duration-500 ease-out',
+              compact ? 'my-3.5' : 'my-6',
+              'origin-left cursor-pointer duration-500 ease-out',
               'transition-[color,transform,filter] motion-reduce:transition-none',
               active
                 ? 'text-white scale-[1.02]'
@@ -111,7 +128,7 @@ function SyncedLyrics({ lyrics }: LyricProps) {
   )
 }
 
-function UnsyncedLyrics({ lyrics }: LyricProps) {
+function UnsyncedLyrics({ lyrics, compact }: LyricProps) {
   const { currentSong } = usePlayerSonglist()
   const { langCode } = useLang()
   const lyricsBoxRef = useRef<HTMLDivElement>(null)
@@ -136,7 +153,10 @@ function UnsyncedLyrics({ lyrics }: LyricProps) {
   return (
     <ScrollArea
       type="always"
-      className="w-full h-full overflow-y-auto text-left font-semibold text-xl 2xl:text-2xl px-2 scroll-smooth maskImage-unsynced-lyrics text-white/80"
+      className={clsx(
+        'w-full h-full overflow-y-auto text-left font-semibold px-2 scroll-smooth maskImage-unsynced-lyrics text-white/80 cp-lyrics',
+        compact ? 'text-base' : 'text-xl 2xl:text-2xl',
+      )}
       thumbClassName="secondary-thumb-bar"
       ref={lyricsBoxRef}
     >

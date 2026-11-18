@@ -31,6 +31,7 @@ export function PlayerLyricsButton({ disabled }: PlayerLyricsButtonProps) {
         )}
         onClick={handleClick}
         disabled={disabled}
+        data-testid="player-lyrics-button"
       >
         <MicVocalIcon className={clsx('w-4 h-4', isActive && 'text-primary')} />
       </Button>

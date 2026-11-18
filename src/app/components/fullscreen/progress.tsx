@@ -52,7 +52,7 @@ export function FullscreenProgress() {
 
   return (
     <div className="flex items-center gap-3">
-      <div className="min-w-[44px] text-right text-[12px] tabular-nums text-white/60">
+      <div className="min-w-[48px] text-right text-[13px] tabular-nums text-white/60">
         {currentTime}
       </div>
 
@@ -63,14 +63,14 @@ export function FullscreenProgress() {
         tooltipTransformer={convertSecondsToTime}
         max={currentDuration}
         step={1}
-        className="w-full h-4"
+        className="w-full h-5"
         onValueChange={([value]) => handleSeeking(value)}
         onValueCommit={([value]) => handleSeeked(value)}
         onPointerUp={handleSeekedFallback}
         onMouseUp={handleSeekedFallback}
       />
 
-      <div className="min-w-[44px] text-left text-[12px] tabular-nums text-white/60">
+      <div className="min-w-[48px] text-left text-[13px] tabular-nums text-white/60">
         {convertSecondsToTime(currentDuration ?? 0)}
       </div>
     </div>

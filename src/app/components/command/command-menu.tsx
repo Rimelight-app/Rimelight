@@ -49,7 +49,7 @@ export default function CommandMenu({
   const isHome = activePage === 'HOME'
 
   const enableQuery = Boolean(
-    byteLength(query) >= 3 && activePage !== 'PLAYLISTS',
+    byteLength(query) >= 2 && activePage !== 'PLAYLISTS',
   )
 
   const { data: searchResult } = useQuery({
@@ -59,7 +59,7 @@ export default function CommandMenu({
         query,
         albumCount: 4,
         artistCount: 4,
-        songCount: 4,
+        songCount: 8,
       }),
     enabled: enableQuery,
     staleTime: convertMinutesToMs(5),
@@ -93,7 +93,7 @@ export default function CommandMenu({
 
   const debounced = useDebouncedCallback((value: string) => {
     setQuery(value)
-  }, 500)
+  }, 250)
 
   function handleInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === '/') {

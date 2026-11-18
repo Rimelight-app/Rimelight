@@ -28,6 +28,7 @@ import { ROUTES } from '@/routes/routesList'
 
 const StatsPage = lazy(() => import('@/app/pages/insights/stats'))
 const NowPlayingPage = lazy(() => import('@/app/pages/insights/now-playing'))
+const SearchPage = lazy(() => import('@/app/pages/insights/search'))
 const BaseLayout = lazy(() => import('@/app/layout/base'))
 const Album = lazy(() => import('@/app/pages/albums/album'))
 const AlbumsList = lazy(() => import('@/app/pages/albums/list'))
@@ -64,6 +65,16 @@ export const router = createHashRouter([
         element: (
           <Suspense fallback={null}>
             <StatsPage />
+          </Suspense>
+        ),
+      },
+      {
+        id: 'search',
+        path: ROUTES.SEARCH,
+        errorElement: <ErrorPage />,
+        element: (
+          <Suspense fallback={null}>
+            <SearchPage />
           </Suspense>
         ),
       },

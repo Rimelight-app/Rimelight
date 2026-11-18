@@ -6,6 +6,7 @@ import { RadioInfo } from '@/app/components/player/radio-info'
 import { TrackInfo } from '@/app/components/player/track-info'
 import { podcasts } from '@/service/podcasts'
 import { useAppMediaCache, useAppStore } from '@/store/app.store'
+import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import {
   getVolume,
   usePlayerActions,
@@ -79,18 +80,24 @@ export function Player() {
   const mediaCacheEnabled = useAppMediaCache()
   const songId = song?.id
 
+  const maxBitRate = useClearPlaySettings((s) => s.maxBitRate)
+  const streamFormat = useClearPlaySettings((s) => s.streamFormat)
+
   const songStreamUrl = useMemo(() => {
     if (!songId) return ''
 
     const cacheBustToken = mediaCacheEnabled ? undefined : Date.now().toString()
+    // Only ask the server to convert when the file is above the cap.
+    const limit = Number(maxBitRate)
+    const convert = limit > 0 && (song.bitRate ?? 0) > limit
 
     return getSongStreamUrl(
       songId,
-      undefined,
-      ensureSupportForAlac(song.suffix),
+      convert ? maxBitRate : undefined,
+      convert ? streamFormat : ensureSupportForAlac(song.suffix),
       cacheBustToken,
     )
-  }, [songId, song, mediaCacheEnabled])
+  }, [songId, song, mediaCacheEnabled, maxBitRate, streamFormat])
 
   const getAudioRef = useCallback(() => {
     if (isRadio) return radioRef

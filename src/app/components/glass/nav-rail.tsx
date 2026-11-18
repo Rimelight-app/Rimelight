@@ -14,7 +14,7 @@ import CommandMenu from '@/app/components/command/command-menu'
 import { SimpleTooltip } from '@/app/components/ui/simple-tooltip'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/routes/routesList'
-import { useAppSettings, useAppStore } from '@/store/app.store'
+import { useAppSettings } from '@/store/app.store'
 
 const iconProps = { className: 'size-[19px]', strokeWidth: 1.6 }
 
@@ -68,7 +68,6 @@ function RailButton({
 export function NavRail() {
   const { t } = useTranslation()
   const { pathname } = useLocation()
-  const setCommandOpen = useAppStore((state) => state.command.setOpen)
   const { openDialog, setOpenDialog } = useAppSettings()
 
   useHotkeys('mod+comma', () => setOpenDialog(!openDialog))
@@ -94,7 +93,8 @@ export function NavRail() {
         <RailButton
           icon={Search}
           label={t('sidebar.search')}
-          onClick={() => setCommandOpen(true)}
+          to={ROUTES.SEARCH}
+          active={pathname === ROUTES.SEARCH}
         />
         <RailButton
           icon={LibraryBig}

@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { AudioWaveform, ChevronDown, ListMusic, MicVocal } from 'lucide-react'
+import { ChevronDown, ListMusic, MicVocal } from 'lucide-react'
 import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ImageLoader } from '@/app/components/image-loader'
@@ -7,7 +7,6 @@ import { Drawer, DrawerContent, DrawerTitle } from '@/app/components/ui/drawer'
 import { SimpleTooltip } from '@/app/components/ui/simple-tooltip'
 import { useAppWindow } from '@/app/hooks/use-app-window'
 import { useAppStore } from '@/store/app.store'
-import { useEffectsStore } from '@/store/effects.store'
 import { usePlayerCurrentSong, usePlayerFullscreen } from '@/store/player.store'
 import { isLinux, isWindows } from '@/utils/desktop'
 import { FullscreenControls } from './controls'
@@ -17,7 +16,6 @@ import { LikeButton } from './like-button'
 import { LyricsTab } from './lyrics'
 import { FullscreenProgress } from './progress'
 import { FullscreenSongQueue } from './queue'
-import { Visualizer } from './visualizer'
 import { VolumeContainer } from './volume-container'
 
 const MemoBackdrop = memo(GradientBackdrop)
@@ -60,7 +58,9 @@ function TopButton({
   active,
   onClick,
   children,
+  testId,
 }: {
+  testId?: string
   label: string
   active?: boolean
   onClick: () => void
@@ -72,6 +72,7 @@ function TopButton({
         type="button"
         onClick={onClick}
         aria-pressed={active}
+        data-testid={testId}
         className={clsx(
           'electron-no-drag inline-flex size-9 items-center justify-center rounded-full',
           'text-white/70 transition-colors duration-200 hover:text-white hover:bg-white/10',
@@ -91,8 +92,6 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
   const song = usePlayerCurrentSong()
   const hideFavorites = useAppStore().pages.hideFavoritesSection
   const toggle = (p: Panel) => setPanel((cur) => (cur === p ? 'none' : p))
-  const { showVisualizer, setShowVisualizer, reduceEffects } = useEffectsStore()
-  const visualizerOn = showVisualizer && !reduceEffects
   const hasPanel = panel !== 'none'
 
   return (
@@ -111,13 +110,6 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
         </TopButton>
         <div className="glass-chip electron-no-drag flex items-center gap-0.5 rounded-full p-0.5">
           <TopButton
-            label={t('clearplay.visualizer')}
-            active={visualizerOn}
-            onClick={() => setShowVisualizer(!showVisualizer)}
-          >
-            <AudioWaveform className="size-[17px]" strokeWidth={1.75} />
-          </TopButton>
-          <TopButton
             label={t('fullscreen.lyrics')}
             active={panel === 'lyrics'}
             onClick={() => toggle('lyrics')}
@@ -128,6 +120,7 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
             label={t('fullscreen.queue')}
             active={panel === 'queue'}
             onClick={() => toggle('queue')}
+            testId="fs-queue-toggle"
           >
             <ListMusic className="size-[17px]" strokeWidth={1.75} />
           </TopButton>
@@ -138,21 +131,14 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
       <div
         className={clsx(
           'grid min-h-0 flex-1 items-center gap-12 px-12 2xl:gap-20 2xl:px-20',
-          visualizerOn ? 'pb-2' : 'pb-10',
+          'pb-10',
           hasPanel
             ? 'grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]'
             : 'grid-cols-1',
         )}
       >
         {/* Player column */}
-        <div
-          className={clsx(
-            'mx-auto flex w-full flex-col',
-            visualizerOn
-              ? 'max-w-[min(400px,36vh)] gap-4'
-              : 'max-w-[min(440px,46vh)] gap-5',
-          )}
-        >
+        <div className="mx-auto flex w-full max-w-[min(540px,45vh)] flex-col gap-5">
           <div className="aspect-square w-full overflow-hidden rounded-[24px] bg-white/5 shadow-[0_40px_80px_-30px_rgb(0_0_0/0.8)] ring-1 ring-white/10">
             <ImageLoader id={song.coverArt} type="song" size={800}>
               {(src) => (
@@ -168,10 +154,10 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
 
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="truncate text-2xl font-bold tracking-tight 2xl:text-3xl">
+              <h2 className="truncate text-3xl font-bold tracking-tight 2xl:text-4xl">
                 {song.title}
               </h2>
-              <p className="mt-1 truncate text-[15px] text-white/65">
+              <p className="mt-1.5 truncate text-[17px] text-white/65">
                 {song.artist}
                 {song.album ? ` · ${song.album}` : ''}
               </p>
@@ -185,7 +171,7 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
             <FullscreenControls />
           </div>
 
-          <div className="mx-auto w-full max-w-[280px]">
+          <div className="mx-auto w-full max-w-[340px]">
             <VolumeContainer />
           </div>
         </div>
@@ -197,12 +183,6 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </div>
-
-      {visualizerOn && (
-        <div className="h-20 shrink-0 px-12 pb-5 2xl:h-24 2xl:px-20">
-          <Visualizer />
-        </div>
-      )}
     </div>
   )
 }

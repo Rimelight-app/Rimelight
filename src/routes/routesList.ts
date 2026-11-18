@@ -76,6 +76,7 @@ const GENRE = {
 const SERVER_CONFIG = '/server-config'
 const NOW_PLAYING = '/now-playing'
 const STATS = '/stats'
+const SEARCH = '/search'
 
 export const ROUTES = {
   LIBRARY,
@@ -91,4 +92,5 @@ export const ROUTES = {
   SERVER_CONFIG,
   NOW_PLAYING,
   STATS,
+  SEARCH,
 }

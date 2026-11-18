@@ -1,7 +1,7 @@
 {
   "name": "clearplay",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A frosted-glass desktop player for Navidrome (OpenSubsonic) servers.",
   "author": {
     "name": "tonihk00"
