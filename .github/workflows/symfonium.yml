@@ -60,7 +60,7 @@ jobs:
           body: |
             Always the newest Symfonium files from `main`:
             - **ClearPlay-Icons-Symfonium.apk**: Lucide icon pack (Symfonium 16+). Install it, then choose
-              Settings > Interface > Theme, icons, fonts and colors > Icon pack > ClearPlay (Lucide).
+              Settings > Interface settings > Theme, icons, font and colors > Icon pack > ClearPlay (Lucide).
             - **ClearPlay-Glass-Style.json**: full application style. Install the icon pack first.
             - **ClearPlay-Glass.json**: colour theme only.
           files: |

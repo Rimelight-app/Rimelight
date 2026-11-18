@@ -56,8 +56,9 @@ application style: layout, now-playing screen, colours and icons in one file.
    manager). It has no screen of its own; it only provides icons.
 3. Symfonium → **Settings → Interface → Application style → Import**, and pick the
    JSON file.
-4. If the icons did not change, choose them by hand: **Settings → Interface → Theme,
-   icons, fonts and colors → Icon pack → ClearPlay (Lucide)**.
+4. If the icons did not change, choose them by hand: **Settings → Interface settings →
+   Theme, icons, font and colors**, then in **Theme mode and palette** tap **Icon pack**
+   and pick **ClearPlay (Lucide)**. No "Icon pack" row means Symfonium is older than 16.
 
 Icon packs need Symfonium 16 or newer. If you only want the colours, import
 `ClearPlay-Glass.json` as a custom theme instead (see above).
