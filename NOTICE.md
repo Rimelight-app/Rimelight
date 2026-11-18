@@ -22,7 +22,5 @@ Dependencies are installed from npm and keep their own licences; see
   Licence 1.1 (`licenses/Inter-OFL-1.1.txt`), via `@fontsource-variable/inter`.
 - **Lucide** icons (ISC licence), via `lucide-react`.
 
-The ClearPlay logo (`src/app/components/glass/logo.tsx`) is original.
+The ClearPlay logo (`build/icon.svg`, `src/app/components/glass/logo.tsx`) was supplied by the project owner.
 
-The icons in `build/` and `resources/` are still the upstream Aonsoku icons and
-will be replaced with original ones.

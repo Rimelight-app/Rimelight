@@ -2,6 +2,18 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
+## [0.4.0] - 2026-11-18
+
+### Added
+- New ClearPlay logo for the app icon, installers, tray and header.
+- **Fedora / RHEL package** (`.rpm`) alongside the AppImage and `.deb`.
+- **Now playing page** now shows the current track in detail: cover, title, artists, album, year, when it was added, genre, format, bit depth, sample rate, bitrate, length and BPM, play count, like and lyrics buttons; the rest of the album with the current track marked; about the artist (photo, biography, similar artists, switch between featured artists); the artist's discography; and who is listening on the server.
+- **ClearPlay Glass theme for Symfonium** (Android) in `themes/symfonium/`, also attached to each release.
+- Fullscreen player: a slow, subtle moving blur made from the cover behind the player.
+
+### Changed
+- Synced lyrics: the current line is full size and bright while the others shrink and fade with distance; the list now glides between lines with a single smooth animation instead of scrolling. Lyrics are larger overall. You can scroll to look around; it eases back to the current line after a moment.
+
 ## [0.3.0] - 2026-11-18
 
 ### Added

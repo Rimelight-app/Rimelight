@@ -197,9 +197,6 @@ importers:
       react-lazy-load-image-component:
         specifier: ^1.6.3
         version: 1.6.3(react@18.3.1)
-      react-lrc:
-        specifier: ^3.2.1
-        version: 3.2.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@18.3.20)(react@18.3.1)
@@ -2247,9 +2244,6 @@ packages:
     resolution: {integrity: sha512-JQHZ2QMW6l3aH/j6xCqQThY/9OH4D/9ls34cgkUBiEeocRTU04tHfKPBsUK1PqZCUQM7GiA0IIXJSuXHI64Kbg==}
     engines: {node: '>=0.8'}
 
-  clrc@3.1.4:
-    resolution: {integrity: sha512-lNWVrD2u+PRB9sQimJOjpAUdqRNsgQgx2c+oI00Uqxt4p2Aiusx0MlPLNjXs5t0mqQqz7UlyzqTIHVPIAjAGLg==}
-
   clsx@2.1.1:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
@@ -3770,12 +3764,6 @@ packages:
     peerDependencies:
       react: ^15.x.x || ^16.x.x || ^17.x.x || ^18.x.x || ^19.x.x
 
-  react-lrc@3.2.1:
-    resolution: {integrity: sha512-CRmjtFjjL6Y4RLGSgBxpP7RD9rAJqLLJeRKbC7TYzBFxWFQysOzc2j1dtjGc8rOsOMz6Pfeh4352qUh97dBhZA==}
-    peerDependencies:
-      react: '>=17.0.0'
-      react-dom: '>=17.0.0'
-
   react-markdown@10.1.0:
     resolution: {integrity: sha512-qKxVopLT/TyA6BX3Ue5NwabOsAzm0Q7kAPwq6L+wWDwisYs7R8vZ0nRXqq6rkueboxpkjvLGU9fWifiX/ZZFxQ==}
     peerDependencies:
@@ -3886,9 +3874,6 @@ packages:
   resedit@1.7.2:
     resolution: {integrity: sha512-vHjcY2MlAITJhC0eRD/Vv8Vlgmu9Sd3LX9zZvtGzU5ZImdTN3+d6e/4mnTyV8vEbyf1sgNIrWxhWlrys52OkEA==}
     engines: {node: '>=12', npm: '>=6'}
-
-  resize-observer-polyfill@1.5.1:
-    resolution: {integrity: sha512-LwZrotdHOo12nQuZlHEmtuXdqGoOD0OhaxopaNFxWzInpEgaLWoVuAMbTzixuosCx2nEG58ngzW3vxdWoxIgdg==}
 
   resolve-alpn@1.2.1:
     resolution: {integrity: sha512-0a1F4l73/ZFZOakJnQ3FvkJ2+gSTQWz/r2KE5OdDY0TxPm5h4GkqkWWfM47T7HsbnOtcJVEF4epCVy6u7Q3K+g==}
@@ -6454,8 +6439,6 @@ snapshots:
 
   clone@1.0.4: {}
 
-  clrc@3.1.4: {}
-
   clsx@2.1.1: {}
 
   cmdk@1.1.1(@types/react-dom@18.3.6(@types/react@18.3.20))(@types/react@18.3.20)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
@@ -8287,13 +8270,6 @@ snapshots:
       lodash.throttle: 4.1.1
       react: 18.3.1
 
-  react-lrc@3.2.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      clrc: 3.1.4
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      resize-observer-polyfill: 1.5.1
-
   react-markdown@10.1.0(@types/react@18.3.20)(react@18.3.1):
     dependencies:
       '@types/hast': 3.0.4
@@ -8436,8 +8412,6 @@ snapshots:
   resedit@1.7.2:
     dependencies:
       pe-library: 0.4.1
-
-  resize-observer-polyfill@1.5.1: {}
 
   resolve-alpn@1.2.1: {}
 

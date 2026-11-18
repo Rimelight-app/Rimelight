@@ -1,7 +1,7 @@
 {
   "name": "clearplay",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A frosted-glass desktop player for Navidrome (OpenSubsonic) servers.",
   "author": {
     "name": "tonihk00"
@@ -93,7 +93,6 @@
     "react-hotkeys-hook": "^4.6.1",
     "react-i18next": "^14.1.3",
     "react-lazy-load-image-component": "^1.6.3",
-    "react-lrc": "^3.2.1",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.30.4",
     "react-toastify": "^10.0.6",

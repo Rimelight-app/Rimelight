@@ -874,7 +874,7 @@
       "footnote": "Based on the play counts Navidrome records for your user (scrobbles)"
     },
     "nowPlaying": {
-      "kicker": "Live on your server",
+      "kicker": "Listening on your server",
       "title": "Now playing",
       "empty": "Nobody is listening right now.",
       "justNow": "just now",
@@ -950,6 +950,29 @@
           "info": "Format, bit depth, sample rate and bitrate under the artist."
         }
       }
+    },
+    "np": {
+      "kicker": "Now playing",
+      "nothing": "Nothing is playing. Pick something to see details here.",
+      "added": "added {{when}}",
+      "today": "today",
+      "daysAgo_one": "{{count}} day ago",
+      "daysAgo_other": "{{count}} days ago",
+      "monthsAgo_one": "{{count}} month ago",
+      "monthsAgo_other": "{{count}} months ago",
+      "yearsAgo_one": "{{count}} year ago",
+      "yearsAgo_other": "{{count}} years ago",
+      "like": "Like",
+      "fromAlbum": "From this album",
+      "viewAlbum": "View album",
+      "trackOf": "track {{n}} of {{total}}",
+      "aboutArtist": "About the artist",
+      "goToArtist": "Go to artist",
+      "noBio": "No biography on the server for this artist.",
+      "more": "Read more",
+      "less": "Show less",
+      "similar": "Similar artists",
+      "discography": "Discography"
     }
   }
 }

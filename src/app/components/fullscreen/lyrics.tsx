@@ -1,9 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { ComponentPropsWithoutRef, useEffect, useRef, useState } from 'react'
-import { isSafari } from 'react-device-detect'
+import { ComponentPropsWithoutRef, useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Lrc } from 'react-lrc'
 import {
   ScrollArea,
   scrollAreaViewportSelector,
@@ -14,6 +12,7 @@ import { useLang } from '@/store/lang.store'
 import { usePlayerRef, usePlayerSonglist } from '@/store/player.store'
 import { ILyric } from '@/types/responses/song'
 import { queryKeys } from '@/utils/queryKeys'
+import { SmoothLyrics } from './smooth-lyrics'
 
 // disambiguates chinese language code to the user's locale if set
 function resolveLyricsLang(
@@ -65,66 +64,36 @@ export function LyricsTab({ compact = false }: { compact?: boolean }) {
 }
 
 const LYRICS_SIZES = {
-  s: 'text-[22px] leading-tight 2xl:text-[26px]',
-  m: 'text-[28px] leading-tight 2xl:text-[34px]',
-  l: 'text-[34px] leading-tight 2xl:text-[42px]',
+  s: 'text-[26px] leading-tight 2xl:text-[32px]',
+  m: 'text-[32px] leading-tight 2xl:text-[40px]',
+  l: 'text-[38px] leading-tight 2xl:text-[48px]',
 }
 
 function SyncedLyrics({ lyrics, compact }: LyricProps) {
   const lyricsSize = useClearPlaySettings((s) => s.lyricsSize)
   const playerRef = usePlayerRef()
   const { langCode } = useLang()
-  const [progress, setProgress] = useState(0)
   const resolvedLang = resolveLyricsLang(lyrics.lang, langCode)
 
-  // One steady timer instead of a new timeout on every render.
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      const next = Math.round((playerRef?.currentTime || 0) * 1000)
-      setProgress((prev) => (prev === next ? prev : next))
-    }, 120)
-    return () => window.clearInterval(id)
-  }, [playerRef])
-
-  const skipToTime = (timeMs: number) => {
-    if (playerRef) {
-      playerRef!.currentTime = timeMs / 1000
-    }
-  }
+  const getTime = useCallback(() => playerRef?.currentTime ?? 0, [playerRef])
+  const onSeek = useCallback(
+    (ms: number) => {
+      if (playerRef) playerRef.currentTime = ms / 1000
+    },
+    [playerRef],
+  )
 
   return (
-    <div
-      className={clsx(
-        'w-full h-full text-left font-bold tracking-tight px-2 lrc-box maskImage-big-player-lyrics',
-        compact ? 'text-[19px] leading-snug' : LYRICS_SIZES[lyricsSize],
-        'cp-lyrics',
-      )}
-    >
-      <Lrc
-        lrc={lyrics.value!}
-        recoverAutoScrollInterval={1500}
-        currentMillisecond={progress}
-        id="sync-lyrics-box"
-        className={clsx('h-full overflow-y-auto', !isSafari && 'scroll-smooth')}
-        verticalSpace={true}
-        lineRenderer={({ active, line }) => (
-          <p
-            onClick={() => skipToTime(line.startMillisecond)}
-            className={clsx(
-              compact ? 'my-3.5' : 'my-6',
-              'origin-left cursor-pointer duration-500 ease-out',
-              'transition-[color,transform,filter] motion-reduce:transition-none',
-              active
-                ? 'text-white scale-[1.02]'
-                : 'text-white/30 hover:text-white/60 blur-[0.4px]',
-            )}
-            lang={resolvedLang}
-          >
-            {line.content}
-          </p>
-        )}
-      />
-    </div>
+    <SmoothLyrics
+      lrc={lyrics.value ?? ''}
+      getTime={getTime}
+      onSeek={onSeek}
+      lang={resolvedLang}
+      compact={compact}
+      sizeClass={
+        compact ? 'text-[20px] leading-snug' : LYRICS_SIZES[lyricsSize]
+      }
+    />
   )
 }
 

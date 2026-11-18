@@ -35,11 +35,18 @@ export function GradientBackdrop() {
       style={{ backgroundColor: rgb(d, 1) }}
     >
       {cover && (
-        <div
-          key={cover.length}
-          className="absolute -inset-[8%] bg-cover bg-center opacity-70 animate-backdrop-in"
-          style={{ backgroundImage: `url(${cover})` }}
-        />
+        <div key={cover.length} className="absolute inset-0 animate-backdrop-in">
+          {/* Two oversized copies of the pre-blurred cover turning very slowly
+              in opposite directions: a soft, living blur. */}
+          <div
+            className="cp-swirl cp-swirl-a"
+            style={{ backgroundImage: `url(${cover})` }}
+          />
+          <div
+            className="cp-swirl cp-swirl-b"
+            style={{ backgroundImage: `url(${cover})` }}
+          />
+        </div>
       )}
       <div
         className="cp-blob cp-blob-1"

@@ -45,9 +45,23 @@ linux:
     - target: deb
       arch:
         - x64
+    - target: rpm
+      arch:
+        - x64
   maintainer: tonihk00
   category: AudioVideo
   synopsis: 'A frosted-glass desktop player for Navidrome (OpenSubsonic) servers.'
+  description: 'ClearPlay is a minimal desktop music player for self-hosted Navidrome and OpenSubsonic servers.'
+  executableName: clearplay
+  desktop:
+    entry:
+      Name: ClearPlay
+      StartupWMClass: ClearPlay
+      Keywords: music;player;navidrome;subsonic;
+
+rpm:
+  fpm:
+    - '--rpm-rpmbuild-define=_build_id_links none'
 
 npmRebuild: true
 nativeRebuilder: legacy

@@ -25,6 +25,7 @@ jobs:
             files: |
               dist/*.AppImage
               dist/*.deb
+              dist/*.rpm
               dist/latest-linux.yml
           - os: windows-2022
             name: windows
@@ -45,6 +46,10 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+
+      - name: Install rpm tooling (Fedora package)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm
 
       - run: pnpm install --frozen-lockfile
 
@@ -103,5 +108,7 @@ jobs:
           tag_name: ${{ steps.tag.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: ClearPlay ${{ steps.tag.outputs.tag }}
-          files: release/*
+          files: |
+            release/*
+            themes/symfonium/ClearPlay-Glass.json
           generate_release_notes: true

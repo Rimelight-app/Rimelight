@@ -4,7 +4,7 @@ A minimal, frosted-glass desktop player for self-hosted
 [Navidrome](https://www.navidrome.org/) (OpenSubsonic) servers.
 Linux (AppImage, deb) and Windows (installer).
 
-> Status: 0.3.0. See `CHANGELOG.md`.
+> Status: 0.4.0. See `CHANGELOG.md`.
 
 ## Features
 
@@ -46,7 +46,14 @@ The AppImage needs `libfuse2` on some distributions.
 
 ## Download
 
-Installers are attached to each [release](https://github.com/tonihk00/ClearPlay/releases): `.AppImage` and `.deb` for Linux, `Setup .exe` for Windows. The Windows installer is unsigned, so SmartScreen may warn on first run (*More info → Run anyway*).
+Installers are attached to each [release](https://github.com/tonihk00/ClearPlay/releases):
+
+- Linux: `.AppImage` (any distribution), `.deb` (Debian, Ubuntu, Mint), `.rpm` (Fedora, RHEL, openSUSE). On Fedora: `sudo dnf install ./ClearPlay-*.rpm`.
+- Windows: `.exe` installer.
+- Android: the ClearPlay Glass colour theme for Symfonium (`ClearPlay-Glass.json`), see [themes/symfonium](themes/symfonium/README.md).
+
+ 
+The Windows installer is unsigned, so SmartScreen may warn on first run (*More info → Run anyway*).
 
 ## CI
 

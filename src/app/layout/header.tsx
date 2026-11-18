@@ -13,7 +13,7 @@ export function Header() {
       <div className="flex items-center">
         {isMacOS && !isFullscreen && <div className="w-[70px]" />}
         <div className="w-[calc(var(--rail-width)+12px)] pl-3 mr-3 flex justify-center">
-          <ClearPlayLogo className="size-[22px] text-white/90" />
+          <ClearPlayLogo className="size-[26px] drop-shadow-[0_2px_6px_rgb(0_0_0/0.35)]" />
         </div>
         <NavigationButtons />
       </div>
