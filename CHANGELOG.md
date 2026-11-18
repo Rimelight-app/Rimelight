@@ -6,6 +6,8 @@ All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
 ### Added
 - ClearPlay Glass **full application style** for Symfonium (`themes/symfonium/ClearPlay-Glass-Style.json`), based on TIDAL For Symfonium by Myke: translucent glass colours, rounder player and covers, ClearPlay logo.
+- Symfonium style now uses the Apple Music for Symfonium arrangement (by RoyalGuard): Home, Playlists, Library and Search tabs, large home rows, Apple-style album/artist/playlist pages; graphite pages instead of pure black; the ClearPlay logo as the home title.
+- **ClearPlay icon pack for Symfonium 16** (`symfonium-iconpack/`): the desktop app's Lucide icons for 375 Symfonium icons, built by GitHub Actions and published on the rolling `symfonium` release with the style files.
 
 ## [0.4.1] - 2026-11-19
 
