@@ -1,5 +1,5 @@
 import randomCSSHexColor from '@chriscodesthings/random-css-hex-color'
-import { AudioLines } from 'lucide-react'
+import { AudioLines, Maximize2 } from 'lucide-react'
 import { useCallback } from 'react'
 import { Fragment } from 'react/jsx-runtime'
 import { useTranslation } from 'react-i18next'
@@ -10,8 +10,9 @@ import { MarqueeTitle } from '@/app/components/fullscreen/marquee-title'
 import { ImageLoader } from '@/app/components/image-loader'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/routes/routesList'
-import { useSongColor } from '@/store/player.store'
+import { usePlayerFullscreen, useSongColor } from '@/store/player.store'
 import { ISong } from '@/types/responses/song'
+import { getAudioQuality } from '@/utils/audioQuality'
 import { getAverageColor } from '@/utils/getAverageColor'
 import { logger } from '@/utils/logger'
 import { ALBUM_ARTISTS_MAX_NUMBER } from '@/utils/multipleArtists'
@@ -19,6 +20,7 @@ import { ALBUM_ARTISTS_MAX_NUMBER } from '@/utils/multipleArtists'
 export function TrackInfo({ song }: { song: ISong | undefined }) {
   const { t } = useTranslation()
   const { setCurrentSongColor, currentSongColor } = useSongColor()
+  const { setIsFullscreen } = usePlayerFullscreen()
 
   const getImageElement = useCallback(() => {
     return document.getElementById('track-song-image') as HTMLImageElement
@@ -71,8 +73,17 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
 
   return (
     <Fragment>
-      <div className="group relative">
+      <button
+        type="button"
+        className="group relative shrink-0 cursor-pointer rounded-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+        onClick={() => setIsFullscreen(true)}
+        aria-label={t('clearplay.openNowPlaying')}
+        title={t('clearplay.openNowPlaying')}
+      >
         <div className="min-w-[54px] max-w-[54px] aspect-square bg-cover bg-center bg-white/5 rounded-[14px] overflow-hidden shadow-[0_8px_20px_-8px_rgb(0_0_0/0.6)] relative">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all duration-200 group-hover:bg-black/45 group-hover:opacity-100">
+            <Maximize2 className="size-4" strokeWidth={2} />
+          </div>
           <ImageLoader id={song.coverArt} type="song" size={400}>
             {(src) => (
               <LazyLoadImage
@@ -98,7 +109,7 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
             screen="playerBar"
           />
         </div>
-      </div>
+      </button>
       <div className="flex flex-col justify-center w-full overflow-hidden">
         <MarqueeTitle gap="mr-2">
           <Link to={ROUTES.ALBUM.PAGE(song.albumId)} tabIndex={-1}>
@@ -111,8 +122,34 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
           </Link>
         </MarqueeTitle>
         <TrackInfoArtistsLinks song={song} />
+        <TrackQuality song={song} />
       </div>
     </Fragment>
+  )
+}
+
+function TrackQuality({ song }: { song: ISong }) {
+  const { format, details, lossless, hiRes } = getAudioQuality(song)
+
+  return (
+    <div
+      className="mt-1 flex items-center gap-1.5 text-[11px] leading-none text-white/50 whitespace-nowrap"
+      data-testid="track-quality"
+    >
+      <span
+        className={cn(
+          'rounded-full px-1.5 py-[3px] text-[10px] font-semibold tracking-wide',
+          hiRes
+            ? 'bg-white/90 text-[#121216]'
+            : lossless
+              ? 'bg-white/[0.16] text-white/90'
+              : 'bg-white/[0.08] text-white/70',
+        )}
+      >
+        {hiRes ? `${format} · HI-RES` : format}
+      </span>
+      <span className="truncate tabular-nums">{details.join(' · ')}</span>
+    </div>
   )
 }
 

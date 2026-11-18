@@ -4,13 +4,15 @@ A minimal, frosted-glass desktop player for self-hosted
 [Navidrome](https://www.navidrome.org/) (OpenSubsonic) servers.
 Linux (AppImage, deb) and Windows (installer).
 
-> Status: 0.1.0, first usable release. See `CHANGELOG.md`.
+> Status: 0.2.0. See `CHANGELOG.md`.
 
 ## Features
 
 - Frosted-glass interface over a blurred copy of the current cover, Inter font, rounded panels.
 - Icon rail (Home, Search, Library, Settings); library tabs for albums, artists, songs, playlists, favourites and genres.
-- Fullscreen now-playing view with a cover-colour gradient and synced lyrics from your server.
+- Fullscreen now-playing view with a cover-colour gradient, a visualiser in the album's colours and synced lyrics from your server.
+- Audio quality (format, bit depth, sample rate, bitrate) in the player bar.
+- Now playing (who is listening on your server) and Statistics (hours listened, plays, top artists, genres, songs, albums).
 - Queue, shuffle, repeat, favourites, playlists, search (`Ctrl+K`), scrobbling to Navidrome.
 - OS media controls through the system media session (MPRIS on Linux, SMTC on Windows).
 - Settings → Appearance → *Reduce visual effects* for slower GPUs.

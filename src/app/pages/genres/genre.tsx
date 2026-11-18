@@ -64,7 +64,7 @@ export default function Genre() {
 
   return (
     <div className="w-full relative">
-      <StickyHeader contentClassName="backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 border-b border-border">
+      <StickyHeader>
         <GenreButtons genre={genre} />
       </StickyHeader>
 

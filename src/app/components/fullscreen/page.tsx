@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ChevronDown, ListMusic, MicVocal } from 'lucide-react'
+import { AudioWaveform, ChevronDown, ListMusic, MicVocal } from 'lucide-react'
 import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ImageLoader } from '@/app/components/image-loader'
@@ -7,6 +7,7 @@ import { Drawer, DrawerContent, DrawerTitle } from '@/app/components/ui/drawer'
 import { SimpleTooltip } from '@/app/components/ui/simple-tooltip'
 import { useAppWindow } from '@/app/hooks/use-app-window'
 import { useAppStore } from '@/store/app.store'
+import { useEffectsStore } from '@/store/effects.store'
 import { usePlayerCurrentSong, usePlayerFullscreen } from '@/store/player.store'
 import { isLinux, isWindows } from '@/utils/desktop'
 import { FullscreenControls } from './controls'
@@ -16,6 +17,7 @@ import { LikeButton } from './like-button'
 import { LyricsTab } from './lyrics'
 import { FullscreenProgress } from './progress'
 import { FullscreenSongQueue } from './queue'
+import { Visualizer } from './visualizer'
 import { VolumeContainer } from './volume-container'
 
 const MemoBackdrop = memo(GradientBackdrop)
@@ -89,6 +91,8 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
   const song = usePlayerCurrentSong()
   const hideFavorites = useAppStore().pages.hideFavoritesSection
   const toggle = (p: Panel) => setPanel((cur) => (cur === p ? 'none' : p))
+  const { showVisualizer, setShowVisualizer, reduceEffects } = useEffectsStore()
+  const visualizerOn = showVisualizer && !reduceEffects
   const hasPanel = panel !== 'none'
 
   return (
@@ -106,6 +110,13 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
           <ChevronDown className="size-5" strokeWidth={1.75} />
         </TopButton>
         <div className="glass-chip electron-no-drag flex items-center gap-0.5 rounded-full p-0.5">
+          <TopButton
+            label={t('clearplay.visualizer')}
+            active={visualizerOn}
+            onClick={() => setShowVisualizer(!showVisualizer)}
+          >
+            <AudioWaveform className="size-[17px]" strokeWidth={1.75} />
+          </TopButton>
           <TopButton
             label={t('fullscreen.lyrics')}
             active={panel === 'lyrics'}
@@ -126,14 +137,22 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
       {/* Body */}
       <div
         className={clsx(
-          'grid min-h-0 flex-1 items-center gap-12 px-12 pb-10 2xl:gap-20 2xl:px-20',
+          'grid min-h-0 flex-1 items-center gap-12 px-12 2xl:gap-20 2xl:px-20',
+          visualizerOn ? 'pb-2' : 'pb-10',
           hasPanel
             ? 'grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]'
             : 'grid-cols-1',
         )}
       >
         {/* Player column */}
-        <div className="mx-auto flex w-full max-w-[min(440px,46vh)] flex-col gap-5">
+        <div
+          className={clsx(
+            'mx-auto flex w-full flex-col',
+            visualizerOn
+              ? 'max-w-[min(400px,36vh)] gap-4'
+              : 'max-w-[min(440px,46vh)] gap-5',
+          )}
+        >
           <div className="aspect-square w-full overflow-hidden rounded-[24px] bg-white/5 shadow-[0_40px_80px_-30px_rgb(0_0_0/0.8)] ring-1 ring-white/10">
             <ImageLoader id={song.coverArt} type="song" size={800}>
               {(src) => (
@@ -178,6 +197,12 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </div>
+
+      {visualizerOn && (
+        <div className="h-20 shrink-0 px-12 pb-5 2xl:h-24 2xl:px-20">
+          <Visualizer />
+        </div>
+      )}
     </div>
   )
 }

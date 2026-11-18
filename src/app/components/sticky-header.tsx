@@ -81,23 +81,26 @@ export function StickyHeader({
   }, [])
 
   const isHidden = opacity === 0
+  // ClearPlay: ignore the cover-colour background some callers pass and
+  // render a floating frosted bar instead.
+  const { backgroundColor: _ignored, ...restStyle } = style ?? {}
 
   return (
     <div className="sticky top-0 z-10 h-0 w-full">
       <div
         className={cn(
-          'absolute top-0 left-0 w-full h-shadow-header',
-          'transition-opacity shadow-sm',
+          'absolute top-0 left-0 w-full px-6 pt-3',
+          'transition-opacity',
           isHidden && 'pointer-events-none',
           className,
         )}
-        style={{ ...style, opacity }}
+        style={{ ...restStyle, opacity }}
         {...props}
       >
-        <div className="w-full h-shadow-header bg-background/50">
+        <div className="glass-panel glass-blur rounded-[20px] h-[64px]">
           <div
             className={cn(
-              'flex items-center gap-4 w-full h-shadow-header px-8 transition-opacity duration-500 delay-150',
+              'flex items-center gap-4 w-full h-full px-4 transition-opacity duration-500 delay-150',
               contentClassName,
             )}
             style={{ opacity: contentOpacity }}
@@ -160,7 +163,7 @@ export function StickyHeaderImage({
   return (
     <ImageLoader id={id} type={type} size={size}>
       {(src) => (
-        <div className="w-10 h-10 min-w-10 min-h-10 shrink-0 bg-skeleton rounded overflow-hidden shadow-md">
+        <div className="w-10 h-10 min-w-10 min-h-10 shrink-0 bg-white/5 rounded-[10px] overflow-hidden shadow-md">
           {src ? (
             <LazyLoadImage
               {...props}

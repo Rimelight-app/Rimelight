@@ -67,15 +67,14 @@ function SyncedLyrics({ lyrics }: LyricProps) {
   const [progress, setProgress] = useState(0)
   const resolvedLang = resolveLyricsLang(lyrics.lang, langCode)
 
-  setTimeout(() => {
-    let newProgress = (playerRef?.currentTime || 0) * 1000
-
-    if (newProgress === progress) {
-      newProgress += 1 // Prevents the lyrics from getting stuck when the audio is still loading
-    }
-
-    setProgress(newProgress)
-  }, 50)
+  // One steady timer instead of a new timeout on every render.
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const next = Math.round((playerRef?.currentTime || 0) * 1000)
+      setProgress((prev) => (prev === next ? prev : next))
+    }, 120)
+    return () => window.clearInterval(id)
+  }, [playerRef])
 
   const skipToTime = (timeMs: number) => {
     if (playerRef) {

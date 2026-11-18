@@ -26,6 +26,8 @@ import { loginLoader } from '@/routes/loginLoader'
 import { podcastsLoader, protectedLoader } from '@/routes/protectedLoader'
 import { ROUTES } from '@/routes/routesList'
 
+const StatsPage = lazy(() => import('@/app/pages/insights/stats'))
+const NowPlayingPage = lazy(() => import('@/app/pages/insights/now-playing'))
 const BaseLayout = lazy(() => import('@/app/layout/base'))
 const Album = lazy(() => import('@/app/pages/albums/album'))
 const AlbumsList = lazy(() => import('@/app/pages/albums/list'))
@@ -55,6 +57,26 @@ export const router = createHashRouter([
     element: <BaseLayout />,
     loader: protectedLoader,
     children: [
+      {
+        id: 'stats',
+        path: ROUTES.STATS,
+        errorElement: <ErrorPage />,
+        element: (
+          <Suspense fallback={null}>
+            <StatsPage />
+          </Suspense>
+        ),
+      },
+      {
+        id: 'now-playing',
+        path: ROUTES.NOW_PLAYING,
+        errorElement: <ErrorPage />,
+        element: (
+          <Suspense fallback={null}>
+            <NowPlayingPage />
+          </Suspense>
+        ),
+      },
       {
         id: 'home',
         path: ROUTES.LIBRARY.HOME,

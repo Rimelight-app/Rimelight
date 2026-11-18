@@ -1,7 +1,9 @@
 import {
+  ChartColumnBig,
   House,
   LibraryBig,
   type LucideIcon,
+  Radio,
   Search,
   Settings,
 } from 'lucide-react'
@@ -99,6 +101,19 @@ export function NavRail() {
           label={t('sidebar.library')}
           to={ROUTES.LIBRARY.ALBUMS}
           active={isLibrary}
+        />
+        <div className="my-1 h-px w-6 bg-white/10" />
+        <RailButton
+          icon={Radio}
+          label={t('clearplay.nowPlaying.nav')}
+          to={ROUTES.NOW_PLAYING}
+          active={pathname === ROUTES.NOW_PLAYING}
+        />
+        <RailButton
+          icon={ChartColumnBig}
+          label={t('clearplay.statsNav')}
+          to={ROUTES.STATS}
+          active={pathname === ROUTES.STATS}
         />
       </div>
       <RailButton

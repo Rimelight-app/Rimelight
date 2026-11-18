@@ -384,10 +384,12 @@ div[data-test-id="table-row"]:hover {
 
 /* ClearPlay glass surfaces */
 @layer components {
+  /* Panels sit on an already-blurred backdrop, so they need no live
+     backdrop-filter (the main scrolling cost). Use .glass-blur only where
+     content actually moves underneath (sticky bars). */
   .glass-panel {
     background: var(--glass-fill);
     border: 1px solid var(--glass-stroke);
-    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
     box-shadow:
       0 10px 40px -12px rgb(0 0 0 / 0.45),
       inset 0 1px 0 rgb(255 255 255 / 0.05);
@@ -395,7 +397,10 @@ div[data-test-id="table-row"]:hover {
   .glass-chip {
     background: var(--glass-fill-strong);
     border: 1px solid var(--glass-stroke);
-    backdrop-filter: blur(16px);
+  }
+  .glass-blur {
+    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    background: rgb(20 20 28 / 0.35);
   }
   .reduce-effects .glass-panel,
   .reduce-effects .glass-chip {

@@ -845,6 +845,43 @@
     "effects": {
       "group": "Effects",
       "description": "Blur and motion used across ClearPlay."
-    }
+    },
+    "openNowPlaying": "Open now playing",
+    "visualizer": "Visualiser",
+    "stats": {
+      "kicker": "Your server",
+      "title": "Statistics",
+      "refresh": "Refresh",
+      "loading": "Reading your library… {{n}} songs",
+      "hours": "Hours listened",
+      "hoursNote": "{{days}} days of music",
+      "plays": "Total plays",
+      "playsNote": "{{avg}} plays per played song",
+      "discovered": "Library explored",
+      "discoveredNote": "{{played}} of {{total}} songs played at least once",
+      "library": "Library",
+      "libraryNote": "{{albums}} albums · {{artists}} artists · {{size}}",
+      "topArtists": "Top artists by listening time",
+      "topGenres": "Top genres by listening time",
+      "topSongs": "Most played songs",
+      "topAlbums": "Most played albums",
+      "decades": "Listening by decade",
+      "formats": "Formats",
+      "lossless": "{{pct}}% of the library is lossless",
+      "playsCount_one": "{{n}} play",
+      "playsCount_other": "{{n}} plays",
+      "empty": "Nothing played yet.",
+      "footnote": "Based on the play counts Navidrome records for your user (scrobbles)"
+    },
+    "nowPlaying": {
+      "kicker": "Live on your server",
+      "title": "Now playing",
+      "empty": "Nobody is listening right now.",
+      "justNow": "just now",
+      "minutesAgo_one": "{{count}} min ago",
+      "minutesAgo_other": "{{count}} min ago",
+      "nav": "Now playing"
+    },
+    "statsNav": "Statistics"
   }
 }

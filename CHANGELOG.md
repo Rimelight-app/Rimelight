@@ -2,6 +2,23 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
+## [0.2.0] - 2026-11-18
+
+### Added
+- Audio quality in the player bar: format, bit depth, sample rate and bitrate, with a Hi-Res badge for lossless files above 16-bit/48 kHz.
+- Click the cover in the player bar to open the fullscreen player.
+- Visualiser in the fullscreen player: mirrored, rounded frequency bars coloured from the album art (toggle at the top; off with *Reduce visual effects*).
+- **Now playing** page: who is listening on your server right now (user, player, quality), refreshed every 15 s.
+- **Statistics** page: hours listened, total plays, share of the library explored, library size, top artists and genres by listening time, most played songs and albums, listening by decade, formats.
+
+### Changed
+- Album, playlist and artist pages: the bar that appears when scrolling is now a floating frosted bar instead of a solid colour block.
+- Performance: the window background is pre-blurred once on a tiny canvas instead of blurring a window-sized image live; panels no longer use live backdrop blur while scrolling; synced lyrics update on one steady timer instead of re-scheduling on every render.
+
+### Fixed
+- The app could reopen in the fullscreen player on start.
+- A resumed track was not announced to the server as "now playing".
+
 ## [0.1.0] - 2026-11-18
 
 ### Added

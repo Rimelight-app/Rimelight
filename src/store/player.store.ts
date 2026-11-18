@@ -977,6 +977,10 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
         },
         merge: (persistedState, currentState) => {
           let merged = merge(currentState, persistedState)
+          // Always start in the normal window, even with older saved state.
+          merged.fullscreen.isFullscreen = false
+          // Resumed track: announce it to the server again ("now playing").
+          merged.playerState.hasSyncedTheCurrentTrack = false
 
           idbStorage.getItem<ISongList>(miniStores.songlist, (value) => {
             if (!value) return
@@ -999,7 +1003,7 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
             'playerState.mainDrawerState',
             'playerState.queueState',
             'playerState.lyricsState',
-            'playerState.isFullscreen',
+            'fullscreen.isFullscreen',
             'state.settings.colors.bigPlayer.blur.settings',
           ])
 

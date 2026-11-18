@@ -74,6 +74,8 @@ const GENRE = {
 }
 
 const SERVER_CONFIG = '/server-config'
+const NOW_PLAYING = '/now-playing'
+const STATS = '/stats'
 
 export const ROUTES = {
   LIBRARY,
@@ -87,4 +89,6 @@ export const ROUTES = {
   EPISODES,
   GENRE,
   SERVER_CONFIG,
+  NOW_PLAYING,
+  STATS,
 }
