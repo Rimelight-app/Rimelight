@@ -91,7 +91,8 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
           settings: {
             privacy: {
               lrclib: {
-                enabled: true,
+                // ClearPlay: lyrics come from your server; online lookup is opt-in.
+                enabled: false,
                 setEnabled(value) {
                   set((state) => {
                     state.settings.privacy.lrclib.enabled = value
@@ -126,7 +127,7 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
               },
             },
             lyrics: {
-              preferSyncedLyrics: false,
+              preferSyncedLyrics: true,
               setPreferSyncedLyrics: (value) => {
                 set((state) => {
                   state.settings.lyrics.preferSyncedLyrics = value
@@ -958,7 +959,22 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
       ),
       {
         name: 'player_store',
-        version: 1,
+        version: 2,
+        migrate: (persisted, version) => {
+          const state = persisted as {
+            settings?: {
+              lyrics?: { preferSyncedLyrics?: boolean }
+              privacy?: { lrclib?: { enabled?: boolean } }
+            }
+          }
+          if (version < 2 && state?.settings) {
+            if (state.settings.lyrics)
+              state.settings.lyrics.preferSyncedLyrics = true
+            if (state.settings.privacy?.lrclib)
+              state.settings.privacy.lrclib.enabled = false
+          }
+          return state as never
+        },
         merge: (persistedState, currentState) => {
           let merged = merge(currentState, persistedState)
 
@@ -983,6 +999,7 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
             'playerState.mainDrawerState',
             'playerState.queueState',
             'playerState.lyricsState',
+            'playerState.isFullscreen',
             'state.settings.colors.bigPlayer.blur.settings',
           ])
 

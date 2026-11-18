@@ -52,7 +52,7 @@ export function FullscreenProgress() {
 
   return (
     <div className="flex items-center gap-3">
-      <div className="min-w-[50px] max-w-[60px] text-right drop-shadow-lg">
+      <div className="min-w-[44px] text-right text-[12px] tabular-nums text-white/60">
         {currentTime}
       </div>
 
@@ -70,7 +70,7 @@ export function FullscreenProgress() {
         onMouseUp={handleSeekedFallback}
       />
 
-      <div className="min-w-[50px] max-w-[60px] text-left drop-shadow-lg">
+      <div className="min-w-[44px] text-left text-[12px] tabular-nums text-white/60">
         {convertSecondsToTime(currentDuration ?? 0)}
       </div>
     </div>

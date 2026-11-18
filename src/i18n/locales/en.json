@@ -840,6 +840,7 @@
       "label": "Look up missing lyrics online (LRCLIB)",
       "info": "When your server has no lyrics for a song, ask lrclib.net. Sends artist and title to that service."
     },
-    "featured": "Featured"
+    "featured": "Featured",
+    "close": "Close"
   }
 }

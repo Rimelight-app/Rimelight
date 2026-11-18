@@ -355,7 +355,7 @@ svg#bars .eq-bar--4 {
 }
 
 #sync-lyrics-box .react-lrc-line {
-  @apply w-fit m-auto max-w-[80%] text-balance;
+  @apply w-full max-w-[92%];
 }
 
 .default-gradient {
@@ -403,3 +403,45 @@ div[data-test-id="table-row"]:hover {
     background: rgb(20 20 26 / 0.82);
   }
 }
+
+/* Fullscreen player: drifting colour fields */
+.cp-blob {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 9999px;
+  filter: blur(60px);
+  opacity: 0.9;
+  transition: background 1.2s ease;
+  will-change: transform;
+}
+.cp-blob-1 {
+  top: -25vmax;
+  left: -15vmax;
+  animation: cp-drift-1 26s ease-in-out infinite alternate;
+}
+.cp-blob-2 {
+  bottom: -30vmax;
+  right: -20vmax;
+  animation: cp-drift-2 32s ease-in-out infinite alternate;
+}
+.cp-blob-3 {
+  top: 10vmax;
+  left: 30vmax;
+  width: 55vmax;
+  height: 55vmax;
+  animation: cp-drift-3 22s ease-in-out infinite alternate;
+}
+@keyframes cp-drift-1 {
+  to { transform: translate3d(18vmax, 12vmax, 0) scale(1.15); }
+}
+@keyframes cp-drift-2 {
+  to { transform: translate3d(-22vmax, -10vmax, 0) scale(0.9); }
+}
+@keyframes cp-drift-3 {
+  to { transform: translate3d(-14vmax, 16vmax, 0) scale(1.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cp-blob { animation: none; }
+}
+.reduce-effects .cp-blob { animation: none; }

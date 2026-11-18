@@ -84,7 +84,7 @@ function SyncedLyrics({ lyrics }: LyricProps) {
   }
 
   return (
-    <div className="w-full h-full text-center font-semibold text-2xl 2xl:text-3xl px-2 lrc-box maskImage-big-player-lyrics">
+    <div className="w-full h-full text-left font-bold tracking-tight text-[28px] leading-tight 2xl:text-[34px] px-2 lrc-box maskImage-big-player-lyrics">
       <Lrc
         lrc={lyrics.value!}
         recoverAutoScrollInterval={1500}
@@ -96,9 +96,11 @@ function SyncedLyrics({ lyrics }: LyricProps) {
           <p
             onClick={() => skipToTime(line.startMillisecond)}
             className={clsx(
-              'text-shadow-lg my-5 cursor-pointer hover:opacity-100 duration-500',
-              'transition-[opacity,transform] motion-reduce:transition-none',
-              active ? 'opacity-100 scale-125' : 'opacity-50',
+              'my-6 origin-left cursor-pointer duration-500 ease-out',
+              'transition-[color,transform,filter] motion-reduce:transition-none',
+              active
+                ? 'text-white scale-[1.02]'
+                : 'text-white/30 hover:text-white/60 blur-[0.4px]',
             )}
             lang={resolvedLang}
           >
@@ -135,7 +137,7 @@ function UnsyncedLyrics({ lyrics }: LyricProps) {
   return (
     <ScrollArea
       type="always"
-      className="w-full h-full overflow-y-auto text-center font-semibold text-xl 2xl:text-2xl px-2 scroll-smooth maskImage-unsynced-lyrics"
+      className="w-full h-full overflow-y-auto text-left font-semibold text-xl 2xl:text-2xl px-2 scroll-smooth maskImage-unsynced-lyrics text-white/80"
       thumbClassName="secondary-thumb-bar"
       ref={lyricsBoxRef}
     >
@@ -161,7 +163,7 @@ type CenteredMessageProps = ComponentPropsWithoutRef<'p'>
 function CenteredMessage({ children }: CenteredMessageProps) {
   return (
     <div className="w-full h-full flex justify-center items-center">
-      <p className="leading-10 text-shadow-lg text-center font-semibold text-xl 2xl:text-2xl">
+      <p className="leading-10 text-center font-medium text-lg text-white/50">
         {children}
       </p>
     </div>
