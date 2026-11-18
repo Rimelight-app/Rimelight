@@ -5,9 +5,8 @@ import { Fragment } from 'react/jsx-runtime'
 import { useTranslation } from 'react-i18next'
 import { LazyLoadImage } from 'react-lazy-load-image-component'
 import { Link } from 'react-router-dom'
-
-import { MarqueeTitle } from '@/app/components/fullscreen/marquee-title'
 import { AnimatedCoverVideo } from '@/app/components/album/animated-cover-video'
+import { MarqueeTitle } from '@/app/components/fullscreen/marquee-title'
 import { ImageLoader } from '@/app/components/image-loader'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/routes/routesList'
@@ -55,7 +54,7 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
   if (!song) {
     return (
       <Fragment>
-        <div className="w-[70px] h-[70px] flex justify-center items-center bg-muted rounded">
+        <div className="size-[54px] flex justify-center items-center bg-white/[0.06] rounded-[14px] text-white/50">
           <AudioLines data-testid="song-no-playing-icon" />
         </div>
         <div className="flex flex-col justify-center">
@@ -73,7 +72,7 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
   return (
     <Fragment>
       <div className="group relative">
-        <div className="min-w-[70px] max-w-[70px] aspect-square bg-cover bg-center bg-skeleton rounded overflow-hidden shadow-md relative">
+        <div className="min-w-[54px] max-w-[54px] aspect-square bg-cover bg-center bg-white/5 rounded-[14px] overflow-hidden shadow-[0_8px_20px_-8px_rgb(0_0_0/0.6)] relative">
           <ImageLoader id={song.coverArt} type="song" size={400}>
             {(src) => (
               <LazyLoadImage

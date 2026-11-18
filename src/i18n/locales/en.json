@@ -841,6 +841,10 @@
       "info": "When your server has no lyrics for a song, ask lrclib.net. Sends artist and title to that service."
     },
     "featured": "Featured",
-    "close": "Close"
+    "close": "Close",
+    "effects": {
+      "group": "Effects",
+      "description": "Blur and motion used across ClearPlay."
+    }
   }
 }

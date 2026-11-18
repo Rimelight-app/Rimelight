@@ -22,7 +22,7 @@ export function HomeHeader() {
   return (
     <div className="px-8 pt-6">
       <Carousel
-        className="glass-panel w-full overflow-hidden z-10 rounded-xl"
+        className="glass-panel w-full overflow-hidden z-10 rounded-[24px]"
         opts={{
           loop: loopEnabled,
         }}

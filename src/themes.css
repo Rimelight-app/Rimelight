@@ -566,7 +566,7 @@
  */
 @layer base {
   .glass {
-    --radius: 0.625rem;
+    --radius: 1rem;
 
     --background: 240 14% 5%;
     --background-a: 0;
@@ -618,26 +618,26 @@
 
   .glass body {
     background: hsl(240 14% 5%);
-    font-feature-settings: 'cv11', 'ss01';
+    font-feature-settings: "cv11", "ss01";
     letter-spacing: -0.006em;
   }
 
   /* Dialogs and sheets still need a solid-ish surface to stay readable. */
-  .glass [role='dialog'],
-  .glass [role='alertdialog'],
-  .glass [role='menu'],
-  .glass [role='listbox'],
+  .glass [role="dialog"],
+  .glass [role="alertdialog"],
+  .glass [role="menu"],
+  .glass [role="listbox"],
   .glass [data-radix-popper-content-wrapper] > * {
     backdrop-filter: blur(var(--glass-blur)) saturate(150%);
   }
-  .glass [role='dialog'],
-  .glass [role='alertdialog'] {
+  .glass [role="dialog"],
+  .glass [role="alertdialog"] {
     background-color: hsl(240 12% 9% / 0.88);
   }
 
   /* Thumbs that used the page background would vanish on glass. */
-  .glass [role='switch'] > span,
-  .glass [role='slider'] {
+  .glass [role="switch"] > span,
+  .glass [role="slider"] {
     background-color: rgb(255 255 255);
   }
 }

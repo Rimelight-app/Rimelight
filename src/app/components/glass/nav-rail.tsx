@@ -30,7 +30,7 @@ function RailButton({
   onClick?: () => void
 }) {
   const className = cn(
-    'relative flex size-10 items-center justify-center rounded-[10px]',
+    'relative flex size-10 items-center justify-center rounded-[14px]',
     'text-white/55 transition-[color,background-color,transform] duration-200 ease-out',
     'hover:text-white/90 hover:bg-white/[0.07] active:scale-95',
     'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40',
@@ -77,7 +77,7 @@ export function NavRail() {
   return (
     <nav
       className={cn(
-        'glass-panel fixed z-30 left-3 w-[--rail-width] rounded-xl',
+        'glass-panel fixed z-30 left-3 w-[--rail-width] rounded-[20px]',
         'top-[--header-height] bottom-[--player-height]',
         'flex flex-col items-center justify-between py-2',
       )}

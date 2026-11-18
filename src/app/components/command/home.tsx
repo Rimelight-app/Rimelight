@@ -12,7 +12,8 @@ type HomeProps = CommandItemProps & {
   setPages: (value: CommandPages[]) => void
 }
 
-const appHideThemes = window.APP_HIDE_THEMES ?? false
+// ClearPlay has a single glass theme.
+const appHideThemes = true
 
 export function CommandHome({ pages, setPages, runCommand }: HomeProps) {
   const { t } = useTranslation()

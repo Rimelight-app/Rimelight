@@ -22,23 +22,23 @@ type CommandItemProps = {
 
 const icons = {
   GotoPage: {
-    className: 'from-cyan-500 to-blue-500',
+    className: '',
     icon: <SquareArrowOutUpRight />,
   },
   ChangeTheme: {
-    className: 'from-purple-500 to-pink-500',
+    className: '',
     icon: <Palette />,
   },
   Playlists: {
-    className: 'from-blue-600 to-violet-600',
+    className: '',
     icon: <ListMusic />,
   },
   CreatePlaylist: {
-    className: 'from-teal-400 to-emerald-600',
+    className: '',
     icon: <PlusIcon />,
   },
   ServerManagement: {
-    className: 'from-rose-400 to-red-500',
+    className: '',
     icon: <Cog />,
   },
 }
@@ -47,9 +47,12 @@ export function CustomCommandItem({ children, variant }: CommandItemProps) {
   const { className, icon } = icons[variant as keyof typeof icons]
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-3 items-center">
       <div
-        className={clsx('bg-gradient-to-r rounded p-1 text-white', className)}
+        className={clsx(
+          'flex size-7 items-center justify-center rounded-[9px] bg-white/[0.08] text-white/80 ring-1 ring-white/10 [&_svg]:size-4',
+          className,
+        )}
       >
         {icon}
       </div>

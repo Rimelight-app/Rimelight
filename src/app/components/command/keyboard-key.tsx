@@ -11,7 +11,7 @@ export function Keyboard({ modifier, text, className = '' }: KeyboardProps) {
     <kbd
       className={cn(
         'inline-flex pointer-events-none text-muted-foreground h-5 items-center gap-1 leading-[19px] -tracking-[0.003rem]',
-        'min-w-[22px] justify-center rounded border bg-background px-1 font-medium text-[0.8125rem] sm:flex select-none shadow-kbd',
+        'min-w-[22px] justify-center rounded-md border border-white/10 bg-white/[0.06] px-1 font-medium text-[0.75rem] sm:flex select-none',
         'relative -top-[1px] whitespace-pre-wrap',
         className,
       )}

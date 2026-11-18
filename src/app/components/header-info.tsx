@@ -20,7 +20,7 @@ interface HeaderInfoProps {
 }
 
 const chip =
-  'glass-chip inline-flex h-6 items-center rounded-md px-2 text-[12px] font-medium text-white/75'
+  'glass-chip inline-flex h-6 items-center rounded-full px-2.5 text-[12px] font-medium text-white/75'
 
 /** Small frosted info chips (year, genre, track count, duration). */
 export function HeaderInfoGenerator({ badges }: HeaderInfoProps) {

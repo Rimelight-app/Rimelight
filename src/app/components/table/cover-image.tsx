@@ -29,7 +29,7 @@ export function CoverImage({
   return (
     <div
       className={cn(
-        'bg-skeleton overflow-hidden rounded shadow aspect-square',
+        'bg-white/5 overflow-hidden rounded-[10px] shadow aspect-square',
         setSizes(),
       )}
     >

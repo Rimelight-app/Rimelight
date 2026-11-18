@@ -25,7 +25,7 @@ interface ImageWrapperProps extends Children {
 
 function ImageWrapper({ children, link }: ImageWrapperProps) {
   return (
-    <div className="group flex-1 aspect-square rounded bg-border relative overflow-hidden">
+    <div className="group flex-1 aspect-square rounded-2xl bg-white/5 ring-1 ring-white/[0.06] relative overflow-hidden shadow-[0_16px_36px_-18px_rgb(0_0_0/0.7)] transition-transform duration-300 ease-out hover:-translate-y-0.5">
       <Link
         to={link}
         data-testid="card-image-link"
@@ -63,10 +63,10 @@ type CardButtonProps = ComponentPropsWithoutRef<'button'> & {
 
 function CardButton({ onClick, dataTestId, children }: CardButtonProps) {
   return (
-    <div className="w-full h-full flex items-center justify-center rounded bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 absolute inset-0 z-10">
+    <div className="w-full h-full flex items-end justify-end p-3 rounded-2xl bg-gradient-to-t from-black/0 to-transparent group-hover:from-black/45 transition-all duration-300 absolute inset-0 z-10">
       <Button
-        className="opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-full w-12 h-12 z-20"
-        variant="outline"
+        className="opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 rounded-full size-11 z-20 bg-white/95 text-[#121216] hover:bg-white shadow-[0_10px_24px_-8px_rgb(0_0_0/0.6)]"
+        variant="default"
         onClick={(e) => {
           e.stopPropagation()
           e.preventDefault()
@@ -87,7 +87,7 @@ interface PlayPauseButtonProps {
 function PlayButton({ onClick }: PlayPauseButtonProps) {
   return (
     <CardButton dataTestId="card-play-button" onClick={onClick}>
-      <Play className="fill-foreground" />
+      <Play className="size-4 fill-current" strokeWidth={2.5} />
     </CardButton>
   )
 }
@@ -95,7 +95,7 @@ function PlayButton({ onClick }: PlayPauseButtonProps) {
 function PauseButton({ onClick }: PlayPauseButtonProps) {
   return (
     <CardButton dataTestId="card-pause-button" onClick={onClick}>
-      <Pause className="fill-foreground" />
+      <Pause className="size-4 fill-current" strokeWidth={2.5} />
     </CardButton>
   )
 }

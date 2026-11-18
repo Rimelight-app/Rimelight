@@ -134,7 +134,7 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
       >
         {/* Player column */}
         <div className="mx-auto flex w-full max-w-[min(440px,46vh)] flex-col gap-5">
-          <div className="aspect-square w-full overflow-hidden rounded-xl bg-white/5 shadow-[0_40px_80px_-30px_rgb(0_0_0/0.8)] ring-1 ring-white/10">
+          <div className="aspect-square w-full overflow-hidden rounded-[24px] bg-white/5 shadow-[0_40px_80px_-30px_rgb(0_0_0/0.8)] ring-1 ring-white/10">
             <ImageLoader id={song.coverArt} type="song" size={800}>
               {(src) => (
                 <img

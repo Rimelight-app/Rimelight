@@ -110,7 +110,6 @@ export function DataTable<TData, TValue>({
   const [rowSelection, setRowSelection] = useState({})
   const [lastRowSelected, setLastRowSelected] = useState<number | null>(null)
 
-
   const selectedRows = useMemo(
     () => Object.keys(rowSelection).map(Number),
     [rowSelection],
@@ -424,7 +423,7 @@ export function DataTable<TData, TValue>({
         </div>
       )}
 
-      <div className="glass-panel rounded-xl p-1.5">
+      <div className="glass-panel rounded-[20px] p-2">
         <div
           className={clsx(
             'relative w-full overflow-hidden rounded-md cursor-default caption-bottom text-sm',

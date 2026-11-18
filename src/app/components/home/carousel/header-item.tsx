@@ -51,7 +51,7 @@ export function HeaderItem({ song }: { song: ISong }) {
             <div className="w-full h-full absolute z-10">
               <div className="flex h-full p-5 gap-6">
                 <div
-                  className="h-full aspect-square relative group bg-white/5 rounded-lg shadow-[0_20px_40px_-20px_rgb(0_0_0/0.7)]"
+                  className="h-full aspect-square relative group bg-white/5 rounded-2xl overflow-hidden shadow-[0_20px_40px_-20px_rgb(0_0_0/0.7)]"
                   data-testid="header-image-container"
                 >
                   <LazyLoadImage
@@ -60,10 +60,10 @@ export function HeaderItem({ song }: { song: ISong }) {
                     effect="opacity"
                     width="100%"
                     height="100%"
-                    className="aspect-square rounded-lg object-cover bg-center absolute inset-0 z-0"
+                    className="aspect-square rounded-2xl object-cover bg-center absolute inset-0 z-0"
                     data-testid="header-image"
                   />
-                  <div className="w-full h-full flex items-center justify-center rounded-lg bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-colors duration-300 absolute inset-0 z-10">
+                  <div className="w-full h-full flex items-center justify-center rounded-2xl bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-colors duration-300 absolute inset-0 z-10">
                     <Button
                       className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full size-12 bg-white/90 text-[#121216] hover:bg-white"
                       variant="default"
@@ -129,7 +129,7 @@ export function HeaderItem({ song }: { song: ISong }) {
                       >
                         <Badge
                           variant="neutral"
-                          className="glass-chip h-6 rounded-md border-0 px-2 text-[12px] font-medium text-white/75"
+                          className="glass-chip h-6 rounded-full border-0 px-2.5 text-[12px] font-medium text-white/75"
                           data-testid="header-genre"
                         >
                           {song.genre}
@@ -139,7 +139,7 @@ export function HeaderItem({ song }: { song: ISong }) {
                     {song.year && (
                       <Badge
                         variant="neutral"
-                        className="glass-chip h-6 rounded-md border-0 px-2 text-[12px] font-medium text-white/75"
+                        className="glass-chip h-6 rounded-full border-0 px-2.5 text-[12px] font-medium text-white/75"
                         data-testid="header-year"
                       >
                         {song.year}
@@ -147,7 +147,7 @@ export function HeaderItem({ song }: { song: ISong }) {
                     )}
                     <Badge
                       variant="neutral"
-                      className="glass-chip h-6 rounded-md border-0 px-2 text-[12px] font-medium text-white/75"
+                      className="glass-chip h-6 rounded-full border-0 px-2.5 text-[12px] font-medium text-white/75"
                       data-testid="header-duration"
                     >
                       {convertSecondsToTime(song.duration)}

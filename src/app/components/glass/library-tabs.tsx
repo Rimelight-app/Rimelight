@@ -28,7 +28,7 @@ export function LibraryTabs() {
             key={tab.route}
             to={tab.route}
             className={cn(
-              'px-3 h-7 inline-flex items-center rounded-lg text-[13px] font-medium',
+              'px-3.5 h-7 inline-flex items-center rounded-full text-[13px] font-medium',
               'text-white/55 transition-colors duration-200 hover:text-white/90',
               active && 'bg-white/[0.12] text-white',
             )}

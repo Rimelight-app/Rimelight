@@ -433,15 +433,61 @@ div[data-test-id="table-row"]:hover {
   animation: cp-drift-3 22s ease-in-out infinite alternate;
 }
 @keyframes cp-drift-1 {
-  to { transform: translate3d(18vmax, 12vmax, 0) scale(1.15); }
+  to {
+    transform: translate3d(18vmax, 12vmax, 0) scale(1.15);
+  }
 }
 @keyframes cp-drift-2 {
-  to { transform: translate3d(-22vmax, -10vmax, 0) scale(0.9); }
+  to {
+    transform: translate3d(-22vmax, -10vmax, 0) scale(0.9);
+  }
 }
 @keyframes cp-drift-3 {
-  to { transform: translate3d(-14vmax, 16vmax, 0) scale(1.2); }
+  to {
+    transform: translate3d(-14vmax, 16vmax, 0) scale(1.2);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cp-blob { animation: none; }
+  .cp-blob {
+    animation: none;
+  }
 }
-.reduce-effects .cp-blob { animation: none; }
+.reduce-effects .cp-blob {
+  animation: none;
+}
+
+/* Reduce effects: no live blur behind panels, no motion */
+.reduce-effects *,
+.reduce-effects *::before,
+.reduce-effects *::after {
+  backdrop-filter: none !important;
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+}
+.reduce-effects .glass-panel {
+  background: rgb(18 18 24 / 0.78);
+}
+.reduce-effects .glass-chip {
+  background: rgb(255 255 255 / 0.1);
+}
+
+/* Soft scrollbars everywhere */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.14);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(255 255 255 / 0.24);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::selection {
+  background: rgb(255 255 255 / 0.22);
+}

@@ -70,7 +70,7 @@ export default function ImageHeader({
           <div className="flex items-end gap-7">
             <div
               className={clsx(
-                'relative shrink-0 overflow-hidden rounded-xl bg-white/5',
+                'relative shrink-0 overflow-hidden rounded-[20px] bg-white/5',
                 'size-[200px] 2xl:size-[232px]',
                 'shadow-[0_28px_60px_-24px_rgb(0_0_0/0.75)] ring-1 ring-white/10',
                 'transition-transform duration-300 ease-out hover:scale-[1.015]',

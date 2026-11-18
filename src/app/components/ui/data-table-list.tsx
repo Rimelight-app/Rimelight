@@ -327,7 +327,7 @@ export function DataTableList<TData, TValue>({
       <div
         className={clsx(
           'relative w-full h-full overflow-hidden cursor-default caption-bottom text-sm bg-transparent',
-          pageType !== 'queue' && 'glass-panel rounded-xl p-1.5',
+          pageType !== 'queue' && 'glass-panel rounded-[20px] p-2',
         )}
         data-testid="data-table"
         role="table"

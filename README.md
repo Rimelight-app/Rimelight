@@ -4,7 +4,16 @@ A minimal, frosted-glass desktop player for self-hosted
 [Navidrome](https://www.navidrome.org/) (OpenSubsonic) servers.
 Linux (AppImage, deb) and Windows (installer).
 
-> Status: early. Stage 0 is a rename of the upstream app; the new design lands in later stages. See `CHANGELOG.md`.
+> Status: 0.1.0, first usable release. See `CHANGELOG.md`.
+
+## Features
+
+- Frosted-glass interface over a blurred copy of the current cover, Inter font, rounded panels.
+- Icon rail (Home, Search, Library, Settings); library tabs for albums, artists, songs, playlists, favourites and genres.
+- Fullscreen now-playing view with a cover-colour gradient and synced lyrics from your server.
+- Queue, shuffle, repeat, favourites, playlists, search (`Ctrl+K`), scrobbling to Navidrome.
+- OS media controls through the system media session (MPRIS on Linux, SMTC on Windows).
+- Settings → Appearance → *Reduce visual effects* for slower GPUs.
 
 Based on [Aonsoku](https://github.com/victoralvesf/aonsoku) (MIT). See `NOTICE.md` and `LICENSE.txt`.
 
@@ -30,6 +39,10 @@ pnpm build:win           # Windows installer (best run on Windows or via CI)
 ```
 
 The AppImage needs `libfuse2` on some distributions.
+
+## Download
+
+Installers are attached to each [release](https://github.com/tonihk00/ClearPlay/releases): `.AppImage` and `.deb` for Linux, `Setup .exe` for Windows. The Windows installer is unsigned, so SmartScreen may warn on first run (*More info → Run anyway*).
 
 ## CI
 

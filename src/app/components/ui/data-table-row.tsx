@@ -53,9 +53,9 @@ export function TableRow<TData>({
         data-state={row.getIsSelected() && 'selected'}
         className={clsx(
           'group/tablerow w-full flex flex-row transition-colors duration-150',
-          row.getIsSelected() && !isPrevRowSelected(index) && 'rounded-t-lg',
-          row.getIsSelected() && !isNextRowSelected(index) && 'rounded-b-lg',
-          !row.getIsSelected() && 'rounded-lg',
+          row.getIsSelected() && !isPrevRowSelected(index) && 'rounded-t-xl',
+          row.getIsSelected() && !isNextRowSelected(index) && 'rounded-b-xl',
+          !row.getIsSelected() && 'rounded-xl',
           'hover:bg-white/[0.06] data-[state=selected]:bg-white/[0.11]',
           clickable && 'cursor-pointer',
           isRowSongActive && 'row-active bg-white/[0.08]',
