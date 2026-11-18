@@ -73,7 +73,7 @@
     "headline": "Playlist",
     "songCount_one": "{{count}} song",
     "songCount_other": "{{count}} songs",
-    "duration": "about {{duration}}",
+    "duration": "{{duration}}",
     "refresh": "Refresh playlists",
     "buttons": {
       "play": "Play {{name}}",
@@ -824,5 +824,22 @@
       "y": "1 year",
       "yy": "%d years"
     }
+  },
+  "clearplay": {
+    "playAll": "Play all",
+    "pause": "Pause",
+    "addToQueue": "Add to queue",
+    "addedToQueue": "Added to queue",
+    "searchInAlbum": "Search in album",
+    "searchInPlaylist": "Search in playlist",
+    "reduceEffects": {
+      "label": "Reduce visual effects",
+      "info": "Turns off background blur and animations. Use it if scrolling feels slow."
+    },
+    "lrclib": {
+      "label": "Look up missing lyrics online (LRCLIB)",
+      "info": "When your server has no lyrics for a song, ask lrclib.net. Sends artist and title to that service."
+    },
+    "featured": "Featured"
   }
 }

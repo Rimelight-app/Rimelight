@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 import ImageHeader from '@/app/components/album/image-header'
@@ -22,6 +23,7 @@ export default function Playlist() {
   const { t } = useTranslation()
   const columns = songsColumns()
   const { setSongList } = usePlayerActions()
+  const [searchActive, setSearchActive] = useState(false)
 
   const {
     data: playlist,
@@ -40,8 +42,6 @@ export default function Playlist() {
     'title',
     'album',
     'duration',
-    'playCount',
-    'contentType',
     'select',
   ]
 
@@ -82,7 +82,11 @@ export default function Playlist() {
       />
 
       <ListWrapper>
-        <PlaylistButtons playlist={playlist} />
+        <PlaylistButtons
+          playlist={playlist}
+          searchActive={searchActive}
+          onToggleSearch={() => setSearchActive((v) => !v)}
+        />
 
         <DataTable
           columns={columns}
@@ -95,6 +99,8 @@ export default function Playlist() {
             })
           }}
           columnFilter={columnsToShow}
+          showSearch={searchActive}
+          searchColumn="title"
           noRowsMessage={t('playlist.noSongList')}
           variant="modern"
           enableVirtualization={true}

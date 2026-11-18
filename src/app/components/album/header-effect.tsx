@@ -5,17 +5,9 @@ export const ImageHeaderEffect = forwardRef<
   HTMLDivElement,
   ComponentPropsWithoutRef<'div'>
 >(({ children, className, ...props }, ref) => {
+  // ClearPlay: the window backdrop replaces this colour wash.
   return (
-    <div
-      ref={ref}
-      className={cn(
-        'bg-gradient-to-b from-background/60 to-background-foreground',
-        'w-full h-64 z-0',
-        'absolute top-[calc(3rem+200px)] 2xl:top-[calc(3rem+250px)]',
-        className,
-      )}
-      {...props}
-    >
+    <div ref={ref} className={cn('hidden', className)} {...props}>
       {children}
     </div>
   )

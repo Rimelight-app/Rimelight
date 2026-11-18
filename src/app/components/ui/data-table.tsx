@@ -110,8 +110,6 @@ export function DataTable<TData, TValue>({
   const [rowSelection, setRowSelection] = useState({})
   const [lastRowSelected, setLastRowSelected] = useState<number | null>(null)
 
-  const isClassic = variant === 'classic'
-  const isModern = variant === 'modern'
 
   const selectedRows = useMemo(
     () => Object.keys(rowSelection).map(Number),
@@ -394,9 +392,11 @@ export function DataTable<TData, TValue>({
   return (
     <>
       {showSearch && searchColumn && (
-        <div className="flex items-center mb-4" data-testid="table-search">
+        <div className="flex items-center mb-3" data-testid="table-search">
           <div className="w-72 relative">
             <Input
+              autoFocus
+              className="glass-chip h-9 rounded-full border-white/10 pl-4 text-[13px] placeholder:text-white/40 focus-visible:ring-1 focus-visible:ring-white/30 focus-visible:ring-offset-0"
               placeholder={t('sidebar.search')}
               value={inputValue ?? ''}
               onChange={(event) =>
@@ -412,7 +412,7 @@ export function DataTable<TData, TValue>({
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-2 top-2 w-6 h-6"
+                className="absolute right-1.5 top-1.5 w-6 h-6 rounded-full"
                 onClick={() =>
                   table.getColumn(searchColumn)?.setFilterValue('')
                 }
@@ -424,11 +424,11 @@ export function DataTable<TData, TValue>({
         </div>
       )}
 
-      <div className={clsx(isClassic && 'rounded-md border')}>
+      <div className="glass-panel rounded-xl p-1.5">
         <div
           className={clsx(
             'relative w-full overflow-hidden rounded-md cursor-default caption-bottom text-sm',
-            isClassic ? 'bg-background' : 'bg-transparent',
+            'bg-transparent',
           )}
           data-testid="data-table"
           role="table"
@@ -439,8 +439,7 @@ export function DataTable<TData, TValue>({
                 <div
                   key={headerGroup.id}
                   className={clsx(
-                    'w-full flex flex-row border-b',
-                    isModern && 'mb-2 border-foreground/20',
+                    'w-full flex flex-row border-b border-white/[0.06] mb-1',
                   )}
                   role="row"
                 >
@@ -452,7 +451,7 @@ export function DataTable<TData, TValue>({
                       <div
                         key={header.id}
                         className={clsx(
-                          'p-2 h-12 flex items-center justify-start align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-4',
+                          'p-2 h-10 flex items-center justify-start align-middle text-[12px] font-medium text-white/45 [&:has([role=checkbox])]:pr-4',
                           columnDef.className,
                         )}
                         style={columnDef.style}
@@ -502,9 +501,7 @@ export function DataTable<TData, TValue>({
                         >
                           <Fragment>
                             {discNumber && (
-                              <AlbumDiscNumber
-                                className={clsx(isClassic && 'border-b')}
-                              >
+                              <AlbumDiscNumber>
                                 {t('album.table.discNumber', {
                                   number: discNumber,
                                 })}
@@ -539,9 +536,7 @@ export function DataTable<TData, TValue>({
                     return (
                       <Fragment key={row.id}>
                         {discNumber && (
-                          <AlbumDiscNumber
-                            className={clsx(isClassic && 'border-b')}
-                          >
+                          <AlbumDiscNumber>
                             {t('album.table.discNumber', {
                               number: discNumber,
                             })}

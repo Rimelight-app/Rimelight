@@ -1,10 +1,12 @@
 import clsx from 'clsx'
 import {
-  EllipsisVertical,
+  Ellipsis,
   Heart,
   Info,
+  ListPlus,
   Pause,
   Play,
+  Search,
   Shuffle,
 } from 'lucide-react'
 import { ButtonHTMLAttributes, ComponentPropsWithoutRef } from 'react'
@@ -23,7 +25,7 @@ function Container({ children, className, ...rest }: ActionsContainerProps) {
   return (
     <div
       {...rest}
-      className={cn('w-full mb-6 flex items-center gap-1', className)}
+      className={cn('w-full mb-5 flex items-center gap-2', className)}
     >
       {children}
     </div>
@@ -35,6 +37,8 @@ interface ActionsMainButtonProps
   tooltip?: string
   buttonStyle?: 'primary' | 'secondary'
   isActive?: boolean
+  /** Text shown next to the icon (primary pill only). */
+  label?: string
 }
 
 function Button({
@@ -43,23 +47,25 @@ function Button({
   buttonStyle = 'secondary',
   className,
   isActive = false,
+  label,
   ...props
 }: ActionsMainButtonProps) {
+  const isPrimary = buttonStyle === 'primary'
   const button = (
     <ComponentButton
       className={cn(
-        'rounded-full w-14 h-14 ease-linear duration-100 transition relative',
-        'border-[1px] border-transparent',
-        buttonStyle === 'primary'
-          ? 'hover:scale-105 mr-2'
-          : 'hover:bg-foreground/20',
+        'relative rounded-full transition-[background-color,color,transform] duration-200 ease-out active:scale-95',
+        isPrimary
+          ? 'h-10 gap-2 px-5 mr-1 bg-white/90 text-[#121216] hover:bg-white text-sm font-semibold shadow-[0_10px_28px_-12px_rgb(255_255_255/0.45)]'
+          : 'glass-chip size-10 p-0 text-white/80 hover:text-white hover:bg-white/[0.14]',
         className,
-        isActive && 'pointer-events-none text-primary action-button-active',
+        isActive && 'text-white bg-white/[0.2] action-button-active',
       )}
-      variant={buttonStyle === 'primary' ? 'default' : 'ghost'}
+      variant={isPrimary ? 'default' : 'ghost'}
       {...props}
     >
       {children}
+      {isPrimary && label && <span>{label}</span>}
     </ComponentButton>
   )
 
@@ -82,15 +88,14 @@ function Dropdown({ tooltip, options }: DropdownProps) {
       >
         <ComponentButton
           className={clsx(
-            'rounded-full w-14 h-14 border-transparent',
-            'data-[state=open]:bg-foreground/20',
-            'hover:bg-foreground/20',
-            'ease-linear duration-100 transition',
+            'glass-chip size-10 rounded-full p-0 text-white/80',
+            'data-[state=open]:bg-white/[0.18] hover:bg-white/[0.14] hover:text-white',
+            'transition-colors duration-200',
           )}
           variant="ghost"
         >
           <SimpleTooltip text={tooltip}>
-            <div className="min-w-14 h-14 rounded-full flex justify-center items-center">
+            <div className="size-10 rounded-full flex justify-center items-center">
               <EllipsisIcon />
             </div>
           </SimpleTooltip>
@@ -106,15 +111,23 @@ function Dropdown({ tooltip, options }: DropdownProps) {
 }
 
 function PlayIcon() {
-  return <Play className="w-5 h-5 fill-primary-foreground" strokeWidth={6} />
+  return <Play className="size-4 fill-current" strokeWidth={2.5} />
 }
 
 function PauseIcon() {
-  return <Pause className="w-5 h-5 fill-primary-foreground" />
+  return <Pause className="size-4 fill-current" strokeWidth={2.5} />
 }
 
 function ShuffleIcon() {
-  return <Shuffle className="w-5 h-5 drop-shadow-md" strokeWidth={2} />
+  return <Shuffle className="size-[18px]" strokeWidth={1.75} />
+}
+
+function QueueIcon() {
+  return <ListPlus className="size-[18px]" strokeWidth={1.75} />
+}
+
+function SearchIcon() {
+  return <Search className="size-[18px]" strokeWidth={1.75} />
 }
 
 interface LikeIconProps {
@@ -125,20 +138,20 @@ function LikeIcon({ isStarred }: LikeIconProps) {
   return (
     <Heart
       className={clsx(
-        'w-5 h-5 drop-shadow-md',
-        isStarred && 'text-red-500 fill-red-500',
+        'size-[18px]',
+        isStarred && 'text-rose-400 fill-rose-400',
       )}
-      strokeWidth={2}
+      strokeWidth={1.75}
     />
   )
 }
 
 function InfoIcon() {
-  return <Info className="w-5 h-5 drop-shadow-md" strokeWidth={2} />
+  return <Info className="size-[18px]" strokeWidth={1.75} />
 }
 
 function EllipsisIcon() {
-  return <EllipsisVertical className="w-5 h-5 drop-shadow-md" strokeWidth={2} />
+  return <Ellipsis className="size-[18px]" strokeWidth={1.75} />
 }
 
 export const Actions = {
@@ -147,6 +160,8 @@ export const Actions = {
   PlayIcon,
   PauseIcon,
   ShuffleIcon,
+  QueueIcon,
+  SearchIcon,
   LikeIcon,
   InfoIcon,
   EllipsisIcon,

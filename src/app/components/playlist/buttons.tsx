@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { toast } from 'react-toastify'
 import { Actions } from '@/app/components/actions'
 import {
   useIsPlaylistPlaying,
@@ -11,11 +12,18 @@ import { PlaylistOptions } from './options'
 
 interface PlaylistButtonsProps {
   playlist: PlaylistWithEntries
+  searchActive?: boolean
+  onToggleSearch?: () => void
 }
 
-export function PlaylistButtons({ playlist }: PlaylistButtonsProps) {
+export function PlaylistButtons({
+  playlist,
+  searchActive = false,
+  onToggleSearch,
+}: PlaylistButtonsProps) {
   const { t } = useTranslation()
-  const { setSongList, togglePlayPause, toggleShuffle } = usePlayerActions()
+  const { setSongList, togglePlayPause, toggleShuffle, setLastOnQueue } =
+    usePlayerActions()
   const { isPlaylistActive, isPlaylistPlaying } = useIsPlaylistPlaying(
     playlist.id,
   )
@@ -60,6 +68,9 @@ export function PlaylistButtons({ playlist }: PlaylistButtonsProps) {
         buttonStyle="primary"
         onClick={handlePlayButton}
         disabled={!playlist.entry}
+        label={
+          isPlaylistPlaying ? t('clearplay.pause') : t('clearplay.playAll')
+        }
       >
         {isPlaylistPlaying ? <Actions.PauseIcon /> : <Actions.PlayIcon />}
       </Actions.Button>
@@ -72,6 +83,29 @@ export function PlaylistButtons({ playlist }: PlaylistButtonsProps) {
       >
         <Actions.ShuffleIcon />
       </Actions.Button>
+
+      <Actions.Button
+        tooltip={t('clearplay.addToQueue')}
+        disabled={!playlist.entry}
+        onClick={() => {
+          if (!playlist.entry) return
+          setLastOnQueue(playlist.entry)
+          toast.success(t('clearplay.addedToQueue'))
+        }}
+      >
+        <Actions.QueueIcon />
+      </Actions.Button>
+
+      {onToggleSearch && (
+        <Actions.Button
+          tooltip={t('clearplay.searchInPlaylist')}
+          onClick={onToggleSearch}
+          disabled={!playlist.entry}
+          className={searchActive ? 'bg-white/[0.2] text-white' : undefined}
+        >
+          <Actions.SearchIcon />
+        </Actions.Button>
+      )}
 
       <Actions.Dropdown
         tooltip={buttonsTooltips.options}

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 import { AlbumComment } from '@/app/components/album/comment'
@@ -29,6 +30,7 @@ export default function Album() {
   const { albumId } = useParams() as { albumId: string }
   const { setSongList } = usePlayerActions()
   const { t } = useTranslation()
+  const [searchActive, setSearchActive] = useState(false)
 
   const {
     data: album,
@@ -80,10 +82,6 @@ export default function Album() {
     'trackNumber',
     'title',
     'duration',
-    'playCount',
-    'played',
-    'bitRate',
-    'contentType',
     'select',
   ]
 
@@ -134,7 +132,11 @@ export default function Album() {
       />
 
       <ListWrapper>
-        <AlbumInfo album={album} />
+        <AlbumInfo
+          album={album}
+          searchActive={searchActive}
+          onToggleSearch={() => setSearchActive((v) => !v)}
+        />
 
         <DataTable
           columns={columns}
@@ -148,6 +150,8 @@ export default function Album() {
           }
           columnFilter={columnsToShow}
           showDiscNumber={true}
+          showSearch={searchActive}
+          searchColumn="title"
           variant="modern"
           enableVirtualization={true}
         />

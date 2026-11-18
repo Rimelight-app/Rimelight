@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'react-toastify'
 import { Actions } from '@/app/components/actions'
 import { subsonic } from '@/service/subsonic'
 import { useAppPages, useAppStore } from '@/store/app.store'
@@ -16,11 +17,19 @@ import { AlbumOptions } from './options'
 interface AlbumButtonsProps {
   album: SingleAlbum
   showInfoButton: boolean
+  searchActive?: boolean
+  onToggleSearch?: () => void
 }
 
-export function AlbumButtons({ album, showInfoButton }: AlbumButtonsProps) {
+export function AlbumButtons({
+  album,
+  showInfoButton,
+  searchActive = false,
+  onToggleSearch,
+}: AlbumButtonsProps) {
   const { t } = useTranslation()
-  const { setSongList, togglePlayPause, toggleShuffle } = usePlayerActions()
+  const { setSongList, togglePlayPause, toggleShuffle, setLastOnQueue } =
+    usePlayerActions()
   const { showInfoPanel, toggleShowInfoPanel } = useAppPages()
   const { isAlbumActive, isAlbumPlaying } = useIsAlbumPlaying(album.id)
   const isShuffleActive = usePlayerStore(
@@ -89,6 +98,7 @@ export function AlbumButtons({ album, showInfoButton }: AlbumButtonsProps) {
         tooltip={buttonsTooltips.play}
         buttonStyle="primary"
         onClick={handlePlayButton}
+        label={isAlbumPlaying ? t('clearplay.pause') : t('clearplay.playAll')}
       >
         {isAlbumPlaying ? <Actions.PauseIcon /> : <Actions.PlayIcon />}
       </Actions.Button>
@@ -100,6 +110,26 @@ export function AlbumButtons({ album, showInfoButton }: AlbumButtonsProps) {
           isActive={isAlbumActive && isShuffleActive}
         >
           <Actions.ShuffleIcon />
+        </Actions.Button>
+      )}
+
+      <Actions.Button
+        tooltip={t('clearplay.addToQueue')}
+        onClick={() => {
+          setLastOnQueue(album.song)
+          toast.success(t('clearplay.addedToQueue'))
+        }}
+      >
+        <Actions.QueueIcon />
+      </Actions.Button>
+
+      {onToggleSearch && album.song.length > 1 && (
+        <Actions.Button
+          tooltip={t('clearplay.searchInAlbum')}
+          onClick={onToggleSearch}
+          className={searchActive ? 'bg-white/[0.2] text-white' : undefined}
+        >
+          <Actions.SearchIcon />
         </Actions.Button>
       )}
 

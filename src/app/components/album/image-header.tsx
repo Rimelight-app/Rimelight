@@ -6,13 +6,10 @@ import {
   AlbumArtistInfo,
   AlbumMultipleArtistsInfo,
 } from '@/app/components/album/artists'
-import { ImageHeaderEffect } from '@/app/components/album/header-effect'
 import { AlbumHeaderFallback } from '@/app/components/fallbacks/album-fallbacks'
 import { BadgesData, HeaderInfoGenerator } from '@/app/components/header-info'
 import { ImageLoader } from '@/app/components/image-loader'
 import { CustomLightBox } from '@/app/components/lightbox'
-import { useAlbumColor } from '@/app/hooks/use-album-color'
-import { cn } from '@/lib/utils'
 import { CoverArt } from '@/types/coverArtType'
 import { IFeaturedArtist } from '@/types/responses/artist'
 import { getTextSizeClass } from '@/utils/getTextSizeClass'
@@ -33,6 +30,11 @@ interface ImageHeaderProps {
   isPlaylist?: boolean
 }
 
+/**
+ * Page header for albums, playlists, artists and genres: cover on the left,
+ * then a small type label, a large title, artist line and frosted info chips.
+ * It sits directly on the window backdrop; no colour block of its own.
+ */
 export default function ImageHeader({
   type,
   title,
@@ -49,9 +51,6 @@ export default function ImageHeader({
   isPlaylist = false,
 }: ImageHeaderProps) {
   const [open, setOpen] = useState(false)
-  const { bgColor, handleLoadImage, handleError } =
-    useAlbumColor('cover-art-image')
-
   const hasMultipleArtists = artists ? artists.length > 1 : false
 
   return (
@@ -59,7 +58,7 @@ export default function ImageHeader({
       {(src, isLoading) => (
         <div
           id="image-header-container"
-          className="flex relative w-full h-[calc(3rem+200px)] 2xl:h-[calc(3rem+250px)]"
+          className="relative w-full px-8 pt-8 pb-5"
           key={`header-${coverArtId}`}
         >
           {isLoading && (
@@ -67,20 +66,14 @@ export default function ImageHeader({
               <AlbumHeaderFallback />
             </div>
           )}
-          <div
-            className={cn(
-              'w-full px-8 py-6 flex gap-4 absolute inset-0',
-              'bg-gradient-to-b from-background/20 to-background/50',
-            )}
-            style={{ backgroundColor: bgColor }}
-          >
+
+          <div className="flex items-end gap-7">
             <div
-              className={cn(
-                'w-[200px] h-[200px] min-w-[200px] min-h-[200px]',
-                '2xl:w-[250px] 2xl:h-[250px] 2xl:min-w-[250px] 2xl:min-h-[250px]',
-                'bg-skeleton aspect-square bg-cover bg-center rounded',
-                'shadow-header-image overflow-hidden relative',
-                'hover:scale-[1.02] ease-linear duration-100',
+              className={clsx(
+                'relative shrink-0 overflow-hidden rounded-xl bg-white/5',
+                'size-[200px] 2xl:size-[232px]',
+                'shadow-[0_28px_60px_-24px_rgb(0_0_0/0.75)] ring-1 ring-white/10',
+                'transition-transform duration-300 ease-out hover:scale-[1.015]',
               )}
             >
               <LazyLoadImage
@@ -90,14 +83,11 @@ export default function ImageHeader({
                 id="cover-art-image"
                 src={src}
                 alt={coverArtAlt}
-                className="aspect-square object-cover w-full h-full cursor-pointer"
+                className="aspect-square h-full w-full cursor-pointer object-cover"
                 width="100%"
                 height="100%"
-                onLoad={handleLoadImage}
-                onError={handleError}
                 onClick={() => setOpen(true)}
               />
-
               <AnimatedCoverVideo
                 artist={animatedArtworkArtist}
                 album={animatedArtworkAlbum}
@@ -105,13 +95,13 @@ export default function ImageHeader({
               />
             </div>
 
-            <div className="flex w-full max-w-[calc(100%-216px)] 2xl:max-w-[calc(100%-266px)] flex-col justify-end z-10">
-              <p className="text-xs 2xl:text-sm font-medium text-shadow-md">
+            <div className="flex min-w-0 flex-col gap-3 pb-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
                 {type}
               </p>
               <h1
                 className={clsx(
-                  'max-w-full scroll-m-20 font-bold tracking-tight antialiased text-shadow-md break-words line-clamp-2',
+                  'max-w-full break-words font-bold leading-[1.05] tracking-tight text-white line-clamp-2',
                   getTextSizeClass(title),
                 )}
               >
@@ -119,47 +109,25 @@ export default function ImageHeader({
               </h1>
 
               {!isPlaylist && artists && hasMultipleArtists && (
-                <div className="flex items-center mt-2">
-                  <AlbumMultipleArtistsInfo artists={artists} />
-                  <HeaderInfoGenerator badges={badges} />
-                </div>
+                <AlbumMultipleArtistsInfo artists={artists} />
               )}
-
-              {!isPlaylist && subtitle && !hasMultipleArtists && (
-                <>
-                  {artistId ? (
-                    <div className="flex items-center mt-2">
-                      <AlbumArtistInfo id={artistId} name={subtitle} />
-                      <HeaderInfoGenerator badges={badges} />
-                    </div>
-                  ) : (
-                    <p className="opacity-80 text-sm font-medium">{subtitle}</p>
-                  )}
-                </>
-              )}
-
-              {isPlaylist && subtitle && (
-                <>
-                  <p className="text-sm opacity-80 text-shadow-md line-clamp-2 mt-1 mb-2">
+              {!isPlaylist &&
+                subtitle &&
+                !hasMultipleArtists &&
+                (artistId ? (
+                  <AlbumArtistInfo id={artistId} name={subtitle} />
+                ) : (
+                  <p className="text-[15px] font-medium text-white/75">
                     {subtitle}
                   </p>
-                  <HeaderInfoGenerator badges={badges} showFirstDot={false} />
-                </>
+                ))}
+              {isPlaylist && subtitle && (
+                <p className="text-sm text-white/65 line-clamp-2">{subtitle}</p>
               )}
 
-              {!subtitle && (
-                <div className="mt-1">
-                  <HeaderInfoGenerator badges={badges} showFirstDot={false} />
-                </div>
-              )}
+              <HeaderInfoGenerator badges={badges} />
             </div>
           </div>
-
-          {isLoading ? (
-            <ImageHeaderEffect className="bg-muted-foreground" />
-          ) : (
-            <ImageHeaderEffect style={{ backgroundColor: bgColor }} />
-          )}
 
           <CustomLightBox
             open={open}

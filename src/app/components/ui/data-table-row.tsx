@@ -37,9 +37,6 @@ export function TableRow<TData>({
 }: RowProps<TData>) {
   const currentSong = usePlayerCurrentSong()
 
-  const isClassic = variant === 'classic'
-  const isModern = variant === 'modern'
-
   const isRowSongActive = useMemo(() => {
     if (dataType !== 'song') return false
 
@@ -55,20 +52,13 @@ export function TableRow<TData>({
         data-test-id="table-row"
         data-state={row.getIsSelected() && 'selected'}
         className={clsx(
-          'group/tablerow w-full flex flex-row transition-colors',
-          isModern &&
-            row.getIsSelected() &&
-            !isPrevRowSelected(index) &&
-            'rounded-t-md',
-          isModern &&
-            row.getIsSelected() &&
-            !isNextRowSelected(index) &&
-            'rounded-b-md',
-          isModern && !row.getIsSelected() && 'rounded-md',
-          'hover:bg-foreground/20 data-[state=selected]:bg-foreground/30',
+          'group/tablerow w-full flex flex-row transition-colors duration-150',
+          row.getIsSelected() && !isPrevRowSelected(index) && 'rounded-t-lg',
+          row.getIsSelected() && !isNextRowSelected(index) && 'rounded-b-lg',
+          !row.getIsSelected() && 'rounded-lg',
+          'hover:bg-white/[0.06] data-[state=selected]:bg-white/[0.11]',
           clickable && 'cursor-pointer',
-          isClassic && 'border-b',
-          isRowSongActive && isModern && 'row-active bg-foreground/20',
+          isRowSongActive && 'row-active bg-white/[0.08]',
         )}
       >
         {row.getVisibleCells().map((cell) => (

@@ -20,40 +20,42 @@ export function HomeHeader() {
   if (!songs || songs.length === 0) return null
 
   return (
-    <Carousel
-      className="w-full overflow-hidden z-10"
-      opts={{
-        loop: loopEnabled,
-      }}
-      plugins={[
-        Autoplay({
-          delay: 10000,
-          active: autoScrollEnabled,
-        }),
-      ]}
-      data-testid="header-carousel"
-    >
-      <CarouselContent className="ml-0 flex">
-        {songs.map((song, index) => (
-          <CarouselItem
-            key={song.id}
-            className="pl-0 basis-full maskImage-carousel-item transform-gpu"
-            data-testid={`carousel-header-song-${index}`}
-          >
-            <HeaderItem song={song} />
-          </CarouselItem>
-        ))}
-      </CarouselContent>
-      <div className="absolute right-8 bottom-6 flex items-center gap-2">
-        <CarouselPrevious
-          data-testid="header-carousel-previous"
-          className="relative inset-0 translate-x-0 translate-y-0 shadow-sm"
-        />
-        <CarouselNext
-          data-testid="header-carousel-next"
-          className="relative inset-0 translate-x-0 translate-y-0 shadow-sm"
-        />
-      </div>
-    </Carousel>
+    <div className="px-8 pt-6">
+      <Carousel
+        className="glass-panel w-full overflow-hidden z-10 rounded-xl"
+        opts={{
+          loop: loopEnabled,
+        }}
+        plugins={[
+          Autoplay({
+            delay: 10000,
+            active: autoScrollEnabled,
+          }),
+        ]}
+        data-testid="header-carousel"
+      >
+        <CarouselContent className="ml-0 flex">
+          {songs.map((song, index) => (
+            <CarouselItem
+              key={song.id}
+              className="pl-0 basis-full maskImage-carousel-item transform-gpu"
+              data-testid={`carousel-header-song-${index}`}
+            >
+              <HeaderItem song={song} />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <div className="absolute right-5 bottom-5 z-20 flex items-center gap-2">
+          <CarouselPrevious
+            data-testid="header-carousel-previous"
+            className="glass-chip relative inset-0 translate-x-0 translate-y-0 size-8 rounded-full border-white/10 text-white/80 hover:bg-white/[0.14] hover:text-white"
+          />
+          <CarouselNext
+            data-testid="header-carousel-next"
+            className="glass-chip relative inset-0 translate-x-0 translate-y-0 size-8 rounded-full border-white/10 text-white/80 hover:bg-white/[0.14] hover:text-white"
+          />
+        </div>
+      </Carousel>
+    </div>
   )
 }

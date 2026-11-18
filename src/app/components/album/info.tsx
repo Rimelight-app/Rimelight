@@ -6,16 +6,27 @@ import { AlbumButtons } from './buttons'
 
 interface AlbumInfoProps {
   album: SingleAlbum
+  searchActive?: boolean
+  onToggleSearch?: () => void
 }
 
-export function AlbumInfo({ album }: AlbumInfoProps) {
+export function AlbumInfo({
+  album,
+  searchActive,
+  onToggleSearch,
+}: AlbumInfoProps) {
   const { data: albumInfo } = useGetAlbumInfo(album.id)
 
   const hasInfoToShow = albumInfo !== undefined && albumInfo.notes !== undefined
 
   return (
     <Fragment>
-      <AlbumButtons album={album} showInfoButton={hasInfoToShow} />
+      <AlbumButtons
+        album={album}
+        showInfoButton={hasInfoToShow}
+        searchActive={searchActive}
+        onToggleSearch={onToggleSearch}
+      />
 
       {hasInfoToShow && (
         <CollapsibleInfo

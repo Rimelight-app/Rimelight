@@ -78,7 +78,7 @@ function ArtistImage({ id, name }: AlbumArtistProps) {
 function ArtistLink({ id, name }: AlbumArtistProps) {
   return (
     <Link
-      className="flex items-center hover:underline text-sm font-medium text-shadow-md"
+      className="flex items-center text-[15px] font-medium text-white/75 transition-colors hover:text-white"
       to={ROUTES.ARTIST.PAGE(id)}
     >
       {name}

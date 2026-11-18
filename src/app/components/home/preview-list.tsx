@@ -55,7 +55,7 @@ export default function PreviewList({
     <div className="w-full flex flex-col mt-4">
       <div className="my-4 flex justify-between items-center">
         <h3
-          className="scroll-m-20 text-2xl font-semibold tracking-tight"
+          className="text-xl font-semibold tracking-tight text-white"
           data-testid="preview-list-title"
         >
           {title}
@@ -63,7 +63,7 @@ export default function PreviewList({
         <div className="flex items-center gap-4">
           {showMore && moreRoute && (
             <Link to={moreRoute} data-testid="preview-list-show-more">
-              <p className="leading-7 text-sm truncate hover:underline text-muted-foreground hover:text-primary">
+              <p className="leading-7 text-[13px] truncate text-white/50 transition-colors hover:text-white">
                 {moreTitle}
               </p>
             </Link>

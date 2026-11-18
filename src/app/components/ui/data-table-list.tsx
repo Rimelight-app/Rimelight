@@ -323,9 +323,12 @@ export function DataTableList<TData, TValue>({
   }, [currentSongIndex, scrollToIndex, virtualizer])
 
   return (
-    <div className="h-full">
+    <div className={clsx('h-full', pageType !== 'queue' && 'px-8 pb-4')}>
       <div
-        className="relative w-full h-full overflow-hidden cursor-default caption-bottom text-sm bg-transparent"
+        className={clsx(
+          'relative w-full h-full overflow-hidden cursor-default caption-bottom text-sm bg-transparent',
+          pageType !== 'queue' && 'glass-panel rounded-xl p-1.5',
+        )}
         data-testid="data-table"
         role="table"
       >
@@ -333,7 +336,7 @@ export function DataTableList<TData, TValue>({
           {table.getHeaderGroups().map((headerGroup) => (
             <div
               key={headerGroup.id}
-              className="w-full flex flex-row border-b pr-[10px] bg-muted"
+              className="w-full flex flex-row border-b border-white/[0.06] pr-[10px]"
               role="row"
             >
               {headerGroup.headers.map((header) => (

@@ -1,6 +1,4 @@
-import { Fragment } from 'react/jsx-runtime'
 import { Link } from 'react-router-dom'
-import { Dot } from './dot'
 
 type TextBadge = {
   content: string | null
@@ -16,36 +14,36 @@ type LinkBadge = {
 export type BadgesData = Array<TextBadge | LinkBadge>
 
 interface HeaderInfoProps {
+  /** Kept for API compatibility; chips need no separators. */
   showFirstDot?: boolean
   badges: BadgesData
 }
 
-export function HeaderInfoGenerator({
-  showFirstDot = true,
-  badges,
-}: HeaderInfoProps) {
+const chip =
+  'glass-chip inline-flex h-6 items-center rounded-md px-2 text-[12px] font-medium text-white/75'
+
+/** Small frosted info chips (year, genre, track count, duration). */
+export function HeaderInfoGenerator({ badges }: HeaderInfoProps) {
+  const items = badges.filter((item) => item.content)
+  if (items.length === 0) return null
+
   return (
-    <div className="flex text-sm">
-      <Fragment>
-        {badges
-          .filter((item) => item.content)
-          .map((item, index, array) => (
-            <Fragment key={index}>
-              {showFirstDot && index === 0 && <Dot />}
-              {item.type === 'link' ? (
-                <Link
-                  to={item.link}
-                  className="flex opacity-80 text-shadow-md hover:opacity-100 hover:underline"
-                >
-                  {item.content}
-                </Link>
-              ) : (
-                <p className="opacity-80 text-shadow-md">{item.content}</p>
-              )}
-              {index < array.length - 1 && <Dot />}
-            </Fragment>
-          ))}
-      </Fragment>
+    <div className="flex flex-wrap items-center gap-1.5">
+      {items.map((item, index) =>
+        item.type === 'link' ? (
+          <Link
+            key={index}
+            to={item.link}
+            className={`${chip} transition-colors hover:text-white hover:bg-white/[0.14]`}
+          >
+            {item.content}
+          </Link>
+        ) : (
+          <span key={index} className={chip}>
+            {item.content}
+          </span>
+        ),
+      )}
     </div>
   )
 }
