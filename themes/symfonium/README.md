@@ -54,24 +54,28 @@ file:
 
 The style was made for Symfonium 15 (the version the base was exported from).
 
-### Turn on the blurred background (one setting)
+### Blur and glass
 
-The base keeps a solid adaptive colour behind Now Playing, and Symfonium's file format
-for the background choice isn't documented, so set this once by hand:
-
-**Settings → Interface → Now playing screens → Expanded player → Background Style →
-Blur.** The blur level in the style is already at Symfonium's maximum (256). The mini
-player has no blur option (Default, Primary color, Primary container color, Theme
-tertiary container, Solid adaptive color); keep **Default**, which uses the theme's
-translucent graphite. Then **Settings → Interface → Application style → Save** keeps it.
+- **Now playing:** the background is the blurred cover at maximum blur (256) with a
+  dark wash, using the same background style Symfonium exports for the
+  "Apple Music for Symfonium" style.
+- **Mini player:** Symfonium has no blur option for it (Default, Primary color,
+  Primary container color, Theme tertiary container, Solid adaptive color). It uses
+  **Default** with the theme's translucent graphite.
+- **Navigation bar and top bar (Symfonium 16):** the blur and glass materials are
+  already tuned (blur 28 dp, 40 % graphite tint, saturation 140 %, 22 dp corners on the
+  navigation bar). They are left on **Solid** because the exported files only confirm
+  that value. Switch them to **Blur** or **Glass** in Symfonium's interface settings to
+  get frosted bars, then save the style.
 
 ### Credits
 
 Built on **TIDAL For Symfonium** by **Myke**
 ([Symfonium Styles](https://styles.symfonium.app/styles/stellar-tidal-music)), version
 3.1.0. Its layout and now-playing structure are kept. ClearPlay changes the colours (new
-translucent glass theme), corner sizes, lyric fading and overlay strength, and replaces
-the TIDAL wordmark with the ClearPlay logo. TIDAL is a trademark of TIDAL Music AS; this
+translucent glass theme), corner sizes, lyric fading, the now-playing background (blurred
+artwork, value taken from "Apple Music for Symfonium"), adds tuned bar materials, and
+replaces the TIDAL wordmark with the ClearPlay logo. TIDAL is a trademark of TIDAL Music AS; this
 style is not affiliated with TIDAL.
 
 ## Colours
