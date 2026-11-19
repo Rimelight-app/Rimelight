@@ -13,9 +13,9 @@ const track = process.argv[4] || 'Signal'
 
 const electronApp = await electron.launch({
   executablePath: path.join(app, 'node_modules/electron/dist/electron'),
-  args: [app, '--no-sandbox', '--disable-gpu-sandbox', '--enable-precise-memory-info'],
+  args: [app, '--no-sandbox', '--disable-gpu-sandbox', `--user-data-dir=${path.join(rig, 'userdata')}`, '--enable-precise-memory-info'],
   cwd: app,
-  env: { ...process.env, CLEARPLAY_USER_DATA: path.join(rig, 'userdata') },
+  env: { ...process.env },
   timeout: 60000,
 })
 const win = await electronApp.firstWindow()

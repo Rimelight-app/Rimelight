@@ -31,9 +31,9 @@ const currentId = () => win.evaluate(() => window.__cp.player.getState().songlis
 // ---- app ----
 const electronApp = await electron.launch({
   executablePath: path.join(app, 'node_modules/electron/dist/electron'),
-  args: [app, '--no-sandbox', '--disable-gpu-sandbox'],
+  args: [app, '--no-sandbox', '--disable-gpu-sandbox', `--user-data-dir=${path.join(rig, 'userdata')}`],
   cwd: app,
-  env: { ...process.env, CLEARPLAY_E2E: '1', CLEARPLAY_USER_DATA: path.join(rig, 'userdata') },
+  env: { ...process.env, CLEARPLAY_E2E: '1' },
   timeout: 60000,
 })
 const win = await electronApp.firstWindow()

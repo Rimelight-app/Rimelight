@@ -13,9 +13,9 @@ fs.mkdirSync(out, { recursive: true })
 
 const electronApp = await electron.launch({
   executablePath: path.join(app, 'node_modules/electron/dist/electron'),
-  args: [app, '--no-sandbox', '--disable-gpu-sandbox', ...(process.env.SCALE ? [`--force-device-scale-factor=${process.env.SCALE}`] : [])],
+  args: [app, '--no-sandbox', '--disable-gpu-sandbox', `--user-data-dir=${path.join(rig, 'userdata')}`, ...(process.env.SCALE ? [`--force-device-scale-factor=${process.env.SCALE}`] : [])],
   cwd: app,
-  env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1', CLEARPLAY_USER_DATA: path.join(rig, 'userdata') },
+  env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1' },
   timeout: 60000,
 })
 const win = await electronApp.firstWindow()
