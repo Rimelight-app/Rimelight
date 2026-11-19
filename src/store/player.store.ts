@@ -18,7 +18,13 @@ import { ISong } from '@/types/responses/song'
 import { areSongListsEqual } from '@/utils/compareSongLists'
 import { isDesktop } from '@/utils/desktop'
 import { discordRpc } from '@/utils/discordRpc'
-import { addNextSongList, shuffleSongList } from '@/utils/songListFunctions'
+import {
+  addNextSongList,
+  moveItem,
+  placeAfterCurrent,
+  placeAtEnd,
+  shuffleSongList,
+} from '@/utils/songListFunctions'
 import { idbStorage } from './idb'
 
 const miniStores = {
@@ -285,67 +291,87 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
               }
             },
             setNextOnQueue: (list) => {
-              const {
-                currentList,
-                currentSongIndex,
-                currentSong,
-                originalList,
-              } = get().songlist
+              const { currentList, currentSongIndex } = get().songlist
+              const { mediaType } = get().playerState
+              const current = currentList[currentSongIndex]
 
-              const currentListIds = new Set(currentList.map((song) => song.id))
-              const uniqueList = list.filter(
-                (song) => !currentListIds.has(song.id),
-              )
+              // Nothing queued: just play the songs.
+              if (mediaType !== 'song' || !current) {
+                if (list.length) get().actions.setSongList(list, 0)
+                return
+              }
 
-              const newCurrentList = addNextSongList(
-                currentSongIndex,
-                currentList,
-                uniqueList,
+              get().actions.replaceQueueOrder((songs) =>
+                placeAfterCurrent(songs, current.id, list),
               )
-
-              const indexOnOriginalList = originalList.findIndex(
-                (song) => song.id === currentSong.id,
-              )
-              const newOriginalList = addNextSongList(
-                indexOnOriginalList,
-                originalList,
-                uniqueList,
-              )
-
               set((state) => {
-                state.songlist.currentList = newCurrentList
-                state.songlist.originalList = newOriginalList
                 state.playerState.playbackContext.source = null
               })
-
-              const { isPlaying } = get().playerState
-
-              if (!isPlaying) {
-                get().actions.setPlayingState(true)
-              }
             },
             setLastOnQueue: (list, keepSource = false) => {
-              const { currentList, originalList } = get().songlist
+              const { currentList, currentSongIndex } = get().songlist
+              const { mediaType } = get().playerState
+              const current = currentList[currentSongIndex]
 
-              const currentListIds = new Set(currentList.map((song) => song.id))
-              const uniqueList = list.filter(
-                (song) => !currentListIds.has(song.id),
+              if (mediaType !== 'song' || !current) {
+                if (list.length) get().actions.setSongList(list, 0)
+                return
+              }
+
+              get().actions.replaceQueueOrder((songs) =>
+                placeAtEnd(songs, current.id, list),
+              )
+              if (!keepSource) {
+                set((state) => {
+                  state.playerState.playbackContext.source = null
+                })
+              }
+            },
+            replaceQueueOrder: (reorder) => {
+              const { currentList, originalList, currentSongIndex } =
+                get().songlist
+              const current = currentList[currentSongIndex]
+              if (!current) return
+
+              const nextCurrent = reorder(currentList)
+              const nextOriginal = reorder(originalList)
+              const index = nextCurrent.findIndex((s) => s.id === current.id)
+              const originalIndex = nextOriginal.findIndex(
+                (s) => s.id === current.id,
               )
 
-              const newCurrentList = [...currentList, ...uniqueList]
-              const newOriginalList = [...originalList, ...uniqueList]
+              set((state) => {
+                state.songlist.currentList = nextCurrent
+                state.songlist.originalList = nextOriginal
+                state.songlist.currentSongIndex = Math.max(0, index)
+                state.songlist.originalSongIndex = Math.max(0, originalIndex)
+              })
+            },
+            moveInQueue: (from, to) => {
+              const { currentList, currentSongIndex } = get().songlist
+              if (
+                from === to ||
+                from < 0 ||
+                to < 0 ||
+                from >= currentList.length ||
+                to >= currentList.length
+              ) {
+                return
+              }
+              const current = currentList[currentSongIndex]
+              const nextCurrent = moveItem(currentList, from, to)
+              const index = nextCurrent.findIndex((s) => s.id === current?.id)
 
               set((state) => {
-                state.songlist.currentList = newCurrentList
-                state.songlist.originalList = newOriginalList
-                if (!keepSource) state.playerState.playbackContext.source = null
+                state.songlist.currentList = nextCurrent
+                state.songlist.currentSongIndex = Math.max(0, index)
+                // Without shuffle the original order is the queue itself.
+                if (!state.playerState.isShuffleActive) {
+                  state.songlist.originalList = nextCurrent
+                  state.songlist.originalSongIndex = Math.max(0, index)
+                }
+                state.playerState.playbackContext.source = null
               })
-
-              const { isPlaying } = get().playerState
-
-              if (!isPlaying) {
-                get().actions.setPlayingState(true)
-              }
             },
             setPlayRadio: (list, index) => {
               const { mediaType } = get().playerState

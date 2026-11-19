@@ -195,6 +195,10 @@ export interface IPlayerActions {
   setAudioPlayerRef: (ref: HTMLAudioElement) => void
   setNextOnQueue: (songlist: ISong[]) => void
   setLastOnQueue: (songlist: ISong[], keepSource?: boolean) => void
+  /** Reorders the queue (and the unshuffled order) with the same function. */
+  replaceQueueOrder: (reorder: (songs: ISong[]) => ISong[]) => void
+  /** Drag and drop in the queue: moves the song at `from` to `to`. */
+  moveInQueue: (from: number, to: number) => void
   removeSongFromQueue: (id: string) => void
   setMainDrawerState: (state: boolean) => void
   setQueueState: (state: boolean) => void
