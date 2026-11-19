@@ -1078,6 +1078,24 @@
       "star_other": "{{count}} stars",
       "clear": "Remove rating",
       "failed": "Couldn't save the rating"
+    },
+    "local": {
+      "serverName": "This computer",
+      "group": "Music on this computer",
+      "description": "Play music folders on this computer, without a server. Likes, ratings, plays and playlists are kept here.",
+      "login": "Use music on this computer",
+      "loginHint": "No server? Play the music folders on this computer.",
+      "addFolder": "Add folder",
+      "rescan": "Rescan",
+      "remove": "Remove {{folder}}",
+      "noFolders": "No folders added yet.",
+      "status_one": "{{count}} song · {{albums}} albums",
+      "status_other": "{{count}} songs · {{albums}} albums",
+      "scanning": "Scanning… {{count}} files read",
+      "use": "Use this library",
+      "inUse": "In use",
+      "failed": "Couldn't start the local library",
+      "scanDone": "Local library updated"
     }
   }
 }

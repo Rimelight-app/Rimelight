@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { Loader2 } from 'lucide-react'
+import { HardDrive, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -38,7 +38,13 @@ import {
 } from '@/app/components/ui/form'
 import { Input } from '@/app/components/ui/input'
 import { Password } from '@/app/components/ui/password'
+import { LOCAL_SCAN_EVENT } from '@/app/observers/local-library-observer'
 import { ROUTES } from '@/routes/routesList'
+import {
+  activateServer,
+  connectLocalLibrary,
+  hasLocalLibrary,
+} from '@/service/local-library'
 import { useAppActions, useAppData } from '@/store/app.store'
 import { isDesktop } from '@/utils/desktop'
 import { removeSlashFromUrl } from '@/utils/removeSlashFromUrl'
@@ -62,6 +68,7 @@ const urlIsValid = url !== defaultUrl
 
 export function LoginForm() {
   const [loading, setLoading] = useState(false)
+  const [localLoading, setLocalLoading] = useState(false)
   const [serverIsIncompatible, setServerIsIncompatible] = useState(false)
   const { saveConfig } = useAppActions()
   const { hideServer } = useAppData()
@@ -79,6 +86,28 @@ export function LoginForm() {
       password: '',
     },
   })
+
+  /** Plays folders on this computer through the built-in local library. */
+  async function useMusicOnThisComputer() {
+    setLocalLoading(true)
+    try {
+      let state = await window.api.localLibrary.state()
+      if (!state.folders.length)
+        state = await window.api.localLibrary.addFolder()
+      if (!state.folders.length) return
+      const server = await connectLocalLibrary()
+      if (!server) {
+        toast.error(t('clearplay.local.failed'))
+        return
+      }
+      activateServer(server)
+      window.dispatchEvent(new Event(LOCAL_SCAN_EVENT))
+      await queryClient.invalidateQueries()
+      navigate(ROUTES.LIBRARY.HOME, { replace: true })
+    } finally {
+      setLocalLoading(false)
+    }
+  }
 
   async function onSubmit(data: FormData, forceCompatible?: boolean) {
     setLoading(true)
@@ -210,6 +239,28 @@ export function LoginForm() {
           </form>
         </Form>
       </Card>
+      {hasLocalLibrary() && (
+        <div className="mt-4 flex w-[450px] flex-col items-center gap-2 text-center">
+          <p className="text-[13px] text-white/55">
+            {t('clearplay.local.loginHint')}
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            className="glass-chip h-9 rounded-full px-4 text-[13px] text-white/85 hover:bg-white/[0.14] hover:text-white"
+            disabled={localLoading}
+            onClick={useMusicOnThisComputer}
+            data-testid="login-local"
+          >
+            {localLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <HardDrive className="mr-2 h-4 w-4" strokeWidth={1.75} />
+            )}
+            {t('clearplay.local.login')}
+          </Button>
+        </div>
+      )}
       <Dialog
         open={serverIsIncompatible}
         onOpenChange={(state) => {

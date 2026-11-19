@@ -4,6 +4,7 @@ import { Linux } from '@/app/components/controls/linux'
 import { SettingsDialog } from '@/app/components/settings/dialog'
 import { EffectsObserver } from '@/app/observers/effects-observer'
 import { LangObserver } from '@/app/observers/lang-observer'
+import { LocalLibraryObserver } from '@/app/observers/local-library-observer'
 import { MediaSessionObserver } from '@/app/observers/media-session-observer'
 import { QueueObserver } from '@/app/observers/queue-observer'
 import { ScrobbleObserver } from '@/app/observers/scrobble-observer'
@@ -22,6 +23,7 @@ function App() {
   return (
     <>
       {isElectron() && <UpdateObserver />}
+      {isElectron() && <LocalLibraryObserver />}
       <MediaSessionObserver />
       <LangObserver />
       <ThemeObserver />

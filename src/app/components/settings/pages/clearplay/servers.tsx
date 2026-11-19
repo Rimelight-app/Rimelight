@@ -23,6 +23,7 @@ import {
   useServersStore,
   verifyServer,
 } from '@/store/servers.store'
+import { LocalLibrarySettings } from './local-library'
 
 const pill =
   'glass-chip inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-white/80 transition-colors hover:bg-white/[0.14] hover:text-white disabled:opacity-40'
@@ -282,6 +283,7 @@ export function ServersSettings() {
         </Content>
         <ContentSeparator />
       </Root>
+      <LocalLibrarySettings />
     </div>
   )
 }

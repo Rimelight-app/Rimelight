@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { isLocalServer } from '@/service/local-library'
 import { useAppStore } from '@/store/app.store'
 import {
   measureServer,
@@ -23,7 +24,10 @@ export function ServerObserver() {
     if (sessionStorage.getItem(CHECKED)) return
     sessionStorage.setItem(CHECKED, '1')
 
-    const candidates = servers.filter((s) => s.username === username)
+    // The local library is not another route to the same server.
+    const candidates = servers.filter(
+      (s) => s.username === username && !isLocalServer(s.url, s.username),
+    )
     Promise.all(
       candidates.map(async (s) => ({ s, ms: await measureServer(s, 2500) })),
     ).then((results) => {

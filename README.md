@@ -44,11 +44,17 @@ You host your own music. Your player should feel as good as the streaming apps, 
 **Listening**
 - Albums, artists, songs, playlists, favourites, genres; queue, shuffle, repeat; likes and 1–5 star ratings
 - Shuffle the whole library; clearing the queue keeps the song that's playing
+- Drag songs in the queue to change their order; Play next / Add to the end
 - Time-synced lyrics from your server (`.lrc` files or embedded); LRCLIB lookup is optional
 - Audio quality in the player bar: format, bit depth, sample rate, bitrate, plus a Hi-Res badge
 - 10-band equalizer with presets and preamp, output device selection, mono, playback speed
 - Sleep timer (minutes or end of song), ReplayGain
 - Keep playing similar music when the queue runs out (uses Navidrome's Last.fm data, or the same genre)
+- Optional spectrum visualizer on the Now Playing page (Settings → Appearance)
+
+**No server? Music on this computer**
+- Add music folders on this computer (login page or Settings → Servers) and use the whole app without a server: browsing, search, lyrics (`.lrc` or embedded), cover art, likes, ratings, playlists, play counts
+- Folders are rescanned at start; only new or changed files are read
 
 **Your server**
 - Several saved servers (home, Tailscale, a friend's) with latency check and one-click switching
@@ -85,6 +91,7 @@ On first start, enter your server address (for example `http://192.168.1.10:4533
 - **ListenBrainz / Last.fm:** link them in Navidrome (your user → Personal). ClearPlay reports plays to Navidrome, which forwards them.
 - **Similar songs:** needs a Last.fm API key in Navidrome; without it ClearPlay falls back to songs of the same genre.
 - **Bitrate cap:** needs transcoding (ffmpeg) enabled in Navidrome.
+- **Music on this computer:** plays what Chromium can decode (MP3, FLAC, Ogg/Opus, AAC/M4A, WAV). ALAC `.m4a` doesn't play, and the bitrate cap doesn't apply (there's no transcoding). Artist bios and similar-artist data need a server.
 - **Hi-res:** ClearPlay shows your files' real quality, but plays through Chromium's audio engine, which mixes at the system rate. Exclusive or bit-perfect output isn't possible in this app.
 
 ## Build from source
