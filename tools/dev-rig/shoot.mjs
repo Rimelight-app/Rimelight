@@ -62,6 +62,8 @@ for (const step of steps) {
     else if (kind === 'hover') await win.locator(arg).first().hover()
     else if (kind === 'rclick') await win.locator(arg).first().click({ button: 'right' })
     else if (kind === 'rclicktext') await win.getByText(arg, { exact: true }).first().click({ button: 'right' })
+    else if (kind === 'jitterclick') { const [x, y] = arg.split(',').map(Number); await win.mouse.move(x, y); await win.mouse.down(); await win.mouse.move(x + 2, y + 3, { steps: 3 }); await win.mouse.up() }
+    else if (kind === 'clickat') { const [x, y] = arg.split(',').map(Number); await win.mouse.click(x, y) }
     else if (kind === 'mouse') { const [x, y] = arg.split(',').map(Number); await win.mouse.move(x, y) }
     else if (kind === 'snap') { await win.screenshot({ path: path.join(out, `${arg}.png`) }); console.log('saved', arg) }
     else if (kind === 'clicktext') await win.getByText(arg, { exact: true }).first().click()

@@ -15,8 +15,10 @@ import App from '@/App'
 
 import { queryClient } from '@/lib/queryClient'
 import { blockFeatures } from '@/utils/browser'
+import { installTestHook } from '@/utils/test-hook'
 
 blockFeatures()
+installTestHook()
 
 createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>
