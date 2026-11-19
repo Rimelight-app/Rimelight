@@ -1,5 +1,6 @@
 import { OptionsButtons } from '@/app/components/options/buttons'
 import { DownloadOptionHandler } from '@/app/components/options/download-handler'
+import { MenuRatingRow } from '@/app/components/rating/menu-rating-row'
 import { ContextMenuSeparator } from '@/app/components/ui/context-menu'
 import { useOptions } from '@/app/hooks/use-options'
 import { useAppStore } from '@/store/app.store'
@@ -67,6 +68,8 @@ export function SongMenuOptions({
           }}
         />
       )}
+      <ContextMenuSeparator />
+      <MenuRatingRow songs={[song]} />
       <DownloadOptionHandler context={true}>
         <OptionsButtons.Download
           variant={variant}

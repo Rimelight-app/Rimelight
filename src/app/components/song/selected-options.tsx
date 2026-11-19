@@ -2,6 +2,7 @@ import { Table } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 import { OptionsButtons } from '@/app/components/options/buttons'
 import { DownloadOptionHandler } from '@/app/components/options/download-handler'
+import { MenuRatingRow } from '@/app/components/rating/menu-rating-row'
 import {
   ContextMenuItem,
   ContextMenuSeparator,
@@ -126,6 +127,8 @@ export function SelectedSongsMenuOptions({ table }: SelectedSongsProps) {
           />
         </>
       )}
+      <ContextMenuSeparator />
+      <MenuRatingRow songs={songs} />
       <ContextMenuSeparator />
       <ContextMenuItem disabled inset>
         {t('table.menu.selectedCount', { count: rows.length })}

@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom'
 import { AnimatedCoverVideo } from '@/app/components/album/animated-cover-video'
 import { MarqueeTitle } from '@/app/components/fullscreen/marquee-title'
 import { ImageLoader } from '@/app/components/image-loader'
+import { SongRating } from '@/app/components/rating/song-rating'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/routes/routesList'
 import { useClearPlaySettings } from '@/store/clearplay-settings.store'
@@ -123,7 +124,10 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
           </Link>
         </MarqueeTitle>
         <TrackInfoArtistsLinks song={song} />
-        <TrackQuality song={song} />
+        <div className="mt-1 flex min-w-0 items-center gap-2">
+          <TrackQuality song={song} />
+          <SongRating song={song} size="xs" className="-ml-[1.5px]" />
+        </div>
       </div>
     </Fragment>
   )
@@ -138,7 +142,7 @@ function TrackQuality({ song }: { song: ISong }) {
 
   return (
     <div
-      className="mt-1 flex items-center gap-1.5 text-[11px] leading-none text-white/50 whitespace-nowrap"
+      className="flex min-w-0 items-center gap-1.5 text-[11px] leading-none text-white/50 whitespace-nowrap"
       data-testid="track-quality"
     >
       <span

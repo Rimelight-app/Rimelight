@@ -1,8 +1,9 @@
 import clsx from 'clsx'
 import { ChevronDown, ListMusic, MicVocal } from 'lucide-react'
-import { memo, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ImageLoader } from '@/app/components/image-loader'
+import { SongRating } from '@/app/components/rating/song-rating'
 import { Drawer, DrawerContent, DrawerTitle } from '@/app/components/ui/drawer'
 import { SimpleTooltip } from '@/app/components/ui/simple-tooltip'
 import { useAppWindow } from '@/app/hooks/use-app-window'
@@ -27,6 +28,18 @@ type Panel = 'lyrics' | 'queue' | 'none'
 export function FullscreenMode() {
   const { handleDrawerAnimationEnd } = useAppWindow()
   const { isFullscreen, setIsFullscreen } = usePlayerFullscreen()
+  // Keep the player mounted while the sheet slides down, so closing does not
+  // show an empty gradient. Unmounted once the close animation is over.
+  const [showContent, setShowContent] = useState(isFullscreen)
+
+  useEffect(() => {
+    if (isFullscreen) {
+      setShowContent(true)
+      return
+    }
+    const timer = window.setTimeout(() => setShowContent(false), 700)
+    return () => window.clearTimeout(timer)
+  }, [isFullscreen])
 
   return (
     <Drawer
@@ -47,7 +60,7 @@ export function FullscreenMode() {
       >
         <MemoBackdrop />
         <FullscreenDragHandler />
-        {isFullscreen && <NowPlaying onClose={() => setIsFullscreen(false)} />}
+        {showContent && <NowPlaying onClose={() => setIsFullscreen(false)} />}
       </DrawerContent>
     </Drawer>
   )
@@ -146,21 +159,24 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
                   key={song.id}
                   src={src}
                   alt={`${song.artist} - ${song.title}`}
-                  className="h-full w-full object-cover animate-in fade-in duration-700"
+                  className="h-full w-full object-cover animate-in fade-in duration-300"
                 />
               )}
             </ImageLoader>
           </div>
 
           <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h2 className="truncate text-3xl font-bold tracking-tight 2xl:text-4xl">
                 {song.title}
               </h2>
-              <p className="mt-1.5 truncate text-[17px] text-white/65">
-                {song.artist}
-                {song.album ? ` · ${song.album}` : ''}
-              </p>
+              <div className="mt-1.5 flex min-w-0 items-center gap-3">
+                <p className="min-w-0 truncate text-[17px] text-white/65">
+                  {song.artist}
+                  {song.album ? ` · ${song.album}` : ''}
+                </p>
+                <SongRating song={song} size="md" className="ml-auto" />
+              </div>
             </div>
             {!hideFavorites && <LikeButton />}
           </div>
