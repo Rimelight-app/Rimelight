@@ -52,15 +52,18 @@ class Scrobbler(
         }
     }
 
+    private val enabled get() = runCatching { com.tonihk00.clearplay.ClearPlayApp.instance.settings.state.value.scrobble }.getOrDefault(true)
+
     private fun sendNowPlaying() {
         val id = songId ?: return
+        if (!enabled) return
         nowPlayingSent = true
         scope.launch { runCatching { client()?.scrobble(id, submission = false) } }
     }
 
     private fun maybeSubmit() {
         val id = songId ?: return
-        if (submitted) return
+        if (submitted || !enabled) return
         val dur = if (durationMs > 0) durationMs else player.duration.coerceAtLeast(0)
         if (dur in 1 until 30_000) return
         if (listenedMs < minOf(dur / 2, 240_000L).coerceAtLeast(30_000L)) return

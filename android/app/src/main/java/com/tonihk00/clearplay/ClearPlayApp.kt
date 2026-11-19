@@ -8,6 +8,8 @@ import coil3.disk.DiskCache
 import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
+import com.tonihk00.clearplay.data.AppSettings
+import com.tonihk00.clearplay.data.Downloads
 import com.tonihk00.clearplay.data.ServerStore
 import com.tonihk00.clearplay.data.SongEdits
 import com.tonihk00.clearplay.data.api.SubsonicClient
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /** Plain constructor-injected app graph; no DI framework. */
 class ClearPlayApp : Application(), SingletonImageLoader.Factory {
@@ -37,10 +40,31 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
 
     val edits = SongEdits()
 
+    lateinit var settings: AppSettings
+        private set
+
+    /** Offline downloads; created on first use (the cache folder is locked to one instance). */
+    @get:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+    val downloads: Downloads by lazy {
+        Downloads(this, appScope).also { d ->
+            appScope.launch { settings.state.collect { d.setWifiOnly(it.downloadWifiOnly) } }
+        }
+    }
+
+    /** Stream bitrate cap for the current network (Wi-Fi vs mobile data). */
+    fun streamBitrate(): Int {
+        val s = settings.state.value
+        val cm = getSystemService(android.net.ConnectivityManager::class.java)
+        val caps = cm?.getNetworkCapabilities(cm.activeNetwork)
+        val unmetered = caps?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED) ?: true
+        return if (unmetered) s.wifiBitrate else s.mobileBitrate
+    }
+
     override fun onCreate() {
         super.onCreate()
         instance = this
         servers = ServerStore(this)
+        settings = AppSettings(this, appScope)
         session = servers.active
             .map { s -> if (s == null) Session.LoggedOut else Session.Active(SubsonicClient(s)) }
             .stateIn(appScope, SharingStarted.Eagerly, Session.Loading)

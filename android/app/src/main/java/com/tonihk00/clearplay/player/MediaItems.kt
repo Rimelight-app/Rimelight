@@ -5,21 +5,24 @@ import android.os.Bundle
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import com.tonihk00.clearplay.data.Downloads
 import com.tonihk00.clearplay.data.api.Song
 import com.tonihk00.clearplay.data.api.SubsonicClient
 
 private const val EXTRA_SONG = "cp.song"
 
 /**
- * Builds a queue item. The stream URL travels in requestMetadata.mediaUri because Media3
+ * Builds a queue item. The cache key is the song id, so a downloaded song plays from
+ * storage whatever bitrate the URL asks for. The stream URL travels in requestMetadata.mediaUri because Media3
  * strips localConfiguration when items cross from the controller to the session; the
  * service puts it back in onAddMediaItems.
  */
-fun Song.toMediaItem(client: SubsonicClient, maxBitRate: Int = 0): MediaItem {
-    val stream = client.streamUrl(id, maxBitRate).toUri()
+fun Song.toMediaItem(client: SubsonicClient, maxBitRate: Int = 0, format: String? = null): MediaItem {
+    val stream = client.streamUrl(id, maxBitRate, format).toUri()
     return MediaItem.Builder()
         .setMediaId(id)
         .setUri(stream)
+        .setCustomCacheKey(Downloads.cacheKey(id))
         .setRequestMetadata(MediaItem.RequestMetadata.Builder().setMediaUri(stream).build())
         .setMediaMetadata(toMetadata(client))
         .build()

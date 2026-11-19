@@ -122,6 +122,7 @@ fun DetailHeader(
                 IconButtonCp(R.drawable.ic_shuffle, "Shuffle", { actions.play(songs, shuffle = true) }, size = 46.dp, outlined = true)
                 IconButtonCp(R.drawable.ic_list_start, "Play next", { actions.playNext(songs) }, size = 46.dp, outlined = true)
                 IconButtonCp(R.drawable.ic_list_plus, "Add to queue", { actions.addToQueue(songs) }, size = 46.dp, outlined = true)
+                DownloadButton(songs)
             }
         }
     }
@@ -238,5 +239,29 @@ fun ArtistScreen(id: String, bottomPadding: Dp, onBack: () -> Unit) {
             }
         }
         BackButton(onBack)
+    }
+}
+
+/** Download all / progress / downloaded (tap to remove) for a list of songs. */
+@Composable
+fun DownloadButton(songs: List<Song>) {
+    val actions = LocalActions.current
+    val states = com.tonihk00.clearplay.ui.LocalDownloadStates.current
+    val mine = songs.mapNotNull { states[it.id] }
+    val allDone = songs.isNotEmpty() && mine.size == songs.size && mine.all { it.done }
+    val active = mine.any { it.active }
+    when {
+        active -> Box(Modifier.size(46.dp).glassPanel(CircleShape), contentAlignment = Alignment.Center) {
+            val pct = songs.sumOf { (states[it.id]?.let { s -> if (s.done) 100f else s.percent } ?: 0f).toDouble() } / songs.size
+            androidx.compose.material3.CircularProgressIndicator(
+                progress = { (pct / 100).toFloat() },
+                modifier = Modifier.size(22.dp),
+                color = Cp.TextStrong,
+                trackColor = Cp.Muted,
+                strokeWidth = 2.dp,
+            )
+        }
+        allDone -> IconButtonCp(R.drawable.ic_circle_check, "Remove download", { actions.removeDownload(songs) }, size = 46.dp, outlined = true, tint = Cp.TextStrong)
+        else -> IconButtonCp(R.drawable.ic_download, "Download", { actions.download(songs) }, size = 46.dp, outlined = true)
     }
 }

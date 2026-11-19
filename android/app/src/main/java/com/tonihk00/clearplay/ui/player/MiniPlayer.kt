@@ -31,6 +31,7 @@ import com.tonihk00.clearplay.ui.components.Cover
 import com.tonihk00.clearplay.ui.components.IconButtonCp
 import com.tonihk00.clearplay.ui.components.LikeButton
 import com.tonihk00.clearplay.ui.components.PlayButton
+import com.tonihk00.clearplay.ui.components.liveGlass
 import com.tonihk00.clearplay.ui.theme.Cp
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeState
@@ -51,24 +52,7 @@ fun MiniPlayer(state: PlayerState, controls: PlayerControls, onOpen: () -> Unit,
     Box(
         modifier
             .fillMaxWidth()
-            .clip(MiniShape)
-            .then(
-                if (haze != null) {
-                    Modifier.hazeBlur(
-                        HazeInput.Sources(haze),
-                        HazeBlurStyle {
-                            blurRadius(28.dp)
-                            backgroundColor(Cp.Base)
-                            noiseFactor(0f)
-                        },
-                    )
-                } else {
-                    Modifier
-                },
-            )
-            .background(if (haze != null) Color(20, 20, 28).copy(alpha = 0.35f) else Color(20, 20, 26).copy(alpha = 0.86f))
-            .background(Cp.GlassFill)
-            .border(1.dp, Cp.GlassStroke, MiniShape)
+            .liveGlass(haze, MiniShape)
             .clickable(remember { MutableInteractionSource() }, null, onClick = onOpen),
     ) {
         Column {

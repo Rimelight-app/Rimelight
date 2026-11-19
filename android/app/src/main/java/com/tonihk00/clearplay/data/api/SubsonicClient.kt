@@ -69,8 +69,9 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
         return "${server.baseUrl}/rest/$endpoint?${authQuery()}$extra"
     }
 
-    fun streamUrl(songId: String, maxBitRate: Int = 0): String =
-        url("stream", "id" to songId, "maxBitRate" to maxBitRate.takeIf { it > 0 })
+    /** [format] only applies with a bitrate cap: Navidrome transcodes songs above the cap. */
+    fun streamUrl(songId: String, maxBitRate: Int = 0, format: String? = null): String =
+        url("stream", "id" to songId, "maxBitRate" to maxBitRate.takeIf { it > 0 }, "format" to format.takeIf { maxBitRate > 0 })
 
     fun coverUrl(coverArt: String?, size: Int = 300): String? =
         coverArt?.let { url("getCoverArt", "id" to it, "size" to size) }

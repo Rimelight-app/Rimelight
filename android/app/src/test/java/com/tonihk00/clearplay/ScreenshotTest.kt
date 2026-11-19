@@ -155,6 +155,38 @@ class ScreenshotTest {
         }
     }
 
+    @Test fun settings() = shoot("10-settings") {
+        WithDock(2) {
+            com.tonihk00.clearplay.ui.settings.SettingsScreen(
+                com.tonihk00.clearplay.ui.settings.SettingsUi(
+                    servers = listOf(
+                        com.tonihk00.clearplay.data.api.ServerConfig("http://192.168.1.10:4533", "toni", "t", "s"),
+                        com.tonihk00.clearplay.data.api.ServerConfig("http://music.tailnet.ts.net:4533", "toni", "t", "s"),
+                    ),
+                    active = com.tonihk00.clearplay.data.api.ServerConfig("http://192.168.1.10:4533", "toni", "t", "s"),
+                    latency = mapOf("http://192.168.1.10:4533" to 12L, "http://music.tailnet.ts.net:4533" to 48L),
+                    settings = com.tonihk00.clearplay.data.Settings(mobileBitrate = 192),
+                    downloadCount = 18, downloadBytes = 142L shl 20, imageCacheBytes = 23L shl 20, version = "1.1.0",
+                ),
+                object : com.tonihk00.clearplay.ui.settings.SettingsActions {},
+                170.dp,
+            )
+        }
+    }
+
+    @Test fun downloads() = shoot("11-downloads", "Small Hours") {
+        val songs = FakeServer.songs.take(9)
+        CompositionLocalProvider(
+            com.tonihk00.clearplay.ui.LocalDownloadedSongs provides songs,
+            com.tonihk00.clearplay.ui.LocalDownloadStates provides (
+                songs.associate { it.id to com.tonihk00.clearplay.data.DownloadState(androidx.media3.exoplayer.offline.Download.STATE_COMPLETED, 100f) } +
+                    (FakeServer.songs[9].id to com.tonihk00.clearplay.data.DownloadState(androidx.media3.exoplayer.offline.Download.STATE_DOWNLOADING, 40f))
+                ),
+        ) {
+            WithDock(0) { LibraryScreen(170.dp, FakeServer.playing.id, initialTab = 6) }
+        }
+    }
+
     @Test fun login() = shoot("09-login") {
         LoginScreen(onLoggedIn = {})
     }

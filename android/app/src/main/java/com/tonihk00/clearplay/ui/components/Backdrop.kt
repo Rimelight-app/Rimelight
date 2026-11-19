@@ -67,6 +67,14 @@ fun CoverBackdrop(coverArt: String?, modifier: Modifier = Modifier, dim: Float =
 
 @Composable
 fun BackdropLayer(blurred: ImageBitmap?, modifier: Modifier = Modifier, dim: Float = 0f) {
+    val mode = com.tonihk00.clearplay.ui.LocalBackdropMode.current
+    // Dark wash over the cover, same stops as the desktop's vivid / normal / dim modes.
+    val wash = when (mode) {
+        com.tonihk00.clearplay.data.Backdrop.Vivid -> floatArrayOf(0.15f, 0.25f, 0.50f)
+        com.tonihk00.clearplay.data.Backdrop.Dim -> floatArrayOf(0.55f, 0.65f, 0.80f)
+        else -> floatArrayOf(0.35f, 0.45f, 0.65f)
+    }
+    val show = if (mode == com.tonihk00.clearplay.data.Backdrop.Off) null else blurred
     Box(modifier.fillMaxSize().background(Cp.Base)) {
         // Faint cool light in the corners, visible before any cover loads.
         Box(
@@ -74,7 +82,7 @@ fun BackdropLayer(blurred: ImageBitmap?, modifier: Modifier = Modifier, dim: Flo
                 Brush.radialGradient(listOf(Color(70, 70, 90).copy(alpha = 0.35f), Color.Transparent), Offset(200f, 0f), 1400f),
             ),
         )
-        Crossfade(blurred, animationSpec = tween(700, easing = Cp.EaseOutSoft), label = "backdrop") { bmp ->
+        Crossfade(show, animationSpec = tween(700, easing = Cp.EaseOutSoft), label = "backdrop") { bmp ->
             if (bmp != null) {
                 Image(
                     bmp,
@@ -89,9 +97,9 @@ fun BackdropLayer(blurred: ImageBitmap?, modifier: Modifier = Modifier, dim: Flo
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(
                     listOf(
-                        Color.Black.copy(alpha = 0.35f + dim),
-                        Color.Black.copy(alpha = 0.45f + dim),
-                        Color.Black.copy(alpha = 0.65f + dim * 0.5f),
+                        Color.Black.copy(alpha = (wash[0] + dim).coerceAtMost(1f)),
+                        Color.Black.copy(alpha = (wash[1] + dim).coerceAtMost(1f)),
+                        Color.Black.copy(alpha = (wash[2] + dim * 0.5f).coerceAtMost(1f)),
                     ),
                 ),
             ),

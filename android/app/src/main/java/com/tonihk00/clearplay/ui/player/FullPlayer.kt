@@ -6,6 +6,15 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
+import kotlinx.coroutines.launch
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clip
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -65,6 +74,7 @@ interface PlayerControls {
     fun removeAt(index: Int) {}
     fun clearQueue() {}
     fun position(): Long = 0
+    fun setSleep(minutes: Int?, endOfSong: Boolean = false) {}
 }
 
 sealed interface LyricsState {
@@ -85,15 +95,34 @@ fun FullPlayer(
     initialPanel: Panel = Panel.None,
     fixedPositionMs: Long? = null,
     backdrop: @Composable () -> Unit = { CoverBackdrop(state.current?.coverArt, dim = 0.05f) },
+    sleep: com.tonihk00.clearplay.player.PlayerConnection.Sleep? = null,
 ) {
     val raw = state.current ?: return
     val song = raw.edited()
     var panel by rememberSaveable { mutableStateOf(initialPanel) }
+    var sleepSheet by remember { mutableStateOf(false) }
     fun toggle(p: Panel) { panel = if (panel == p) Panel.None else p }
+    val pull = rememberPullToDismiss(onClose)
 
-    Box(modifier.fillMaxSize()) {
+    Box(
+        modifier.fillMaxSize()
+            .graphicsLayer {
+                translationY = pull.offset
+                val f = (pull.offset / size.height).coerceIn(0f, 1f)
+                scaleX = 1f - f * 0.08f
+                scaleY = 1f - f * 0.08f
+                shape = RoundedCornerShape((f * 160).coerceAtMost(28f).dp)
+                clip = pull.offset > 0f
+            }
+            .nestedScroll(pull.connection)
+            .draggable(pull.draggable, Orientation.Vertical, onDragStopped = { v -> pull.settle(v) }),
+    ) {
         backdrop()
         Column(Modifier.fillMaxSize().systemBarsPadding()) {
+            // Grab handle: pull down anywhere outside the lyrics to minimise.
+            Box(Modifier.fillMaxWidth().padding(top = 6.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(width = 36.dp, height = 4.dp).clip(CircleShape).background(Cp.TextFaint.copy(alpha = 0.5f)))
+            }
             // Top bar: close on the left, lyrics/queue toggles in a glass chip on the right.
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButtonCp(R.drawable.ic_chevron_down, "Close", onClose, size = 40.dp, tint = Cp.TextSoft)
@@ -101,6 +130,7 @@ fun FullPlayer(
                 Row(Modifier.glassPanel(CircleShape, strong = true).padding(2.dp)) {
                     IconButtonCp(R.drawable.ic_mic_vocal, "Lyrics", { toggle(Panel.Lyrics) }, size = 38.dp, iconSize = 18.dp, active = panel == Panel.Lyrics)
                     IconButtonCp(R.drawable.ic_list_music, "Queue", { toggle(Panel.Queue) }, size = 38.dp, iconSize = 18.dp, active = panel == Panel.Queue)
+                    IconButtonCp(R.drawable.ic_moon, "Sleep timer", { sleepSheet = true }, size = 38.dp, iconSize = 18.dp, active = sleep != null)
                 }
             }
 
@@ -141,6 +171,58 @@ fun FullPlayer(
             }
         }
     }
+    if (sleepSheet) SleepSheet(sleep, controls::setSleep) { sleepSheet = false }
+}
+
+/** Drag-down-to-minimise state shared by the player's own drag and nested scrolling lists. */
+class PullToDismiss(private val scope: kotlinx.coroutines.CoroutineScope, private val threshold: Float, private val onDismiss: () -> Unit) {
+    private val anim = androidx.compose.animation.core.Animatable(0f)
+    val offset get() = anim.value
+
+    val draggable = androidx.compose.foundation.gestures.DraggableState { d -> scope.launch { anim.snapTo((anim.value + d).coerceAtLeast(0f)) } }
+
+    fun settle(velocity: Float) {
+        scope.launch {
+            if (anim.value > threshold || (velocity > 1600f && anim.value > 0f)) onDismiss()
+            else anim.animateTo(0f, tween(Cp.ControlMs + 40, easing = Cp.EaseOutSoft))
+        }
+    }
+
+    /** A list at its top hands further downward pulls to the player. */
+    val connection = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+        override fun onPreScroll(available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
+            if (anim.value > 0f && available.y < 0f) {
+                val used = maxOf(available.y, -anim.value)
+                scope.launch { anim.snapTo(anim.value + used) }
+                return androidx.compose.ui.geometry.Offset(0f, used)
+            }
+            return androidx.compose.ui.geometry.Offset.Zero
+        }
+
+        override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
+            if (available.y > 0f && source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) {
+                scope.launch { anim.snapTo(anim.value + available.y) }
+                return androidx.compose.ui.geometry.Offset(0f, available.y)
+            }
+            return androidx.compose.ui.geometry.Offset.Zero
+        }
+
+        override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
+            if (anim.value > 0f) {
+                settle(available.y)
+                return available
+            }
+            return androidx.compose.ui.unit.Velocity.Zero
+        }
+    }
+}
+
+@Composable
+fun rememberPullToDismiss(onDismiss: () -> Unit): PullToDismiss {
+    val scope = rememberCoroutineScope()
+    val threshold = with(androidx.compose.ui.platform.LocalDensity.current) { 140.dp.toPx() }
+    val latest = androidx.compose.runtime.rememberUpdatedState(onDismiss)
+    return remember { PullToDismiss(scope, threshold) { latest.value() } }
 }
 
 @Composable

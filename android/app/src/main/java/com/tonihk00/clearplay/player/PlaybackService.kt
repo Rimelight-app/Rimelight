@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.tonihk00.clearplay.ClearPlayApp
 import com.tonihk00.clearplay.MainActivity
+import com.tonihk00.clearplay.data.Downloads
 import com.tonihk00.clearplay.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +42,10 @@ class PlaybackService : MediaLibraryService() {
     override fun onCreate() {
         super.onCreate()
         val http = OkHttpClient.Builder().build()
-        val dataSource = DefaultDataSource.Factory(this, OkHttpDataSource.Factory(http))
+        // Downloaded songs are read from the offline cache; everything else streams.
+        val dataSource = ClearPlayApp.instance.downloads.playbackFactory(
+            DefaultDataSource.Factory(this, OkHttpDataSource.Factory(http)),
+        )
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(dataSource))
             .setAudioAttributes(
@@ -98,7 +102,7 @@ class PlaybackService : MediaLibraryService() {
             val resolved = mediaItems.map { item ->
                 val uri = item.requestMetadata.mediaUri
                     ?: client?.streamUrl(item.mediaId)?.let(android.net.Uri::parse)
-                if (uri == null) item else item.buildUpon().setUri(uri).build()
+                if (uri == null) item else item.buildUpon().setUri(uri).setCustomCacheKey(Downloads.cacheKey(item.mediaId)).build()
             }
             return Futures.immediateFuture(resolved.toMutableList())
         }

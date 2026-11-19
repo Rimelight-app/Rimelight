@@ -95,6 +95,7 @@ fun SongRow(
             CpIcon(R.drawable.ic_heart_filled, size = 14.dp, tint = Cp.TextSoft)
             Spacer(Modifier.width(10.dp))
         }
+        DownloadBadge(song.id)
         Text(formatDuration(song.duration), style = MaterialTheme.typography.bodySmall, color = Cp.TextFaint)
         IconButtonCp(R.drawable.ic_ellipsis_vertical, "More", onMenu, size = 36.dp, iconSize = 18.dp, tint = Cp.TextFaint)
     }
@@ -157,4 +158,22 @@ fun SimpleRow(title: String, subtitle: String, onClick: () -> Unit, modifier: Mo
         }
         CpIcon(R.drawable.ic_chevron_right, size = 18.dp, tint = Cp.TextFaint)
     }
+}
+
+/** Quiet marker in song rows: a check when downloaded, a thin progress ring while downloading. */
+@Composable
+fun DownloadBadge(songId: String, size: androidx.compose.ui.unit.Dp = 14.dp) {
+    val st = com.tonihk00.clearplay.ui.LocalDownloadStates.current[songId] ?: return
+    when {
+        st.done -> CpIcon(R.drawable.ic_circle_check, size = size, tint = Cp.TextSoft)
+        st.active -> androidx.compose.material3.CircularProgressIndicator(
+            progress = { st.percent / 100f },
+            modifier = Modifier.size(size),
+            color = Cp.TextSoft,
+            trackColor = Cp.Muted,
+            strokeWidth = 1.5.dp,
+        )
+        else -> return
+    }
+    Spacer(Modifier.width(10.dp))
 }

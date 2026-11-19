@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -21,6 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tonihk00.clearplay.R
+import com.tonihk00.clearplay.data.Backdrop
+import com.tonihk00.clearplay.data.DownloadState
 import com.tonihk00.clearplay.data.SongEdits
 import com.tonihk00.clearplay.data.api.Song
 import com.tonihk00.clearplay.data.api.SubsonicClient
@@ -41,12 +44,24 @@ interface UiActions {
     fun songMenu(song: Song) {}
     fun toggleLike(song: Song) {}
     fun rate(song: Song, stars: Int) {}
+    fun download(songs: List<Song>) {}
+    fun removeDownload(songs: List<Song>) {}
+    fun openDownloads() {}
 }
 
 object NoActions : UiActions
 
 val LocalActions = staticCompositionLocalOf<UiActions> { NoActions }
 val LocalEdits = staticCompositionLocalOf { SongEdits() }
+
+/** Download state per song id (empty in previews and tests). */
+val LocalDownloadStates = compositionLocalOf<Map<String, DownloadState>> { emptyMap() }
+
+/** Completed downloads, newest first. */
+val LocalDownloadedSongs = compositionLocalOf<List<Song>> { emptyList() }
+
+/** Background strength from Settings → Appearance. */
+val LocalBackdropMode = compositionLocalOf { Backdrop.Balanced }
 
 /** Applies this session's likes/ratings to a loaded song. */
 @Composable

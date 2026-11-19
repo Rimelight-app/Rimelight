@@ -64,11 +64,14 @@ import com.tonihk00.clearplay.ui.components.SongRow
 import com.tonihk00.clearplay.ui.components.formatLongDuration
 import com.tonihk00.clearplay.ui.theme.Cp
 
-val LibraryTabs = listOf("Albums", "Artists", "Songs", "Playlists", "Favorites", "Genres")
+val LibraryTabs = listOf("Albums", "Artists", "Songs", "Playlists", "Favorites", "Genres", "Downloads")
 
 @Composable
-fun LibraryScreen(bottomPadding: Dp, playingId: String?, modifier: Modifier = Modifier, initialTab: Int = 0) {
-    var tab by rememberSaveable { mutableStateOf(initialTab) }
+fun LibraryScreen(bottomPadding: Dp, playingId: String?, modifier: Modifier = Modifier, initialTab: Int? = null) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val hasDownloads = com.tonihk00.clearplay.ui.LocalDownloadedSongs.current.isNotEmpty()
+    // With no connection, open on the downloads, which still play.
+    var tab by rememberSaveable { mutableStateOf(initialTab ?: if (hasDownloads && !isOnline(context)) DownloadsTabIndex else 0) }
     Column(modifier.fillMaxSize()) {
         LibraryHeader()
         PillTabs(LibraryTabs, tab, { tab = it }, Modifier.padding(bottom = 8.dp))
@@ -79,12 +82,13 @@ fun LibraryScreen(bottomPadding: Dp, playingId: String?, modifier: Modifier = Mo
         ) { t ->
             val pad = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = bottomPadding + 12.dp)
             when (t) {
-                0 -> AlbumsTab(pad)
+                0 -> AlbumsTab(pad) { tab = DownloadsTabIndex }
                 1 -> ArtistsTab(pad)
                 2 -> SongsTab(pad, playingId)
                 3 -> PlaylistsTab(pad)
                 4 -> FavoritesTab(pad, playingId)
-                else -> GenresTab(pad)
+                5 -> GenresTab(pad)
+                else -> DownloadsTab(pad, playingId)
             }
         }
     }
@@ -104,23 +108,51 @@ private fun LibraryHeader() {
     }
 }
 
+const val DownloadsTabIndex = 6
+
+fun isOnline(context: android.content.Context): Boolean {
+    val cm = context.getSystemService(android.net.ConnectivityManager::class.java) ?: return true
+    val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
+    return caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+}
+
+/** Shown when the server can't be reached: points to the downloads. */
 @Composable
-fun AlbumsTab(pad: PaddingValues) {
+fun OfflineState(onDownloads: () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().padding(40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+    ) {
+        com.tonihk00.clearplay.ui.components.CpIcon(R.drawable.ic_cloud_download, size = 32.dp, tint = Cp.TextFaint)
+        Text("Can't reach your server", style = MaterialTheme.typography.titleMedium, color = Cp.TextSoft)
+        Text("Your downloads still play.", style = MaterialTheme.typography.bodyMedium, color = Cp.TextFaint)
+        Spacer(Modifier.height(8.dp))
+        com.tonihk00.clearplay.ui.components.PrimaryPill("Downloads", R.drawable.ic_download, onDownloads)
+    }
+}
+
+@Composable
+fun AlbumsTab(pad: PaddingValues, onDownloads: () -> Unit = {}) {
     val client = LocalClient.current
     val actions = LocalActions.current
     val albums = remember(client) { mutableStateListOf<Album>() }
     var end by remember(client) { mutableStateOf(false) }
     var loading by remember(client) { mutableStateOf(false) }
+    var failed by remember(client) { mutableStateOf(false) }
     val grid = rememberLazyGridState()
     val nearEnd by remember { derivedStateOf { (grid.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= albums.size - 8 } }
     LaunchedEffect(client, nearEnd, albums.size) {
         if (client == null || end || loading || (!nearEnd && albums.isNotEmpty())) return@LaunchedEffect
         loading = true
-        val page = runCatching { client.albumList(size = 60, offset = albums.size) }.getOrNull().orEmpty()
+        val result = runCatching { client.albumList(size = 60, offset = albums.size) }
+        failed = result.isFailure && albums.isEmpty()
+        val page = result.getOrNull().orEmpty()
         if (page.size < 60) end = true
         albums += page
         loading = false
     }
+    if (failed) return OfflineState(onDownloads)
     if (albums.isEmpty() && end) return EmptyState(R.drawable.ic_disc_3, "No albums yet")
     LazyVerticalGrid(
         GridCells.Adaptive(150.dp),
@@ -235,6 +267,36 @@ fun GenresTab(pad: PaddingValues) {
             items(list, key = { it.value }) {
                 SimpleRow(it.value, "${it.songCount} songs · ${it.albumCount} albums", { actions.openGenre(it.value) }, icon = R.drawable.ic_tag)
             }
+        }
+    }
+}
+
+/** Downloaded songs: play without a connection. */
+@Composable
+fun DownloadsTab(pad: PaddingValues, playingId: String?) {
+    val actions = LocalActions.current
+    val songs = com.tonihk00.clearplay.ui.LocalDownloadedSongs.current
+    if (songs.isEmpty()) {
+        return EmptyState(
+            R.drawable.ic_download, "No downloads yet",
+            "Tap the download button on an album or playlist, or Download in a song's menu, to keep it on this phone.",
+        )
+    }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = pad) {
+        item {
+            Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 4.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "${songs.size} song${if (songs.size == 1) "" else "s"} · plays offline",
+                    style = MaterialTheme.typography.titleSmall, color = Cp.TextSoft, modifier = Modifier.weight(1f),
+                )
+                IconButtonCp(R.drawable.ic_shuffle, "Shuffle downloads", { actions.play(songs, shuffle = true) }, outlined = true)
+                Spacer(Modifier.size(8.dp))
+                com.tonihk00.clearplay.ui.components.PrimaryPill("Play", R.drawable.ic_play_filled, { actions.play(songs) })
+            }
+        }
+        itemsIndexed(songs, key = { _, s -> "dl" + s.id }) { i, raw ->
+            val song = raw.edited()
+            SongRow(song, { actions.play(songs, i) }, { actions.songMenu(song) }, playing = raw.id == playingId)
         }
     }
 }

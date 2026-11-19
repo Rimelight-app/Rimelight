@@ -96,10 +96,25 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           name: clearplay-android
           path: dist
+
+      # The release text is this version's section of android/CHANGELOG.md.
+      - name: Release notes
+        working-directory: .
+        run: |
+          VERSION="${GITHUB_REF_NAME#android-v}"
+          awk -v v="$VERSION" '
+            index($0, "## [" v "]") == 1 { grab = 1; next }
+            grab && /^## \[/ { exit }
+            grab { print }
+          ' android/CHANGELOG.md > release-notes.md
+          grep -q '[^[:space:]]' release-notes.md || echo "See android/CHANGELOG.md." > release-notes.md
+          cat release-notes.md
 
       # make_latest: false keeps the desktop release as the repository's "latest",
       # which the desktop updater and the README badge read.
@@ -107,5 +122,5 @@ jobs:
         with:
           name: ClearPlay ${{ github.ref_name }}
           files: dist/*.apk
+          body_path: release-notes.md
           make_latest: 'false'
-          generate_release_notes: true

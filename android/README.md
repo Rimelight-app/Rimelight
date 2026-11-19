@@ -4,7 +4,7 @@ The ClearPlay frosted-glass player for Navidrome / OpenSubsonic, as a native And
 Kotlin, Jetpack Compose, Media3 (ExoPlayer + MediaLibraryService), Coil, Haze, Ktor.
 Same design tokens as the desktop `.glass` theme (`src/themes.css`).
 
-Status: **stage 1** (base app). See "Stages" below.
+Status: **1.1** — stage 1 plus offline downloads, settings and sleep timer. See `CHANGELOG.md`.
 
 ## Build
 

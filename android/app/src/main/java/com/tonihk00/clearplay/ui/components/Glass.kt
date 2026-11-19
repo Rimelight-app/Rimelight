@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.blur.hazeBlur
 import com.tonihk00.clearplay.ui.theme.Cp
 
 /** `.glass-panel`: faint white fill, hairline stroke, rounded 16 dp. */
@@ -152,3 +153,27 @@ fun PillTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, modifie
 fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(text.uppercase(), modifier, style = MaterialTheme.typography.labelSmall, color = Cp.TextFaint)
 }
+
+/**
+ * Live frosted glass (Haze) over whatever scrolls behind: the mini player and the tab bar.
+ * With [haze] null (blur turned off in Settings, or in tests) it is a solid dark glass.
+ */
+fun Modifier.liveGlass(haze: dev.chrisbanes.haze.HazeState?, shape: Shape): Modifier =
+    this.clip(shape)
+        .then(
+            if (haze != null) {
+                Modifier.hazeBlur(
+                    dev.chrisbanes.haze.HazeInput.Sources(haze),
+                    dev.chrisbanes.haze.blur.HazeBlurStyle {
+                        blurRadius(28.dp)
+                        backgroundColor(Cp.Base)
+                        noiseFactor(0f)
+                    },
+                )
+            } else {
+                Modifier
+            },
+        )
+        .background(if (haze != null) Color(20, 20, 28).copy(alpha = 0.35f) else Color(20, 20, 28).copy(alpha = 0.72f))
+        .background(if (haze != null) Cp.GlassFill else Cp.GlassFillStrong)
+        .border(1.dp, Cp.GlassStroke, shape)

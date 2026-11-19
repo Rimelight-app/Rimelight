@@ -42,6 +42,28 @@ class PlayerConnection(
     private var endless = false
     private var filling = false
 
+    /** Sleep timer: pause at [endsAtMs], or when the current song ends. Null when off. */
+    data class Sleep(val endsAtMs: Long? = null, val endOfSong: Boolean = false)
+
+    private val _sleep = MutableStateFlow<Sleep?>(null)
+    val sleep: StateFlow<Sleep?> = _sleep
+    private var sleepJob: kotlinx.coroutines.Job? = null
+
+    fun setSleepTimer(minutes: Int?, endOfSong: Boolean = false) {
+        sleepJob?.cancel()
+        _sleep.value = when {
+            endOfSong -> Sleep(endOfSong = true)
+            minutes != null && minutes > 0 -> Sleep(endsAtMs = System.currentTimeMillis() + minutes * 60_000L)
+            else -> null
+        }
+        val at = _sleep.value?.endsAtMs ?: return
+        sleepJob = scope.launch {
+            kotlinx.coroutines.delay(at - System.currentTimeMillis())
+            controller?.pause()
+            _sleep.value = null
+        }
+    }
+
     /** Current playback position; read on demand so only the progress UI ticks. */
     val positionMs: Long get() = controller?.currentPosition ?: 0L
 
@@ -54,7 +76,13 @@ class PlayerConnection(
             controller = c
             c.addListener(object : Player.Listener {
                 override fun onEvents(player: Player, events: Player.Events) = publish()
-                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) = refillIfNeeded()
+                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && _sleep.value?.endOfSong == true) {
+                        c.pause()
+                        _sleep.value = null
+                    }
+                    refillIfNeeded()
+                }
             })
             publish()
         }
@@ -78,7 +106,10 @@ class PlayerConnection(
 
     private fun items(songs: List<Song>): List<MediaItem>? {
         val cl = client() ?: return null
-        return songs.map { it.toMediaItem(cl) }
+        val app = context.applicationContext as? com.tonihk00.clearplay.ClearPlayApp
+        val bitrate = app?.streamBitrate() ?: 0
+        val format = app?.settings?.state?.value?.format?.param
+        return songs.map { it.toMediaItem(cl, bitrate, format) }
     }
 
     fun play(songs: List<Song>, startIndex: Int = 0, shuffle: Boolean = false) {
@@ -143,7 +174,7 @@ class PlayerConnection(
         scope.launch {
             runCatching { cl.randomSongs(50) }.getOrNull()?.let { more ->
                 val have = (0 until c.mediaItemCount).map { c.getMediaItemAt(it).mediaId }.toSet()
-                c.addMediaItems(more.filterNot { it.id in have }.map { it.toMediaItem(cl) })
+                c.addMediaItems(items(more.filterNot { it.id in have }).orEmpty())
             }
             filling = false
         }

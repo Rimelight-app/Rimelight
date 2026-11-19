@@ -69,6 +69,12 @@ fun SongMenuContent(raw: Song, onDismiss: () -> Unit) {
         MenuItem(if (song.isStarred) R.drawable.ic_heart_filled else R.drawable.ic_heart, if (song.isStarred) "Remove from favourites" else "Add to favourites") {
             actions.toggleLike(song)
         }
+        val dl = com.tonihk00.clearplay.ui.LocalDownloadStates.current[raw.id]
+        when {
+            dl?.done == true -> MenuItem(R.drawable.ic_circle_check, "Remove download") { actions.removeDownload(listOf(raw)); onDismiss() }
+            dl?.active == true -> MenuItem(R.drawable.ic_download, "Downloading… ${dl.percent.toInt()}%") {}
+            else -> MenuItem(R.drawable.ic_download, "Download") { actions.download(listOf(raw)); onDismiss() }
+        }
         song.albumId?.let { id -> MenuItem(R.drawable.ic_disc_3, "Go to album") { onDismiss(); actions.openAlbum(id) } }
         song.artistId?.let { id -> MenuItem(R.drawable.ic_user, "Go to artist") { onDismiss(); actions.openArtist(id) } }
         Spacer(Modifier.height(4.dp))

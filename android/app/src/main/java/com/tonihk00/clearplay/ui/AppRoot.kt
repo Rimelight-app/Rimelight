@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +32,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
@@ -56,6 +58,7 @@ import com.tonihk00.clearplay.ui.components.BackdropLayer
 import com.tonihk00.clearplay.ui.components.CoverBackdrop
 import com.tonihk00.clearplay.ui.components.CpIcon
 import com.tonihk00.clearplay.ui.components.LocalClient
+import com.tonihk00.clearplay.ui.components.liveGlass
 import com.tonihk00.clearplay.ui.library.AlbumScreen
 import com.tonihk00.clearplay.ui.library.ArtistScreen
 import com.tonihk00.clearplay.ui.library.GenreScreen
@@ -82,7 +85,9 @@ import java.net.URLEncoder
 fun AppRoot() {
     val app = ClearPlayApp.instance
     val session by app.session.collectAsState()
+    val settings by app.settings.state.collectAsState()
     val scope = rememberCoroutineScope()
+    CompositionLocalProvider(LocalBackdropMode provides settings.backdrop) {
     when (val s = session) {
         Session.Loading -> BackdropLayer(null)
         Session.LoggedOut -> Box(Modifier.fillMaxSize()) {
@@ -98,6 +103,7 @@ fun AppRoot() {
             }
         }
     }
+    }
 }
 
 private class PlayerControlsImpl(private val p: PlayerConnection) : PlayerControls {
@@ -111,6 +117,7 @@ private class PlayerControlsImpl(private val p: PlayerConnection) : PlayerContro
     override fun removeAt(index: Int) = p.removeAt(index)
     override fun clearQueue() = p.clearQueue()
     override fun position(): Long = p.positionMs
+    override fun setSleep(minutes: Int?, endOfSong: Boolean) = p.setSleepTimer(minutes, endOfSong)
 }
 
 private enum class Tab(val route: String, val label: String, val icon: Int) {
@@ -125,7 +132,13 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient, onLog
     val state by player.state.collectAsState()
     val nav = rememberNavController()
     val scope = rememberCoroutineScope()
-    val haze = rememberHazeState()
+    val settings by app.settings.state.collectAsState()
+    val hazeState = rememberHazeState()
+    val haze = if (settings.liveBlur) hazeState else null
+    val dlStates by app.downloads.states.collectAsState()
+    val dlSongs by app.downloads.songs.collectAsState()
+    val sleep by player.sleep.collectAsState()
+    var addingServer by remember { mutableStateOf(false) }
     val reduce = LocalReduceMotion.current
     val controls = remember(player) { PlayerControlsImpl(player) }
     var fullOpen by remember { mutableStateOf(false) }
@@ -146,6 +159,11 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient, onLog
             override fun songMenu(song: Song) { menuSong = song }
             override fun toggleLike(song: Song) { scope.launch { app.edits.toggleStar(client, song) } }
             override fun rate(song: Song, stars: Int) { scope.launch { app.edits.rate(client, song, stars) } }
+            override fun download(songs: List<Song>) {
+                val st = app.settings.state.value
+                app.downloads.download(client, songs, st.downloadBitrate, st.format.param)
+            }
+            override fun removeDownload(songs: List<Song>) = app.downloads.remove(songs.map { it.id })
         }
     }
 
@@ -161,14 +179,18 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient, onLog
     BackHandler(enabled = fullOpen) { fullOpen = false }
     val playingId = current?.id
 
-    CompositionLocalProvider(LocalActions provides actions) {
+    CompositionLocalProvider(
+        LocalActions provides actions,
+        LocalDownloadStates provides dlStates,
+        LocalDownloadedSongs provides dlSongs,
+    ) {
         Box(Modifier.fillMaxSize()) {
             // Everything under the dock is a Haze source, so the mini player can blur it.
             // While the fullscreen player covers them, the page and dock are hidden from TalkBack.
             val hidden = if (fullOpen) Modifier.clearAndSetSemantics {} else Modifier
-            Box(Modifier.fillMaxSize().hazeSource(haze).then(hidden)) {
+            Box(Modifier.fillMaxSize().hazeSource(hazeState).then(hidden)) {
                 CoverBackdrop(current?.coverArt)
-                AppNavHost(nav, dockHeight, playingId, client, onLogout)
+                AppNavHost(nav, dockHeight, playingId, client, onLogout, sleep) { addingServer = true }
             }
             Dock(
                 nav, state, controls, haze,
@@ -180,15 +202,35 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient, onLog
                 enter = slideInVertically(tween(if (reduce) 0 else Cp.ScreenMs, easing = Cp.EaseOutSoft)) { it } + fadeIn(tween(if (reduce) 0 else 200)),
                 exit = slideOutVertically(tween(if (reduce) 0 else Cp.ScreenMs, easing = Cp.EaseOutSoft)) { it } + fadeOut(tween(if (reduce) 0 else 250)),
             ) {
-                FullPlayer(state, controls, lyrics, onClose = { fullOpen = false })
+                FullPlayer(state, controls, lyrics, onClose = { fullOpen = false }, sleep = sleep)
             }
             menuSong?.let { SongMenu(it) { menuSong = null } }
+            if (addingServer) {
+                BackHandler { addingServer = false }
+                Box(Modifier.fillMaxSize()) {
+                    BackdropLayer(null, dim = 0.1f)
+                    LoginScreen(onLoggedIn = { srv ->
+                        player.reset()
+                        app.servers.saveAndActivate(srv)
+                        addingServer = false
+                    })
+                    com.tonihk00.clearplay.ui.library.BackButton({ addingServer = false })
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun AppNavHost(nav: NavHostController, bottom: Dp, playingId: String?, client: SubsonicClient, onLogout: () -> Unit) {
+private fun AppNavHost(
+    nav: NavHostController,
+    bottom: Dp,
+    playingId: String?,
+    client: SubsonicClient,
+    onLogout: () -> Unit,
+    sleep: PlayerConnection.Sleep?,
+    onAddServer: () -> Unit,
+) {
     val enter = fadeIn(tween(Cp.ScreenMs, easing = Cp.EaseOutSoft))
     val exit = fadeOut(tween(150))
     NavHost(
@@ -197,7 +239,7 @@ private fun AppNavHost(nav: NavHostController, bottom: Dp, playingId: String?, c
     ) {
         composable(Tab.Library.route) { LibraryScreen(bottom, playingId) }
         composable(Tab.Search.route) { SearchScreen(bottom, playingId) }
-        composable(Tab.Settings.route) { SettingsScreen(client.server, bottom, onLogout) }
+        composable(Tab.Settings.route) { SettingsRoute(client, bottom, sleep, onLogout, onAddServer) }
         composable("album/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
             AlbumScreen(it.arguments?.getString("id").orEmpty(), bottom, playingId) { nav.popBackStack() }
         }
@@ -215,12 +257,13 @@ private fun AppNavHost(nav: NavHostController, bottom: Dp, playingId: String?, c
 
 /** Mini player (live glass) above the tab bar (solid fade, no blur). */
 @Composable
-private fun Dock(nav: NavHostController, state: PlayerState, controls: PlayerControls, haze: HazeState, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+private fun Dock(nav: NavHostController, state: PlayerState, controls: PlayerControls, haze: HazeState?, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     DockContent(
         state, controls, haze, onOpen,
-        selected = Tab.entries.firstOrNull { it.route == route },
+        // Album, artist, playlist and genre pages belong to the Library tab.
+        selected = Tab.entries.firstOrNull { it.route == route } ?: Tab.Library.takeIf { route != null },
         onTab = { t ->
             nav.navigate(t.route) {
                 popUpTo(Tab.Library.route) { saveState = true }
@@ -242,14 +285,11 @@ private fun DockContent(
     onTab: (Tab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier.fillMaxWidth().background(
-            Brush.verticalGradient(0f to Color.Transparent, 0.3f to Cp.Base.copy(alpha = 0.6f), 0.6f to Cp.Base.copy(alpha = 0.94f), 1f to Cp.Base.copy(alpha = 0.97f)),
-        ),
-    ) {
-        MiniPlayer(state, controls, onOpen, haze, Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
+    // Both bars float as frosted glass over the page, like the desktop player bar.
+    Column(modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 10.dp).padding(bottom = 6.dp)) {
+        MiniPlayer(state, controls, onOpen, haze, Modifier.padding(bottom = 8.dp))
         Row(
-            Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 4.dp),
+            Modifier.fillMaxWidth().liveGlass(haze, RoundedCornerShape(22.dp)).padding(horizontal = 8.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceAround,
         ) {
             Tab.entries.forEach { t -> TabItem(t, t == selected) { onTab(t) } }
@@ -261,7 +301,11 @@ private fun DockContent(
 private fun TabItem(tab: Tab, selected: Boolean, onClick: () -> Unit) {
     val color = if (selected) Cp.TextStrong else Cp.TextFaint
     Column(
-        Modifier.clickable(remember { MutableInteractionSource() }, null, onClick = onClick).padding(horizontal = 18.dp, vertical = 8.dp),
+        Modifier.padding(vertical = 6.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (selected) Cp.Accent else Color.Transparent)
+            .clickable(remember { MutableInteractionSource() }, null, onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CpIcon(tab.icon, size = 22.dp, tint = color)
@@ -273,4 +317,60 @@ private fun TabItem(tab: Tab, selected: Boolean, onClick: () -> Unit) {
 @Composable
 internal fun DockPreview(state: PlayerState, selectedIndex: Int) {
     DockContent(state, object : PlayerControls {}, null, {}, Tab.entries[selectedIndex], {})
+}
+
+/** Settings page wired to the app: servers (with latency), settings, downloads, caches. */
+@Composable
+private fun SettingsRoute(client: SubsonicClient, bottom: Dp, sleep: PlayerConnection.Sleep?, onLogout: () -> Unit, onAddServer: () -> Unit) {
+    val app = ClearPlayApp.instance
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
+    val servers by app.servers.servers.collectAsState(emptyList())
+    val settings by app.settings.state.collectAsState()
+    val dlSongs by app.downloads.songs.collectAsState()
+    val dlBytes by app.downloads.bytes.collectAsState()
+    var latency by remember { mutableStateOf<Map<String, Long?>>(emptyMap()) }
+    var imageBytes by remember { mutableStateOf(0L) }
+    val loader = coil3.SingletonImageLoader.get(context)
+
+    LaunchedEffect(servers) {
+        latency = servers.associate { it.baseUrl to null }
+        servers.forEach { srv ->
+            launch {
+                val t0 = System.nanoTime()
+                val ok = runCatching { SubsonicClient(srv).ping() }.isSuccess
+                latency = latency + (srv.baseUrl to if (ok) (System.nanoTime() - t0) / 1_000_000 else -1L)
+            }
+        }
+    }
+    LaunchedEffect(Unit) { imageBytes = loader.diskCache?.size ?: 0L }
+
+    val actions = remember(client) {
+        object : com.tonihk00.clearplay.ui.settings.SettingsActions {
+            override fun switchServer(s: com.tonihk00.clearplay.data.api.ServerConfig) {
+                scope.launch { app.player.reset(); app.servers.saveAndActivate(s) }
+            }
+            override fun removeServer(s: com.tonihk00.clearplay.data.api.ServerConfig) { scope.launch { app.servers.remove(s) } }
+            override fun addServer() = onAddServer()
+            override fun signOut() = onLogout()
+            override fun update(change: (com.tonihk00.clearplay.data.Settings) -> com.tonihk00.clearplay.data.Settings) {
+                scope.launch { app.settings.update(change) }
+            }
+            override fun removeAllDownloads() = app.downloads.removeAll()
+            override fun clearImageCache() {
+                loader.memoryCache?.clear()
+                loader.diskCache?.clear()
+                imageBytes = 0L
+            }
+            override fun setSleep(minutes: Int?, endOfSong: Boolean) = app.player.setSleepTimer(minutes, endOfSong)
+        }
+    }
+    SettingsScreen(
+        com.tonihk00.clearplay.ui.settings.SettingsUi(
+            servers = servers, active = client.server, latency = latency, settings = settings,
+            downloadCount = dlSongs.size, downloadBytes = dlBytes, imageCacheBytes = imageBytes,
+            sleep = sleep, version = com.tonihk00.clearplay.BuildConfigInfo.versionName,
+        ),
+        actions, bottom,
+    )
 }
