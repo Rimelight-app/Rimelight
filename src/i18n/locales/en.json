@@ -623,7 +623,7 @@
     "label": "Settings",
     "options": {
       "appearance": "Appearance",
-      "language": "Language & Region",
+      "language": "Language",
       "audio": "Player & Audio",
       "content": "Content",
       "accounts": "Accounts",
@@ -949,6 +949,10 @@
         "showQuality": {
           "label": "Show audio quality in the player bar",
           "info": "Format, bit depth, sample rate and bitrate under the artist."
+        },
+        "visualizer": {
+          "label": "Visualizer on Now Playing",
+          "info": "A live spectrum of the song on the Now Playing page. It only draws while that page is open and music is playing."
         }
       }
     },
@@ -973,7 +977,8 @@
       "more": "Read more",
       "less": "Show less",
       "similar": "Similar artists",
-      "discography": "Discography"
+      "discography": "Discography",
+      "visualizer": "Visualizer"
     },
     "servers": {
       "group": "Servers",

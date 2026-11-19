@@ -18,6 +18,8 @@ interface ClearPlaySettings {
   syncQueue: boolean
   /** Add similar songs when the queue is about to run out. */
   autoDj: boolean
+  /** Spectrum visualizer on the Now Playing page. */
+  visualizer: boolean
   set: (patch: Partial<Omit<ClearPlaySettings, 'set'>>) => void
 }
 
@@ -32,6 +34,7 @@ export const useClearPlaySettings = create<ClearPlaySettings>()(
       startPage: '/',
       syncQueue: false,
       autoDj: false,
+      visualizer: false,
       set: (patch) => set(patch),
     }),
     { name: 'clearplay_settings' },

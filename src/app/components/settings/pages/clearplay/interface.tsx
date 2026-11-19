@@ -21,7 +21,7 @@ import { SettingSelect } from './controls'
 
 export function InterfaceSettings() {
   const { t } = useTranslation()
-  const { showQuality, lyricsSize, backdrop, startPage, set } =
+  const { showQuality, lyricsSize, backdrop, startPage, visualizer, set } =
     useClearPlaySettings()
   const k = 'clearplay.settings.interface'
 
@@ -89,6 +89,18 @@ export function InterfaceSettings() {
             <Switch
               checked={showQuality}
               onCheckedChange={(v) => set({ showQuality: v })}
+            />
+          </ContentItemForm>
+        </ContentItem>
+        <ContentItem>
+          <ContentItemTitle info={t(`${k}.visualizer.info`)}>
+            {t(`${k}.visualizer.label`)}
+          </ContentItemTitle>
+          <ContentItemForm>
+            <Switch
+              checked={visualizer}
+              onCheckedChange={(v) => set({ visualizer: v })}
+              data-testid="setting-visualizer"
             />
           </ContentItemForm>
         </ContentItem>

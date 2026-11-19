@@ -12,11 +12,13 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { getSimpleCoverArtUrl } from '@/api/httpClient'
 import { EqualizerBars } from '@/app/components/icons/equalizer-bars'
+import { Visualizer } from '@/app/components/insights/visualizer'
 import { useGetAlbum, useGetArtistAlbums } from '@/app/hooks/use-album'
 import { useGetArtistInfo } from '@/app/hooks/use-artist'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/routes/routesList'
 import { stats } from '@/service/stats'
+import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import {
   useLyricsState,
   usePlayerActions,
@@ -516,12 +518,18 @@ export default function NowPlayingPage() {
   const { t } = useTranslation()
   const song = usePlayerCurrentSong()
   const hasSong = Boolean(song?.id)
+  const visualizer = useClearPlaySettings((s) => s.visualizer)
 
   return (
     <div className="w-full space-y-4 px-8 pb-8 pt-6">
       {hasSong ? (
         <>
           <Hero />
+          {visualizer && (
+            <Panel title={t('clearplay.np.visualizer')}>
+              <Visualizer />
+            </Panel>
+          )}
           <div className="grid gap-4 xl:grid-cols-2">
             <FromThisAlbum />
             <AboutArtist />
