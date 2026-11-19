@@ -119,7 +119,7 @@ export function UpdateObserver() {
 
         <div
           id="update-info-body"
-          className="w-full min-h-16 max-h-80 overflow-auto text-muted-foreground bg-background-foreground p-4 border rounded-md"
+          className="w-full min-h-16 max-h-80 overflow-auto rounded-xl border border-white/10 bg-white/[0.04] p-4 text-white/70"
         >
           <div className="space-y-2 text-sm">
             <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>

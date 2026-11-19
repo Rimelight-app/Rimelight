@@ -18,7 +18,15 @@ export function initAutoUpdater() {
   // IPC Handlers
   ipcMain.handle(IpcChannels.CheckForUpdates, async () => {
     try {
-      return await autoUpdater.checkForUpdates()
+      const result = await autoUpdater.checkForUpdates()
+      if (!result) return null
+      // Send plain data only: the full result also carries a cancellation
+      // token and a download promise, which cannot cross IPC.
+      return {
+        isUpdateAvailable: result.isUpdateAvailable,
+        updateInfo: result.updateInfo,
+        versionInfo: result.versionInfo,
+      }
     } catch (e) {
       console.error('Failed to check for updates:', e)
       return null

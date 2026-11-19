@@ -102,12 +102,31 @@ jobs:
           path: release
           merge-multiple: true
 
+      # The release text is this version's CHANGELOG section. The app's
+      # update dialog shows it when it offers the update.
+      - name: Release notes from CHANGELOG
+        if: steps.tag.outputs.publish == 'true'
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          VERSION="${TAG#v}"
+          awk -v v="$VERSION" '
+            index($0, "## [" v "]") == 1 { grab = 1; next }
+            grab && /^## \[/ { exit }
+            grab { print }
+          ' CHANGELOG.md > release-notes.md
+          if ! grep -q '[^[:space:]]' release-notes.md; then
+            echo "See CHANGELOG.md for details." > release-notes.md
+          fi
+          cat release-notes.md
+
       - uses: softprops/action-gh-release@v2
         if: steps.tag.outputs.publish == 'true'
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: ClearPlay ${{ steps.tag.outputs.tag }}
+          body_path: release-notes.md
           files: |
             release/*
             themes/symfonium/ClearPlay-Glass.json
