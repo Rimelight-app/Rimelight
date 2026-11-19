@@ -2,14 +2,33 @@ import { useCallback, useEffect, useRef } from 'react'
 import { EQ_BANDS, useAudioFx } from '@/store/audio-fx.store'
 import { usePlayerMediaType, useReplayGainState } from '@/store/player.store'
 import { logger } from '@/utils/logger'
+import { resolveOutputDevice } from '@/utils/output-device'
 import { ReplayGainParams } from '@/utils/replayGain'
 
 type Ctx = AudioContext & { setSinkId?: (id: string) => Promise<void> }
 
-/** The live context, for the output info readout in Settings. */
-export const audioEngine: { ctx: Ctx | null } = { ctx: null }
+/**
+ * The live context (for the output readout in Settings) and the last node of
+ * the graph, which the Now Playing visualizer listens to.
+ */
+export const audioEngine: { ctx: Ctx | null; tap: AudioNode | null } = {
+  ctx: null,
+  tap: null,
+}
 
 const dbToGain = (db: number) => 10 ** (db / 20)
+
+/** Routes the context to the saved output device (see output-device.ts). */
+function applySink(ctx: Ctx) {
+  if (!ctx.setSinkId) return
+  resolveOutputDevice()
+    .then((sink) => {
+      const current = (ctx as Ctx & { sinkId?: string }).sinkId ?? ''
+      if (current === sink || ctx.state === 'closed') return
+      return ctx.setSinkId?.(sink)
+    })
+    .catch((e) => logger.error('setSinkId failed', e))
+}
 
 /**
  * Playback graph (native Web Audio, Chromium):
@@ -30,8 +49,7 @@ export function useAudioContext(audio: HTMLAudioElement | null) {
   const applyFx = useCallback(() => {
     const ctx = audioContextRef.current
     if (!ctx) return
-    const { eqEnabled, eqGains, preamp, mono, outputDevice } =
-      useAudioFx.getState()
+    const { eqEnabled, eqGains, preamp, mono } = useAudioFx.getState()
     const t = ctx.currentTime
     eqRef.current.forEach((f, i) => {
       f.gain.setTargetAtTime(eqEnabled ? (eqGains[i] ?? 0) : 0, t, 0.03)
@@ -42,10 +60,7 @@ export function useAudioContext(audio: HTMLAudioElement | null) {
       0.03,
     )
     if (monoRef.current) monoRef.current.channelCount = mono ? 1 : 2
-    if (ctx.setSinkId) {
-      const sink = outputDevice === 'default' ? '' : outputDevice
-      ctx.setSinkId(sink).catch((e) => logger.error('setSinkId failed', e))
-    }
+    applySink(ctx)
   }, [])
 
   const setupAudioContext = useCallback(() => {
@@ -94,12 +109,24 @@ export function useAudioContext(audio: HTMLAudioElement | null) {
         node = next
       }
       node.connect(ctx.destination)
+      audioEngine.tap = node
       applyFx()
     }
   }, [audio, isSong, replayGainError, applyFx])
 
   // Re-apply whenever the effect settings change.
   useEffect(() => useAudioFx.subscribe(() => applyFx()), [applyFx])
+
+  // A saved device that is plugged in later (USB DAC, headphones) is picked
+  // up without a restart.
+  useEffect(() => {
+    const onChange = () => {
+      if (audioContextRef.current) applySink(audioContextRef.current)
+    }
+    navigator.mediaDevices?.addEventListener('devicechange', onChange)
+    return () =>
+      navigator.mediaDevices?.removeEventListener('devicechange', onChange)
+  }, [])
 
   const resumeContext = useCallback(async () => {
     if (!isSong) return
@@ -152,6 +179,7 @@ export function useAudioContext(audio: HTMLAudioElement | null) {
     ]) {
       n?.disconnect()
     }
+    audioEngine.tap = null
     sourceNodeRef.current = null
     gainNodeRef.current = null
     eqRef.current = []

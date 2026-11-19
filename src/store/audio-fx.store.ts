@@ -26,6 +26,8 @@ interface AudioFxState {
   mono: boolean
   speed: number
   outputDevice: string
+  /** Name of the chosen device, to find it again when its id changes. */
+  outputDeviceLabel: string
   set: (patch: Partial<Omit<AudioFxState, 'set' | 'applyPreset'>>) => void
   applyPreset: (name: string) => void
 }
@@ -41,6 +43,7 @@ export const useAudioFx = create<AudioFxState>()(
       mono: false,
       speed: 1,
       outputDevice: 'default',
+      outputDeviceLabel: '',
       set: (patch) => set(patch),
       applyPreset: (name) =>
         set({

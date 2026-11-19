@@ -15,16 +15,18 @@ import { Switch } from '@/app/components/ui/switch'
 import { audioEngine } from '@/app/hooks/use-audio-context'
 import { cn } from '@/lib/utils'
 import { EQ_BANDS, EQ_PRESETS, useAudioFx } from '@/store/audio-fx.store'
+import { listOutputDevices, resolveOutputDevice } from '@/utils/output-device'
 import { SettingSelect } from './controls'
 
 function useOutputDevices() {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   useEffect(() => {
     const load = () =>
-      navigator.mediaDevices
-        ?.enumerateDevices()
-        .then((all) => setDevices(all.filter((d) => d.kind === 'audiooutput')))
-        .catch(() => setDevices([]))
+      listOutputDevices().then((list) => {
+        setDevices(list)
+        // Brings a saved id up to date if the device got a new one.
+        resolveOutputDevice()
+      })
     load()
     navigator.mediaDevices?.addEventListener('devicechange', load)
     return () =>
@@ -140,7 +142,13 @@ export function SoundSettings() {
                   ? outputDevice
                   : 'default'
               }
-              onChange={(v) => set({ outputDevice: v })}
+              onChange={(v) =>
+                set({
+                  outputDevice: v,
+                  outputDeviceLabel:
+                    devices.find((d) => d.deviceId === v)?.label ?? '',
+                })
+              }
               options={[
                 { value: 'default', label: t(`${k}.device.system`) },
                 ...devices
