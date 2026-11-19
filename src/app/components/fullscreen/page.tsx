@@ -166,7 +166,7 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
+            <div className="cp-fs-title min-w-0 flex-1">
               <h2 className="truncate text-3xl font-bold tracking-tight 2xl:text-4xl">
                 {song.title}
               </h2>
@@ -175,7 +175,11 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
                   {song.artist}
                   {song.album ? ` · ${song.album}` : ''}
                 </p>
-                <SongRating song={song} size="md" className="ml-auto" />
+                <SongRating
+                  song={song}
+                  size="md"
+                  className="cp-fs-stars ml-auto"
+                />
               </div>
             </div>
             {!hideFavorites && <LikeButton />}

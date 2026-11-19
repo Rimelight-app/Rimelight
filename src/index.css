@@ -638,3 +638,20 @@ div[data-test-id="table-row"]:hover {
 .cp-playpause path {
   transition: d 180ms cubic-bezier(0.2, 0, 0, 1);
 }
+
+/* Star ratings make way when there is not enough room: in the player bar
+   (small windows) and next to the artist in the fullscreen player. */
+.cp-track-meta,
+.cp-fs-title {
+  container-type: inline-size;
+}
+@container (max-width: 229px) {
+  .cp-track-stars {
+    display: none;
+  }
+}
+@container (max-width: 299px) {
+  .cp-fs-stars {
+    display: none;
+  }
+}

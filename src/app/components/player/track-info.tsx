@@ -124,9 +124,14 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
           </Link>
         </MarqueeTitle>
         <TrackInfoArtistsLinks song={song} />
-        <div className="mt-1 flex min-w-0 items-center gap-2">
+        {/* The stars hide when the bar is too narrow (see .cp-track-meta). */}
+        <div className="cp-track-meta mt-1 flex min-w-0 items-center gap-2">
           <TrackQuality song={song} />
-          <SongRating song={song} size="xs" className="-ml-[1.5px]" />
+          <SongRating
+            song={song}
+            size="xs"
+            className="cp-track-stars -ml-[1.5px]"
+          />
         </div>
       </div>
     </Fragment>
