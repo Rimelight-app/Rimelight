@@ -59,6 +59,11 @@ for (const step of steps) {
     if (kind === 'shot') await shot(arg)
     else if (kind === 'go') await go(arg)
     else if (kind === 'click') await win.locator(arg).first().click()
+    else if (kind === 'hover') await win.locator(arg).first().hover()
+    else if (kind === 'rclick') await win.locator(arg).first().click({ button: 'right' })
+    else if (kind === 'rclicktext') await win.getByText(arg, { exact: true }).first().click({ button: 'right' })
+    else if (kind === 'mouse') { const [x, y] = arg.split(',').map(Number); await win.mouse.move(x, y) }
+    else if (kind === 'snap') { await win.screenshot({ path: path.join(out, `${arg}.png`) }); console.log('saved', arg) }
     else if (kind === 'clicktext') await win.getByText(arg, { exact: true }).first().click()
     else if (kind === 'dblclicktext') await win.getByText(arg, { exact: true }).first().dblclick()
     else if (kind === 'key') await win.keyboard.press(arg)
