@@ -2,6 +2,29 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
+## [0.4.3] - 2026-11-19
+
+### Added
+- **Music on this computer**: no server needed. Choose "Use music on this computer" on the login page (or Settings → Servers → Music on this computer), add folders, and the whole app works with them: albums, artists, songs, genres, search, cover art, synced lyrics from `.lrc` files or tags, likes, ratings, play counts, playlists and queue sync. It appears as "This computer" in the server list, so you can switch between it and Navidrome. Folders are rescanned at start (only new or changed files are read), or with Rescan. ALAC `.m4a` files don't play, and the bitrate cap doesn't apply here.
+- **Drag and drop in the queue**: drag a song in the queue panel (or the fullscreen queue) to a new place; the list scrolls at the edges and Escape cancels.
+- **Visualizer** on the Now Playing page: Settings → Appearance → Visualizer on Now Playing (off by default). White spectrum bars with a quiet peak dot, drawn only while the page is open and music plays.
+
+### Changed
+- The fullscreen player's moving backdrop is drawn on a small canvas instead of five window-sized layers, which cuts GPU work while it is open. In the test rig it went from about 10–13 to 16–19 frames per second.
+- Settings: the "Language and region" tab is now just "Language".
+
+### Removed
+- The Symfonium style and icon pack (and their release files).
+
+### Fixed
+- **Play next** did nothing for a song that was already in the queue (e.g. a later song on the same album). It now moves the song right after the current one; Add to queue moves it to the end. Adding songs no longer starts playback when you were paused.
+- **Back/forward** buttons in the header were disabled while the lyrics or queue panel was open. The mouse back/forward buttons now work on Windows and Linux too (not only macOS); Back closes the fullscreen player first.
+- **Output device** wasn't remembered after restarting the app (seen on Windows): Chromium gives devices new ids each launch, so the device is now also found by its name. A device plugged in later is picked up without a restart.
+- Lyrics from LRCLIB were never tried when the server had no lyrics for a song.
+
+### Notes
+- The fullscreen slowdown after about 15 minutes couldn't be reproduced in the test rig (a 7-minute run showed no growth in memory, page elements or listeners). The most likely cause is sustained GPU load, which the canvas backdrop above reduces. If it still happens, "Reduce visual effects" (Settings → Appearance) lowers the load further.
+
 ## [0.4.2] - 2026-11-19
 
 ### Added
