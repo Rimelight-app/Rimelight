@@ -12,22 +12,31 @@ export function loadCover(url: string): Promise<HTMLImageElement> {
   })
 }
 
+/** A tiny, pre-blurred, more saturated copy of the cover on a canvas. */
+export function blurredCoverCanvas(
+  img: HTMLImageElement,
+  size = 48,
+  blur = 3,
+): HTMLCanvasElement | null {
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+  ctx.filter = `blur(${blur}px) saturate(160%)`
+  // Draw slightly oversized so the blur has no dark edges.
+  const pad = blur * 3
+  ctx.drawImage(img, -pad, -pad, size + pad * 2, size + pad * 2)
+  return canvas
+}
+
 /**
  * Returns a tiny, pre-blurred copy of the cover as a data URL. Stretched to
  * window size by CSS it looks like a heavy blur, but costs almost nothing to
  * paint compared with a live `filter: blur()` on a full-window layer.
  */
 export function blurredCoverUrl(img: HTMLImageElement, size = 48, blur = 3) {
-  const canvas = document.createElement('canvas')
-  canvas.width = size
-  canvas.height = size
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return img.src
-  ctx.filter = `blur(${blur}px) saturate(160%)`
-  // Draw slightly oversized so the blur has no dark edges.
-  const pad = blur * 3
-  ctx.drawImage(img, -pad, -pad, size + pad * 2, size + pad * 2)
-  return canvas.toDataURL('image/png')
+  return blurredCoverCanvas(img, size, blur)?.toDataURL('image/png') ?? img.src
 }
 
 /** Picks up to four distinct, reasonably saturated colours from a cover. */
