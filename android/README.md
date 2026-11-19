@@ -48,10 +48,13 @@ app/src/main/java/com/tonihk00/clearplay/
 ## Releases
 
 `.github/workflows/android.yml` runs on changes under `android/`. A tag `android-vX.Y.Z`
-publishes `ClearPlay-android-X.Y.Z.apk` as a GitHub release that is **not** marked latest,
+publishes `ClearPlay-X.Y.Z.apk` as a GitHub release that is **not** marked latest,
 so the desktop updater keeps seeing desktop releases.
 
-Release signing uses these repository secrets: `ANDROID_KEYSTORE_BASE64`,
+Every release is signed with the same key, so each APK installs over the previous one
+(versionCode is the workflow run number). A tag build fails if the key is missing.
+The key lives outside the repo (`~/clearplay-android-signing/` on hp-server; back it up:
+losing it means the next APK can't update the installed app). Repository secrets: `ANDROID_KEYSTORE_BASE64`,
 `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
 
 ## Stages

@@ -53,9 +53,9 @@ jobs:
       - name: Unit and screenshot tests
         run: ./gradlew --no-daemon testDebugUnitTest
 
-      # Release signing key from repository secrets (base64 keystore). Without the
-      # secrets the APK is signed with a throwaway debug key and cannot update an
-      # installed release build.
+      # Every release is signed with the same key (repository secrets) so a new
+      # APK installs over the previous one; versionCode is the run number, which
+      # always grows.
       - name: Signing key
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -63,8 +63,12 @@ jobs:
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
             echo "CP_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          elif [[ "${GITHUB_REF}" == refs/tags/android-v* ]]; then
+            # A release signed with any other key could not update the installed app.
+            echo "::error::ANDROID_KEYSTORE_BASE64 is not set; refusing to publish an APK that cannot update earlier versions."
+            exit 1
           else
-            echo "::warning::ANDROID_KEYSTORE_BASE64 is not set; the release APK is debug-signed."
+            echo "::warning::ANDROID_KEYSTORE_BASE64 is not set; this test APK is debug-signed."
           fi
 
       - name: Build release APK
@@ -77,7 +81,7 @@ jobs:
             -PcpVersionName="${{ steps.ver.outputs.name }}" \
             -PcpVersionCode="${{ steps.ver.outputs.code }}"
           mkdir -p ../dist
-          cp app/build/outputs/apk/release/app-release.apk "../dist/ClearPlay-android-${{ steps.ver.outputs.name }}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "../dist/ClearPlay-${{ steps.ver.outputs.name }}.apk"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -101,7 +105,7 @@ jobs:
       # which the desktop updater and the README badge read.
       - uses: softprops/action-gh-release@v2
         with:
-          name: ClearPlay for Android ${{ github.ref_name }}
+          name: ClearPlay ${{ github.ref_name }}
           files: dist/*.apk
           make_latest: 'false'
           generate_release_notes: true

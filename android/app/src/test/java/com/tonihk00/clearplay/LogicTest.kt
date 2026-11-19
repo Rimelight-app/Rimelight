@@ -41,4 +41,12 @@ class LogicTest {
         val url = FakeServer.client.streamUrl("x", 320)
         assertTrue(url.contains("/rest/stream?") && url.contains("maxBitRate=320") && !url.contains("p="))
     }
+
+    @Test fun errorsNeverShowTheTokenUrl() {
+        val msg = com.tonihk00.clearplay.ui.login.friendlyError(
+            io.ktor.client.network.sockets.ConnectTimeoutException("Connect timeout has expired [url=http://x/rest/ping?u=a&t=secret]"),
+        )
+        assertTrue(!msg.contains("t=") && !msg.contains("http"))
+        assertEquals("Wrong username or password.", com.tonihk00.clearplay.ui.login.friendlyError(com.tonihk00.clearplay.data.api.SubsonicException(40, "Wrong username or password")))
+    }
 }

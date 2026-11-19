@@ -64,7 +64,7 @@ fun LoginScreen(onLoggedIn: suspend (ServerConfig) -> Unit, initialError: String
             val cfg = ServerConfig.fromPassword(url, user, password)
             runCatching { SubsonicClient(cfg).ping() }
                 .onSuccess { onLoggedIn(cfg) }
-                .onFailure { error = it.message ?: "Couldn't connect" }
+                .onFailure { error = friendlyError(it) }
             busy = false
         }
     }
@@ -112,4 +112,17 @@ fun LoginScreen(onLoggedIn: suspend (ServerConfig) -> Unit, initialError: String
             PrimaryPill(if (busy) "Connecting…" else "Connect", null, { submit() }, Modifier.align(Alignment.CenterHorizontally))
         }
     }
+}
+
+/** Short, readable errors; never the request URL (it carries the auth token). */
+fun friendlyError(e: Throwable): String = when {
+    e is com.tonihk00.clearplay.data.api.SubsonicException && (e.code == 40 || e.code == 41) -> "Wrong username or password."
+    e is com.tonihk00.clearplay.data.api.SubsonicException && e.code == -1 -> "That address isn't a Navidrome or Subsonic server."
+    e is com.tonihk00.clearplay.data.api.SubsonicException -> e.message
+    e.javaClass.simpleName.contains("Timeout") -> "The server didn't answer. Check the address and that you're on the right network."
+    e is java.net.UnknownHostException -> "Can't find that server address."
+    e is java.net.ConnectException -> "The server refused the connection. Check the address and port."
+    e is javax.net.ssl.SSLException -> "Secure connection failed. Try http:// or check the certificate."
+    e is kotlinx.serialization.SerializationException -> "That address isn't a Navidrome or Subsonic server."
+    else -> "Couldn't connect to the server."
 }

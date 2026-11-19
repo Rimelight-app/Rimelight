@@ -70,7 +70,7 @@ fun <T> rememberLoad(vararg keys: Any?, block: suspend SubsonicClient.() -> T): 
         value = if (client == null) {
             Load.Failed("Not connected")
         } else {
-            runCatching { client.block() }.fold({ Load.Done(it) }, { Load.Failed(it.message ?: "Couldn't load") })
+            runCatching { client.block() }.fold({ Load.Done(it) }, { Load.Failed(com.tonihk00.clearplay.ui.login.friendlyError(it)) })
         }
     }
 }
