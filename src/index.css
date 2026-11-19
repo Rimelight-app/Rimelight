@@ -633,3 +633,8 @@ div[data-test-id="table-row"]:hover {
     scroll-behavior: auto !important;
   }
 }
+
+/* Play/pause morph (PlayPauseIcon): quick, standard easing. */
+.cp-playpause path {
+  transition: d 180ms cubic-bezier(0.2, 0, 0, 1);
+}

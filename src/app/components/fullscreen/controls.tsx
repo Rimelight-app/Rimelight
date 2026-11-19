@@ -1,13 +1,7 @@
 import { clsx } from 'clsx'
-import {
-  Pause,
-  Play,
-  Repeat,
-  Shuffle,
-  SkipBack,
-  SkipForward,
-} from 'lucide-react'
+import { Repeat, Shuffle, SkipBack, SkipForward } from 'lucide-react'
 import { Fragment } from 'react/jsx-runtime'
+import { PlayPauseIcon } from '@/app/components/icons/play-pause-icon'
 import RepeatOne from '@/app/components/icons/repeat-one'
 import { Button } from '@/app/components/ui/button'
 import {
@@ -66,11 +60,11 @@ export function FullscreenControls() {
         style={{ ...buttonsStyle.style }}
         onClick={() => togglePlayPause()}
       >
-        {isPlaying ? (
-          <Pause className={buttonsStyle.mainIcon} strokeWidth={1} />
-        ) : (
-          <Play className={buttonsStyle.mainIcon} />
-        )}
+        <PlayPauseIcon
+          playing={isPlaying}
+          strokeWidth={1.5}
+          className={buttonsStyle.mainIcon}
+        />
       </Button>
       <Button
         size="icon"

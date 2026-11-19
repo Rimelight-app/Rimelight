@@ -1,7 +1,5 @@
 import clsx from 'clsx'
 import {
-  Pause,
-  Play,
   Repeat,
   RotateCcwIcon,
   RotateCwIcon,
@@ -16,6 +14,7 @@ import {
   useEffect,
 } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PlayPauseIcon } from '@/app/components/icons/play-pause-icon'
 import RepeatOne from '@/app/components/icons/repeat-one'
 import { Button } from '@/app/components/ui/button'
 import { SimpleTooltip } from '@/app/components/ui/simple-tooltip'
@@ -160,11 +159,7 @@ export function PlayerControls({
         data-testid={`player-button-${isPlaying ? 'pause' : 'play'}`}
         tooltip={playTooltip}
       >
-        {isPlaying ? (
-          <Pause className="fill-primary-foreground" />
-        ) : (
-          <Play className="fill-primary-foreground" />
-        )}
+        <PlayPauseIcon playing={isPlaying} />
       </PlayerButton>
 
       {isPodcast && (

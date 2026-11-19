@@ -1,13 +1,6 @@
 import { clsx } from 'clsx'
-import {
-  Heart,
-  Pause,
-  Play,
-  Repeat,
-  Shuffle,
-  SkipBack,
-  SkipForward,
-} from 'lucide-react'
+import { Heart, Repeat, Shuffle, SkipBack, SkipForward } from 'lucide-react'
+import { PlayPauseIcon } from '@/app/components/icons/play-pause-icon'
 import RepeatOne from '@/app/components/icons/repeat-one'
 import { Button } from '@/app/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -78,17 +71,11 @@ export function MiniPlayerControls() {
         style={{ ...buttonsStyle.style }}
         onClick={() => togglePlayPause()}
       >
-        {isPlaying ? (
-          <Pause
-            className={buttonsStyle.mainIcon}
-            size={20}
-            strokeWidth={0.75}
-            strokeLinecap="square"
-            strokeLinejoin="round"
-          />
-        ) : (
-          <Play className={buttonsStyle.mainIcon} size={18} strokeWidth={1} />
-        )}
+        <PlayPauseIcon
+          playing={isPlaying}
+          strokeWidth={1.5}
+          className={cn(buttonsStyle.mainIcon, 'size-[18px]')}
+        />
       </Button>
       <Button
         size="icon"
