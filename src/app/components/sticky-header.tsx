@@ -65,6 +65,9 @@ export function StickyHeader({
 
       const calculatedOpacity = (scrollTop - startFade) / (endFade - startFade)
       setOpacity(calculatedOpacity)
+      // The bar's content follows over the second half of the fade. Before,
+      // it only changed at the ends, so mid-scroll the bar showed up empty.
+      setContentOpacity(Math.max(0, calculatedOpacity * 2 - 1))
     }
 
     scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
@@ -100,7 +103,7 @@ export function StickyHeader({
         <div className="glass-panel glass-blur rounded-[20px] h-[64px]">
           <div
             className={cn(
-              'flex items-center gap-4 w-full h-full px-4 transition-opacity duration-500 delay-150',
+              'flex items-center gap-4 w-full h-full px-4 transition-opacity duration-150 ease-out',
               contentClassName,
             )}
             style={{ opacity: contentOpacity }}
