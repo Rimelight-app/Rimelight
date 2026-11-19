@@ -2,17 +2,18 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
-## [Unreleased]
+## [0.4.2] - 2026-11-19
 
 ### Added
 - ClearPlay Glass **full application style** for Symfonium (`themes/symfonium/ClearPlay-Glass-Style.json`), based on TIDAL For Symfonium by Myke: translucent glass colours, rounder player and covers, ClearPlay logo.
 - Symfonium style now uses the Apple Music for Symfonium arrangement (by RoyalGuard): Home, Playlists, Library and Search tabs, large home rows, Apple-style album/artist/playlist pages; graphite pages instead of pure black; the ClearPlay logo as the home title.
 - **ClearPlay icon pack for Symfonium 16** (`symfonium-iconpack/`): the desktop app's Lucide icons for 375 Symfonium icons, built by GitHub Actions and published on the rolling `symfonium` release with the style files.
-- **Star ratings** (1–5, saved to Navidrome): quiet white stars in the player bar, the fullscreen player, and the song menus (right-click or ⋯). Click the same star again to clear it; with several songs selected, the menu rates them all.
+- **Star ratings** (1–5, saved to Navidrome): quiet white stars in the player bar, the fullscreen player, and the song menus (right-click or ⋯). Click the same star again to clear it; with several songs selected, the menu rates them all. In small windows the stars leave the player bar and the fullscreen player to make room (the menus always have them).
 - **Shuffle library**: plays the whole library in random order (Library → Songs, or `Ctrl+K` → Shuffle library) and keeps adding random songs when it reaches the end.
 - **Clear queue keeps the playing song**: clearing the queue (new button in the queue panel, or the player-bar queue menu) removes everything except the current song, which keeps playing. Clearing again stops it.
 
 ### Changed
+- The play/pause button morphs between its two icons (a quick 180 ms shape change) in the player bar, the fullscreen player and the mini player.
 - Smoother, quicker motion: pages fade in when you navigate, player-bar buttons respond when pressed, hearts and stars pop when filled, tooltips appear sooner, and a few slow fades are shorter. The system "reduce motion" setting is now respected everywhere.
 - The fullscreen player keeps its content while it slides away, instead of closing as an empty gradient.
 - Update notes in the app's update dialog now come from this changelog.
