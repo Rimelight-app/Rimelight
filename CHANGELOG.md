@@ -8,6 +8,22 @@ All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 - ClearPlay Glass **full application style** for Symfonium (`themes/symfonium/ClearPlay-Glass-Style.json`), based on TIDAL For Symfonium by Myke: translucent glass colours, rounder player and covers, ClearPlay logo.
 - Symfonium style now uses the Apple Music for Symfonium arrangement (by RoyalGuard): Home, Playlists, Library and Search tabs, large home rows, Apple-style album/artist/playlist pages; graphite pages instead of pure black; the ClearPlay logo as the home title.
 - **ClearPlay icon pack for Symfonium 16** (`symfonium-iconpack/`): the desktop app's Lucide icons for 375 Symfonium icons, built by GitHub Actions and published on the rolling `symfonium` release with the style files.
+- **Star ratings** (1–5, saved to Navidrome): quiet white stars in the player bar, the fullscreen player, and the song menus (right-click or ⋯). Click the same star again to clear it; with several songs selected, the menu rates them all.
+- **Shuffle library**: plays the whole library in random order (Library → Songs, or `Ctrl+K` → Shuffle library) and keeps adding random songs when it reaches the end.
+- **Clear queue keeps the playing song**: clearing the queue (new button in the queue panel, or the player-bar queue menu) removes everything except the current song, which keeps playing. Clearing again stops it.
+
+### Changed
+- Smoother, quicker motion: pages fade in when you navigate, player-bar buttons respond when pressed, hearts and stars pop when filled, tooltips appear sooner, and a few slow fades are shorter. The system "reduce motion" setting is now respected everywhere.
+- The fullscreen player keeps its content while it slides away, instead of closing as an empty gradient.
+- Update notes in the app's update dialog now come from this changelog.
+
+### Fixed
+- Hovering the volume or progress bar in the fullscreen player showed an empty white bubble; the value now shows in a small dark pill, and the progress bubble follows the cursor from the first hover.
+- The frosted album bar appeared empty while scrolling part-way down an album or playlist.
+- Liking or rating the playing song could restart it when the media cache is off.
+- The player bar re-rendered on every progress tick.
+- Turning shuffle off after playing a single song could leave the queue pointing at a missing song.
+- Mini player (web): the play button icon and the hover overlay were invisible on the glass theme.
 
 ## [0.4.1] - 2026-11-19
 

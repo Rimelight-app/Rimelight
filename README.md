@@ -42,7 +42,8 @@ You host your own music. Your player should feel as good as the streaming apps, 
 ## Features
 
 **Listening**
-- Albums, artists, songs, playlists, favourites, genres; queue, shuffle, repeat; likes
+- Albums, artists, songs, playlists, favourites, genres; queue, shuffle, repeat; likes and 1–5 star ratings
+- Shuffle the whole library; clearing the queue keeps the song that's playing
 - Time-synced lyrics from your server (`.lrc` files or embedded); LRCLIB lookup is optional
 - Audio quality in the player bar: format, bit depth, sample rate, bitrate, plus a Hi-Res badge
 - 10-band equalizer with presets and preamp, output device selection, mono, playback speed
@@ -59,8 +60,9 @@ You host your own music. Your player should feel as good as the streaming apps, 
 
 **Desktop**
 - System media controls: MPRIS on Linux; media keys and SMTC on Windows (not yet confirmed on Windows)
-- Tray icon, mini player, keyboard shortcuts (`Ctrl+K` quick search)
+- Tray icon, keyboard shortcuts (`Ctrl+K` quick search and commands)
 - Reduce-effects mode for older GPUs; adjustable background strength
+- Checks GitHub for a new version at start and offers to install it
 
 ## Download
 
