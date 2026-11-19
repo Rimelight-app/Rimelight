@@ -26,10 +26,10 @@ export function QueueItem({
         'flex items-center w-[calc(100%-10px)] h-16 text-sm rounded-2xl cursor-pointer',
         'text-white/85 transition-colors duration-200 hover:bg-white/[0.08]',
         'data-[state=active]:bg-white/[0.14] data-[state=active]:text-white data-[state=active]:ring-1 data-[state=active]:ring-white/10',
+        'data-[dragging]:bg-white/[0.16] data-[dragging]:ring-1 data-[dragging]:ring-white/15 data-[dragging]:shadow-[0_12px_32px_-12px_rgb(0_0_0/0.8)]',
       ])}
       style={{
         backfaceVisibility: 'visible',
-        willChange: 'background-color',
         ...style,
       }}
       {...props}
