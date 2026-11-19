@@ -129,6 +129,4 @@ jobs:
           body_path: release-notes.md
           files: |
             release/*
-            themes/symfonium/ClearPlay-Glass.json
-            themes/symfonium/ClearPlay-Glass-Style.json
           generate_release_notes: true

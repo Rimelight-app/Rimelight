@@ -74,7 +74,6 @@ Get the latest build from **[Releases](https://github.com/tonihk00/ClearPlay/rel
 | Debian, Ubuntu, Mint | `ClearPlay-*.deb` | `sudo apt install ./ClearPlay-*.deb` |
 | Fedora, RHEL, openSUSE | `ClearPlay-*.rpm` | `sudo dnf install ./ClearPlay-*.rpm` |
 | Windows 10/11 | `ClearPlay-*-win-x64.exe` | run the installer* |
-| Android (Symfonium) | `ClearPlay-Glass-Style.json` (full style), `ClearPlay-Icons-Symfonium.apk` (icon pack) or `ClearPlay-Glass.json` (colours) | see [themes/symfonium](themes/symfonium/README.md) |
 
 <sub>*The Windows installer isn't code-signed, so SmartScreen may warn on first run: More info → Run anyway.</sub>
 

@@ -24,8 +24,3 @@ Dependencies are installed from npm and keep their own licences; see
 
 The ClearPlay logo (`build/icon.svg`, `src/app/components/glass/logo.tsx`) was supplied by the project owner.
 
-
-## Symfonium icon pack (`symfonium-iconpack/`)
-
-- Icons from [Lucide](https://lucide.dev), ISC licence (parts derived from Feather, MIT); see `symfonium-iconpack/LICENSE-Lucide.txt`.
-- Project structure from [symfonium-icon-pack-template](https://github.com/Tolriq/symfonium-icon-pack-template), MIT licence; see `symfonium-iconpack/LICENSE`.
