@@ -102,26 +102,22 @@ function SliderTooltip({
   position,
   ...props
 }: SliderTooltipProps) {
-  const contentRef = React.useRef<HTMLDivElement | null>(null)
-
-  const alignOffset = React.useMemo(() => {
-    if (!position || !contentRef.current) return undefined
-
-    const contentWidth = contentRef.current.getBoundingClientRect().width
-    return position - contentWidth / 2
-  }, [position])
+  // Follows the cursor: the bubble's left edge goes to the cursor and the
+  // bubble is shifted back by half its own width. (Measuring the bubble
+  // failed on the first hover, before it existed, so it sat at the start.)
+  const alignOffset = position || undefined
 
   return (
     <TooltipProvider delayDuration={0}>
       <Tooltip open={open}>
         <TooltipTrigger asChild>{children}</TooltipTrigger>
         <TooltipContent
-          ref={contentRef}
+          // One small dark glass pill for both variants. The old colours
+          // came from tokens that are transparent on the glass theme, which
+          // left an empty white (or invisible) bubble.
           className={clsx(
-            'px-2 py-1',
-            variant === 'default' && 'bg-background',
-            variant === 'secondary' &&
-              'bg-secondary-foreground border-muted-foreground/50 text-secondary font-semibold text-base',
+            'rounded-full border-white/10 bg-popover px-2.5 py-1 text-xs font-medium leading-none tabular-nums text-white shadow-[0_8px_24px_-10px_rgb(0_0_0/0.7)]',
+            variant === 'secondary' && 'text-[13px]',
           )}
           sticky="always"
           hideWhenDetached={true}
@@ -130,7 +126,10 @@ function SliderTooltip({
           onMouseUp={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
-          style={{ cursor: 'default' }}
+          style={{
+            cursor: 'default',
+            ...(alignOffset !== undefined ? { translate: '-50% 0' } : {}),
+          }}
           alignOffset={alignOffset}
           {...props}
         >

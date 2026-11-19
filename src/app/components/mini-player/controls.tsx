@@ -150,8 +150,10 @@ export function MiniPlayerLikeButton() {
 }
 
 const buttonsStyle = {
-  main: 'w-9 h-9 p-0 rounded-full bg-secondary-foreground hover:scale-105 transition-transform will-change-transform',
-  mainIcon: 'text-secondary fill-secondary',
+  main: 'w-9 h-9 p-0 rounded-full bg-white hover:bg-white hover:scale-105 active:scale-95 transition-transform will-change-transform',
+  // Dark icon on the white button (text-secondary is a 10% white tint on
+  // the glass theme, which made the icon invisible).
+  mainIcon: 'text-[#121216] fill-[#121216]',
   secondary:
     'relative w-9 h-9 p-0 rounded-full text-secondary-foreground hover:text-secondary-foreground data-[state=active]:text-primary hover:bg-transparent hover:scale-110 transition-transform will-change-transform',
   secondaryIconFilled: 'text-secondary-foreground fill-secondary-foreground',
