@@ -70,7 +70,11 @@ export function Player() {
   const { isSong, isRadio, isPodcast } = usePlayerMediaType()
   const loopState = usePlayerLoop()
   const audioPlayerRef = usePlayerRef()
-  const currentPlaybackRate = usePlayerStore().playerState.currentPlaybackRate
+  // Select only the rate: reading the whole store re-rendered the player on
+  // every progress tick.
+  const currentPlaybackRate = usePlayerStore(
+    (state) => state.playerState.currentPlaybackRate,
+  )
   const { replayGainType, replayGainPreAmp, replayGainDefaultGain } =
     useReplayGainState()
 
@@ -84,21 +88,33 @@ export function Player() {
   const maxBitRate = useClearPlaySettings((s) => s.maxBitRate)
   const streamFormat = useClearPlaySettings((s) => s.streamFormat)
 
+  const songBitRate = song?.bitRate ?? 0
+  const songSuffix = song?.suffix ?? ''
+
+  // Depends on primitives only: liking or rating the playing song replaces
+  // its object in the queue, and a new URL here would restart the track.
   const songStreamUrl = useMemo(() => {
     if (!songId) return ''
 
     const cacheBustToken = mediaCacheEnabled ? undefined : Date.now().toString()
     // Only ask the server to convert when the file is above the cap.
     const limit = Number(maxBitRate)
-    const convert = limit > 0 && (song.bitRate ?? 0) > limit
+    const convert = limit > 0 && songBitRate > limit
 
     return getSongStreamUrl(
       songId,
       convert ? maxBitRate : undefined,
-      convert ? streamFormat : ensureSupportForAlac(song.suffix),
+      convert ? streamFormat : ensureSupportForAlac(songSuffix),
       cacheBustToken,
     )
-  }, [songId, song, mediaCacheEnabled, maxBitRate, streamFormat])
+  }, [
+    songId,
+    songBitRate,
+    songSuffix,
+    mediaCacheEnabled,
+    maxBitRate,
+    streamFormat,
+  ])
 
   const getAudioRef = useCallback(() => {
     if (isRadio) return radioRef
@@ -219,7 +235,7 @@ export function Player() {
   }, [song, replayGainDefaultGain, replayGainPreAmp, replayGainType])
 
   return (
-    <footer className="glass-panel h-[76px] flex items-center fixed bottom-3 left-3 right-3 z-40 rounded-[22px]">
+    <footer className="cp-player-bar glass-panel h-[76px] flex items-center fixed bottom-3 left-3 right-3 z-40 rounded-[22px]">
       <div className="w-full h-full grid grid-cols-player gap-2 pl-3 pr-4">
         {/* Track Info */}
         <div className="flex items-center gap-2 w-full">
