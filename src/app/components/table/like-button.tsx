@@ -3,6 +3,7 @@ import { Heart } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { Button } from '@/app/components/ui/button'
+import { usePop } from '@/app/hooks/use-pop'
 import { useRefreshFavorites } from '@/app/hooks/use-refresh-favorites'
 import { subsonic } from '@/service/subsonic'
 import {
@@ -29,6 +30,7 @@ export function TableLikeButton({
   const { isRadio, isSong } = usePlayerMediaType()
   const { starCurrentSong, starSongInQueue } = usePlayerActions()
   const { refreshFavorites } = useRefreshFavorites()
+  const { popping, trigger } = usePop()
 
   useEffect(() => {
     if (type === 'artist') return
@@ -41,6 +43,7 @@ export function TableLikeButton({
 
   async function handleStarred() {
     const state = !isStarred
+    if (state) trigger()
 
     await subsonic.star.handleStarItem({
       id: entityId,
@@ -69,7 +72,11 @@ export function TableLikeButton({
       }}
     >
       <Heart
-        className={clsx('w-4 h-4', isStarred && 'text-red-500 fill-red-500')}
+        className={clsx(
+          'w-4 h-4',
+          isStarred && 'text-red-500 fill-red-500',
+          popping && 'cp-heart-pop',
+        )}
         strokeWidth={2}
       />
     </Button>

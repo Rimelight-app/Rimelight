@@ -118,7 +118,7 @@ function Hero() {
           key={song.id}
           src={getSimpleCoverArtUrl(song.coverArt, 'song', '500')}
           alt=""
-          className="size-full object-cover animate-in fade-in duration-500"
+          className="size-full object-cover animate-in fade-in duration-300"
         />
         <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100">
           <Maximize2 className="size-6" />

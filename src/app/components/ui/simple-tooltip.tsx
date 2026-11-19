@@ -23,7 +23,7 @@ export function SimpleTooltip({
   text,
   side = 'top',
   align = 'center',
-  delay = 700,
+  delay = 450,
   avoidCollisions = true,
   disabled = false,
 }: SimpleTooltipProps) {

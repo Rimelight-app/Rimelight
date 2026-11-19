@@ -81,7 +81,7 @@ export default function Genre() {
       <ListWrapper
         ref={buttonsRef}
         className={clsx(
-          'transition-opacity duration-500',
+          'transition-opacity duration-200',
           isSticky && 'opacity-0',
         )}
       >

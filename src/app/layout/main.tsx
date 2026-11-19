@@ -13,7 +13,10 @@ export function MainRoutes() {
   return (
     <main className="flex h-full">
       <ScrollArea id="main-scroll-area" className="w-full bg-transparent">
-        <Outlet />
+        {/* Keyed so each page gets a short fade-in when you navigate. */}
+        <div key={pathname} className="cp-page-in">
+          <Outlet />
+        </div>
       </ScrollArea>
     </main>
   )
