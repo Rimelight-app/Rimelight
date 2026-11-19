@@ -9,6 +9,8 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import com.tonihk00.clearplay.data.AppSettings
+import com.tonihk00.clearplay.data.ConnectionMonitor
+import com.tonihk00.clearplay.data.PhoneMusic
 import com.tonihk00.clearplay.data.Downloads
 import com.tonihk00.clearplay.data.ServerStore
 import com.tonihk00.clearplay.data.SongEdits
@@ -18,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +43,28 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
 
     val edits = SongEdits()
 
+    lateinit var phone: PhoneMusic
+        private set
+
+    /** Server reachability; offline means the library comes from downloads and phone music. */
+    val connection: ConnectionMonitor by lazy { ConnectionMonitor(this, appScope) { client } }
+
+    /**
+     * What the screens read: the server while it answers, otherwise ClearPlay downloads plus
+     * (if allowed) the phone's own music, laid out the same way.
+     */
+    @get:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+    val library: StateFlow<com.tonihk00.clearplay.data.api.MusicLibrary?> by lazy {
+        combine(session, connection.online, downloads.songs, phone.songs, settings.state) { s, online, dl, ph, st ->
+            val offlineSongs = dl.map(::withOfflineCover) + (if (st.phoneMusic) ph else emptyList())
+            when (s) {
+                is Session.Active -> if (online) s.client else com.tonihk00.clearplay.data.api.OfflineLibrary(offlineSongs, downloads::savedLyrics)
+                Session.Local -> com.tonihk00.clearplay.data.api.OfflineLibrary(offlineSongs, downloads::savedLyrics)
+                else -> null
+            }
+        }.stateIn(appScope, SharingStarted.Eagerly, null)
+    }
+
     lateinit var settings: AppSettings
         private set
 
@@ -49,6 +74,17 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
         Downloads(this, appScope).also { d ->
             appScope.launch { settings.state.collect { d.setWifiOnly(it.downloadWifiOnly) } }
         }
+    }
+
+    /** Last server address (kept after sign-out), for covers of downloads made before 1.2. */
+    val lastServerUrl: StateFlow<String?> by lazy { servers.lastUrl.stateIn(appScope, SharingStarted.Eagerly, null) }
+
+    /** Downloaded covers are found in the image cache by their server address ("srv:<base>|<id>"). */
+    fun withOfflineCover(song: com.tonihk00.clearplay.data.api.Song): com.tonihk00.clearplay.data.api.Song {
+        val art = song.coverArt ?: return song
+        if (song.isLocal || art.startsWith("srv:")) return song
+        val base = song.server ?: lastServerUrl.value ?: client?.server?.baseUrl ?: return song
+        return song.copy(coverArt = "srv:$base|$art")
     }
 
     /** Stream bitrate cap for the current network (Wi-Fi vs mobile data). */
@@ -65,14 +101,29 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
         instance = this
         servers = ServerStore(this)
         settings = AppSettings(this, appScope)
-        session = servers.active
-            .map { s -> if (s == null) Session.LoggedOut else Session.Active(SubsonicClient(s)) }
-            .stateIn(appScope, SharingStarted.Eagerly, Session.Loading)
+        session = combine(servers.active, servers.localMode) { s, local ->
+            when {
+                local -> Session.Local
+                s == null -> Session.LoggedOut
+                else -> Session.Active(SubsonicClient(s))
+            }
+        }.stateIn(appScope, SharingStarted.Eagerly, Session.Loading)
+        phone = PhoneMusic(this, appScope).also { it.refresh() }
+        appScope.launch {
+            session.collect {
+                if (it is Session.Active) {
+                    servers.rememberUrl(it.client.server.baseUrl)
+                    // New or switched server: find out right away whether it answers.
+                    connection.recheck()
+                }
+            }
+        }
         player = PlayerConnection(this, appScope) { client }
     }
 
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader.Builder(context)
+            .components { add(com.tonihk00.clearplay.data.PhoneArtFetcher.Factory(this@ClearPlayApp)) }
             .crossfade(220)
             .memoryCache { MemoryCache.Builder().maxSizePercent(context, 0.15).build() }
             .diskCache {
@@ -90,4 +141,7 @@ sealed interface Session {
     data object Loading : Session
     data object LoggedOut : Session
     data class Active(val client: SubsonicClient) : Session
+
+    /** Signed in with "Use music on this phone": phone music and downloads, no server. */
+    data object Local : Session
 }

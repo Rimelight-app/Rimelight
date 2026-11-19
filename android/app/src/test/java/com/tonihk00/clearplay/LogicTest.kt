@@ -49,4 +49,16 @@ class LogicTest {
         assertTrue(!msg.contains("t=") && !msg.contains("http"))
         assertEquals("Wrong username or password.", com.tonihk00.clearplay.ui.login.friendlyError(com.tonihk00.clearplay.data.api.SubsonicException(40, "Wrong username or password")))
     }
+
+    @Test fun offlineLibraryBuildsAlbumsArtistsSearch() = runBlocking {
+        val lib = com.tonihk00.clearplay.data.api.OfflineLibrary(FakeServer.songs)
+        val albums = lib.albumList("alphabeticalByName", 60, 0, null)
+        assertEquals(listOf("Field Notes", "Neon Tides", "Paper Moons", "Static Bloom"), albums.map { it.name })
+        val neon = lib.album("al1")
+        assertEquals((1..7).toList(), neon.song.map { it.track })
+        assertEquals(4, lib.artists().size)
+        assertTrue(lib.search("glass").songs.any { it.title == "Glass Harbour" })
+        assertEquals("Electronic", lib.genres().first().value)
+        assertTrue(!lib.isRemote)
+    }
 }

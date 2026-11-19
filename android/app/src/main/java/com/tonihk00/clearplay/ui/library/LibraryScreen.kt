@@ -38,6 +38,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.tonihk00.clearplay.ui.components.glassPanel
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tonihk00.clearplay.R
@@ -68,12 +71,22 @@ val LibraryTabs = listOf("Albums", "Artists", "Songs", "Playlists", "Favorites",
 
 @Composable
 fun LibraryScreen(bottomPadding: Dp, playingId: String?, modifier: Modifier = Modifier, initialTab: Int? = null) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val hasDownloads = com.tonihk00.clearplay.ui.LocalDownloadedSongs.current.isNotEmpty()
-    // With no connection, open on the downloads, which still play.
-    var tab by rememberSaveable { mutableStateOf(initialTab ?: if (hasDownloads && !isOnline(context)) DownloadsTabIndex else 0) }
+    var tab by rememberSaveable { mutableStateOf(initialTab ?: 0) }
+    // Long-press selection of albums, shared by the album grids.
+    val selection = remember { androidx.compose.runtime.mutableStateMapOf<String, Album>() }
+    var visible by remember { mutableStateOf<List<Album>>(emptyList()) }
+    val sel = remember(selection) { AlbumSelection(selection) { visible = it } }
+    androidx.activity.compose.BackHandler(selection.isNotEmpty()) { selection.clear() }
+    LaunchedEffect(tab) { selection.clear() }
     Column(modifier.fillMaxSize()) {
-        LibraryHeader()
+        AnimatedContent(
+            selection.isNotEmpty(),
+            transitionSpec = { fadeIn(tween(Cp.ControlMs)) togetherWith fadeOut(tween(120)) },
+            label = "libheader",
+        ) { selecting ->
+            if (selecting) SelectionBar(selection.values.toList(), { visible.forEach { a -> selection[a.id] = a } }, { selection.clear() })
+            else LibraryHeader()
+        }
         PillTabs(LibraryTabs, tab, { tab = it }, Modifier.padding(bottom = 8.dp))
         AnimatedContent(
             tab,
@@ -82,13 +95,13 @@ fun LibraryScreen(bottomPadding: Dp, playingId: String?, modifier: Modifier = Mo
         ) { t ->
             val pad = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = bottomPadding + 12.dp)
             when (t) {
-                0 -> AlbumsTab(pad) { tab = DownloadsTabIndex }
+                0 -> AlbumsTab(pad, sel) { tab = DownloadsTabIndex }
                 1 -> ArtistsTab(pad)
                 2 -> SongsTab(pad, playingId)
                 3 -> PlaylistsTab(pad)
                 4 -> FavoritesTab(pad, playingId)
                 5 -> GenresTab(pad)
-                else -> DownloadsTab(pad, playingId)
+                else -> DownloadsTab(pad, sel)
             }
         }
     }
@@ -103,7 +116,13 @@ private fun LibraryHeader() {
     ) {
         Logo(Modifier.size(30.dp))
         Spacer(Modifier.size(12.dp))
-        Text("Library", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+        Text("Library", style = MaterialTheme.typography.headlineMedium)
+        // Offline: the same library, built from downloads (and phone music).
+        if (!com.tonihk00.clearplay.ui.LocalOnline.current) {
+            Spacer(Modifier.size(10.dp))
+            com.tonihk00.clearplay.ui.components.MetaChip("Offline")
+        }
+        Spacer(Modifier.weight(1f))
         IconButtonCp(R.drawable.ic_shuffle, "Shuffle library", { actions.shuffleLibrary() }, outlined = true)
     }
 }
@@ -132,9 +151,65 @@ fun OfflineState(onDownloads: () -> Unit) {
     }
 }
 
+/** Selection state handed to album grids. */
+class AlbumSelection(val map: MutableMap<String, Album>, val setVisible: (List<Album>) -> Unit) {
+    val active get() = map.isNotEmpty()
+    fun toggle(a: Album) { if (map.containsKey(a.id)) map.remove(a.id) else map[a.id] = a }
+    fun isSelected(a: Album) = map.containsKey(a.id)
+}
+
+/** Album grid item honouring selection: tap opens (or toggles while selecting), long-press selects. */
 @Composable
-fun AlbumsTab(pad: PaddingValues, onDownloads: () -> Unit = {}) {
-    val client = LocalClient.current
+fun SelectableAlbum(album: Album, sel: AlbumSelection?, modifier: Modifier = Modifier) {
+    val actions = LocalActions.current
+    AlbumCard(
+        album,
+        onClick = { if (sel?.active == true) sel.toggle(album) else actions.openAlbum(album.id) },
+        modifier = modifier,
+        selected = if (sel?.active == true) sel.isSelected(album) else null,
+        onLongClick = sel?.let { { it.toggle(album) } },
+    )
+}
+
+@Composable
+private fun SelectionBar(albums: List<Album>, onSelectAll: () -> Unit, onClose: () -> Unit) {
+    val actions = LocalActions.current
+    val states = com.tonihk00.clearplay.ui.LocalDownloadStates.current
+    val remote = com.tonihk00.clearplay.ui.LocalLibrary.current?.isRemote != false
+    fun run(a: com.tonihk00.clearplay.ui.AlbumBulk) { actions.albums(albums, a); onClose() }
+    Column(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButtonCp(R.drawable.ic_x, "Cancel", onClose, size = 42.dp)
+            Text(
+                "${albums.size} selected",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f).padding(start = 6.dp),
+            )
+            Text(
+                "Select all",
+                Modifier.clip(androidx.compose.foundation.shape.CircleShape).clickable(onClick = onSelectAll).padding(horizontal = 12.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.labelLarge,
+                color = Cp.TextSoft,
+            )
+        }
+        Row(
+            Modifier.fillMaxWidth().padding(top = 6.dp).glassPanel(androidx.compose.foundation.shape.CircleShape).padding(4.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            IconButtonCp(R.drawable.ic_play_filled, "Play", { run(com.tonihk00.clearplay.ui.AlbumBulk.Play) }, size = 42.dp, iconSize = 20.dp, tint = Cp.TextStrong)
+            IconButtonCp(R.drawable.ic_shuffle, "Shuffle", { run(com.tonihk00.clearplay.ui.AlbumBulk.Shuffle) }, size = 42.dp, iconSize = 20.dp, tint = Cp.TextStrong)
+            IconButtonCp(R.drawable.ic_list_start, "Play next", { run(com.tonihk00.clearplay.ui.AlbumBulk.PlayNext) }, size = 42.dp, iconSize = 20.dp, tint = Cp.TextStrong)
+            IconButtonCp(R.drawable.ic_list_plus, "Add to queue", { run(com.tonihk00.clearplay.ui.AlbumBulk.AddToQueue) }, size = 42.dp, iconSize = 20.dp, tint = Cp.TextStrong)
+            if (remote) IconButtonCp(R.drawable.ic_download, "Download", { run(com.tonihk00.clearplay.ui.AlbumBulk.Download) }, size = 42.dp, iconSize = 20.dp, tint = Cp.TextStrong)
+            if (states.isNotEmpty()) IconButtonCp(R.drawable.ic_trash_2, "Remove download", { run(com.tonihk00.clearplay.ui.AlbumBulk.RemoveDownload) }, size = 42.dp, iconSize = 20.dp, tint = Cp.TextStrong)
+        }
+    }
+}
+
+@Composable
+fun AlbumsTab(pad: PaddingValues, sel: AlbumSelection? = null, onDownloads: () -> Unit = {}) {
+    val lost = com.tonihk00.clearplay.ui.LocalConnectionLost.current
+    val client = com.tonihk00.clearplay.ui.LocalLibrary.current ?: LocalClient.current
     val actions = LocalActions.current
     val albums = remember(client) { mutableStateListOf<Album>() }
     var end by remember(client) { mutableStateOf(false) }
@@ -147,11 +222,13 @@ fun AlbumsTab(pad: PaddingValues, onDownloads: () -> Unit = {}) {
         loading = true
         val result = runCatching { client.albumList(size = 60, offset = albums.size) }
         failed = result.isFailure && albums.isEmpty()
+        if (result.isFailure && client.isRemote) lost()
         val page = result.getOrNull().orEmpty()
         if (page.size < 60) end = true
         albums += page
         loading = false
     }
+    LaunchedEffect(albums.size) { sel?.setVisible?.invoke(albums.toList()) }
     if (failed) return OfflineState(onDownloads)
     if (albums.isEmpty() && end) return EmptyState(R.drawable.ic_disc_3, "No albums yet")
     LazyVerticalGrid(
@@ -162,7 +239,7 @@ fun AlbumsTab(pad: PaddingValues, onDownloads: () -> Unit = {}) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
-        items(albums, key = { it.id }) { AlbumCard(it, { actions.openAlbum(it.id) }) }
+        items(albums, key = { it.id }) { SelectableAlbum(it, sel) }
         if (loading) item(span = { GridItemSpan(maxLineSpan) }) { LoadBox<Unit>(com.tonihk00.clearplay.ui.Load.Loading) {} }
     }
 }
@@ -181,7 +258,7 @@ fun ArtistsTab(pad: PaddingValues) {
 
 @Composable
 fun SongsTab(pad: PaddingValues, playingId: String?) {
-    val client = LocalClient.current
+    val client = com.tonihk00.clearplay.ui.LocalLibrary.current ?: LocalClient.current
     val actions = LocalActions.current
     val songs = remember(client) { mutableStateListOf<Song>() }
     var end by remember(client) { mutableStateOf(false) }
@@ -271,22 +348,39 @@ fun GenresTab(pad: PaddingValues) {
     }
 }
 
-/** Downloaded songs: play without a connection. */
+/** Downloaded albums (tap to open, long-press to select); everything here plays offline. */
 @Composable
-fun DownloadsTab(pad: PaddingValues, playingId: String?) {
+fun DownloadsTab(pad: PaddingValues, sel: AlbumSelection? = null) {
     val actions = LocalActions.current
     val songs = com.tonihk00.clearplay.ui.LocalDownloadedSongs.current
     if (songs.isEmpty()) {
         return EmptyState(
             R.drawable.ic_download, "No downloads yet",
-            "Tap the download button on an album or playlist, or Download in a song's menu, to keep it on this phone.",
+            "Tap the download button on an album or playlist, or long-press albums to download several at once.",
         )
     }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = pad) {
-        item {
-            Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 4.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    val albums = remember(songs) {
+        songs.groupBy { it.albumId ?: it.id }.map { (id, s) ->
+            val f = s.first()
+            Album(
+                id = id, name = f.album ?: f.title, artist = f.artist, artistId = f.artistId,
+                coverArt = s.firstNotNullOfOrNull { it.coverArt }, songCount = s.size,
+                duration = s.sumOf { it.duration }, year = f.year, genre = f.genre, song = s,
+            )
+        }
+    }
+    LaunchedEffect(albums) { sel?.setVisible?.invoke(albums) }
+    LazyVerticalGrid(
+        GridCells.Adaptive(150.dp),
+        contentPadding = pad,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "${songs.size} song${if (songs.size == 1) "" else "s"} · plays offline",
+                    "${albums.size} album${if (albums.size == 1) "" else "s"} · ${songs.size} song${if (songs.size == 1) "" else "s"}",
                     style = MaterialTheme.typography.titleSmall, color = Cp.TextSoft, modifier = Modifier.weight(1f),
                 )
                 IconButtonCp(R.drawable.ic_shuffle, "Shuffle downloads", { actions.play(songs, shuffle = true) }, outlined = true)
@@ -294,9 +388,6 @@ fun DownloadsTab(pad: PaddingValues, playingId: String?) {
                 com.tonihk00.clearplay.ui.components.PrimaryPill("Play", R.drawable.ic_play_filled, { actions.play(songs) })
             }
         }
-        itemsIndexed(songs, key = { _, s -> "dl" + s.id }) { i, raw ->
-            val song = raw.edited()
-            SongRow(song, { actions.play(songs, i) }, { actions.songMenu(song) }, playing = raw.id == playingId)
-        }
+        items(albums, key = { "dl" + it.id }) { SelectableAlbum(it, sel) }
     }
 }

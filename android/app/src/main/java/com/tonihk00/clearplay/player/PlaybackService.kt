@@ -69,6 +69,7 @@ class PlaybackService : MediaLibraryService() {
             DefaultMediaNotificationProvider.Builder(this).build().also { it.setSmallIcon(R.drawable.ic_stat_clearplay) },
         )
         session = MediaLibrarySession.Builder(this, player, LibraryCallback())
+            .setBitmapLoader(CoverBitmapLoader(this, scope))
             .setSessionActivity(open)
             .build()
     }

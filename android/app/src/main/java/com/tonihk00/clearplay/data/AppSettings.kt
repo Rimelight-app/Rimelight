@@ -30,6 +30,8 @@ data class Settings(
     val scrobble: Boolean = true,
     val backdrop: Backdrop = Backdrop.Balanced,
     val liveBlur: Boolean = true,
+    /** Include the phone's own music when offline or without a server. */
+    val phoneMusic: Boolean = true,
 )
 
 /** User settings in DataStore, exposed as a StateFlow so the player service can read them synchronously. */
@@ -43,6 +45,7 @@ class AppSettings(private val context: Context, scope: CoroutineScope) {
         val scrobble = booleanPreferencesKey("scrobble")
         val backdrop = stringPreferencesKey("backdrop")
         val liveBlur = booleanPreferencesKey("live_blur")
+        val phoneMusic = booleanPreferencesKey("phone_music")
     }
 
     private fun read(p: Preferences) = Settings(
@@ -54,6 +57,7 @@ class AppSettings(private val context: Context, scope: CoroutineScope) {
         scrobble = p[K.scrobble] ?: true,
         backdrop = p[K.backdrop]?.let { runCatching { Backdrop.valueOf(it) }.getOrNull() } ?: Backdrop.Balanced,
         liveBlur = p[K.liveBlur] ?: true,
+        phoneMusic = p[K.phoneMusic] ?: true,
     )
 
     val state: StateFlow<Settings> = context.settingsStore.data.map(::read).stateIn(scope, SharingStarted.Eagerly, Settings())
@@ -69,6 +73,7 @@ class AppSettings(private val context: Context, scope: CoroutineScope) {
             p[K.scrobble] = s.scrobble
             p[K.backdrop] = s.backdrop.name
             p[K.liveBlur] = s.liveBlur
+            p[K.phoneMusic] = s.phoneMusic
         }
     }
 }

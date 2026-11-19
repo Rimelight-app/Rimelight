@@ -26,6 +26,8 @@ import com.tonihk00.clearplay.data.Backdrop
 import com.tonihk00.clearplay.data.DownloadState
 import com.tonihk00.clearplay.data.SongEdits
 import com.tonihk00.clearplay.data.api.Song
+import com.tonihk00.clearplay.data.api.Album
+import com.tonihk00.clearplay.data.api.MusicLibrary
 import com.tonihk00.clearplay.data.api.SubsonicClient
 import com.tonihk00.clearplay.ui.components.CpIcon
 import com.tonihk00.clearplay.ui.components.LocalClient
@@ -47,7 +49,15 @@ interface UiActions {
     fun download(songs: List<Song>) {}
     fun removeDownload(songs: List<Song>) {}
     fun openDownloads() {}
+    fun openStats() {}
+    /** Play, queue or download several albums at once (multi-select). */
+    fun albums(albums: List<Album>, action: AlbumBulk) {}
 }
+
+enum class AlbumBulk { Play, Shuffle, PlayNext, AddToQueue, Download, RemoveDownload }
+
+/** False while the server can't be reached (the library then shows downloads). */
+val LocalOnline = compositionLocalOf { true }
 
 object NoActions : UiActions
 
@@ -77,15 +87,28 @@ sealed interface Load<out T> {
     data class Failed(val message: String) : Load<Nothing>
 }
 
-/** Loads once per key with the active client. */
+/** Where screens read music from: the server, or downloads/phone music when offline. */
+val LocalLibrary = compositionLocalOf<MusicLibrary?> { null }
+
+/** Called when a request fails, so the app re-checks the server and can switch to offline. */
+val LocalConnectionLost = staticCompositionLocalOf<() -> Unit> { {} }
+
+/** Short confirmation pill ("Added to queue"). */
+val LocalToast = staticCompositionLocalOf<(String) -> Unit> { {} }
+
+/** Loads once per key (and again when the library switches between online and offline). */
 @Composable
-fun <T> rememberLoad(vararg keys: Any?, block: suspend SubsonicClient.() -> T): State<Load<T>> {
-    val client = LocalClient.current
-    return produceState<Load<T>>(Load.Loading, client, *keys) {
-        value = if (client == null) {
+fun <T> rememberLoad(vararg keys: Any?, block: suspend MusicLibrary.() -> T): State<Load<T>> {
+    val library = LocalLibrary.current ?: LocalClient.current
+    val lost = LocalConnectionLost.current
+    return produceState<Load<T>>(Load.Loading, library, *keys) {
+        value = if (library == null) {
             Load.Failed("Not connected")
         } else {
-            runCatching { client.block() }.fold({ Load.Done(it) }, { Load.Failed(com.tonihk00.clearplay.ui.login.friendlyError(it)) })
+            runCatching { library.block() }.fold({ Load.Done(it) }, {
+                if (library.isRemote && it !is com.tonihk00.clearplay.data.api.SubsonicException) lost()
+                Load.Failed(com.tonihk00.clearplay.ui.login.friendlyError(it))
+            })
         }
     }
 }

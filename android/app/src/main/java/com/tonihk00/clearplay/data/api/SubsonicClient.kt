@@ -6,6 +6,7 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
+import kotlinx.coroutines.async
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -57,7 +58,8 @@ data class ServerConfig(
 }
 
 /** OpenSubsonic client. All calls are suspend and throw [SubsonicException] on API errors. */
-class SubsonicClient(val server: ServerConfig, private val http: HttpClient = defaultHttp) {
+class SubsonicClient(val server: ServerConfig, private val http: HttpClient = defaultHttp) : MusicLibrary {
+    override val isRemote = true
 
     private fun authQuery(): String =
         "u=${enc(server.user)}&t=${server.token}&s=${server.salt}&v=$API_VERSION&c=$CLIENT"
@@ -113,22 +115,22 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
 
     suspend fun ping() { call("ping") }
 
-    suspend fun albumList(type: String = "alphabeticalByName", size: Int = 60, offset: Int = 0, genre: String? = null) =
+    override suspend fun albumList(type: String, size: Int, offset: Int, genre: String?) =
         call("getAlbumList2", "type" to type, "size" to size, "offset" to offset, "genre" to genre)
             .list<Album>("albumList2", "album")
 
-    suspend fun album(id: String): Album = call("getAlbum", "id" to id).obj("album")
+    override suspend fun album(id: String): Album = call("getAlbum", "id" to id).obj("album")
 
-    suspend fun artists(): List<Artist> {
+    override suspend fun artists(): List<Artist> {
         val idx = call("getArtists")["artists"]?.jsonObject?.get("index")?.jsonArray ?: return emptyList()
         return idx.flatMap { i ->
             (i.jsonObject["artist"] as? JsonArray)?.map { json.decodeFromJsonElement<Artist>(it) } ?: emptyList()
         }
     }
 
-    suspend fun artist(id: String): Artist = call("getArtist", "id" to id).obj("artist")
+    override suspend fun artist(id: String): Artist = call("getArtist", "id" to id).obj("artist")
 
-    suspend fun search(query: String, songs: Int = 60, albums: Int = 18, artists: Int = 12): SearchResult {
+    override suspend fun search(query: String, songs: Int, albums: Int, artists: Int): SearchResult {
         val r = call("search3", "query" to query, "songCount" to songs, "albumCount" to albums, "artistCount" to artists)
         return SearchResult(
             artists = r.list("searchResult3", "artist"),
@@ -138,27 +140,41 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
     }
 
     /** Songs list for the library: an empty search3 query returns every song on Navidrome. */
-    suspend fun songs(size: Int = 200, offset: Int = 0): List<Song> =
+    override suspend fun songs(size: Int, offset: Int): List<Song> =
         call("search3", "query" to "", "songCount" to size, "songOffset" to offset, "albumCount" to 0, "artistCount" to 0)
             .list("searchResult3", "song")
 
-    suspend fun playlists(): List<Playlist> = call("getPlaylists").list("playlists", "playlist")
+    override suspend fun playlists(): List<Playlist> = call("getPlaylists").list("playlists", "playlist")
 
-    suspend fun playlist(id: String): Playlist = call("getPlaylist", "id" to id).obj("playlist")
+    override suspend fun playlist(id: String): Playlist = call("getPlaylist", "id" to id).obj("playlist")
 
-    suspend fun starred(): Starred {
+    override suspend fun starred(): Starred {
         val r = call("getStarred2")
         return Starred(r.list("starred2", "artist"), r.list("starred2", "album"), r.list("starred2", "song"))
     }
 
-    suspend fun genres(): List<Genre> =
+    override suspend fun genres(): List<Genre> =
         call("getGenres").list<Genre>("genres", "genre").sortedByDescending { it.songCount }
 
-    suspend fun songsByGenre(genre: String, count: Int = 200, offset: Int = 0): List<Song> =
+    override suspend fun songsByGenre(genre: String, count: Int, offset: Int): List<Song> =
         call("getSongsByGenre", "genre" to genre, "count" to count, "offset" to offset).list("songsByGenre", "song")
 
-    suspend fun randomSongs(size: Int = 100, genre: String? = null): List<Song> =
+    override suspend fun randomSongs(size: Int, genre: String?): List<Song> =
         call("getRandomSongs", "size" to size, "genre" to genre).list("randomSongs", "song")
+
+    /** All songs in pages of 500, four requests at a time (same as the desktop stats). */
+    override suspend fun allSongs(onProgress: (Int) -> Unit): List<Song> = kotlinx.coroutines.coroutineScope {
+        val all = ArrayList<Song>()
+        var offset = 0
+        while (offset < 400_000) {
+            val batch = (0 until 4).map { i -> async { songs(500, offset + i * 500) } }.map { it.await() }
+            batch.forEach { all += it }
+            onProgress(all.size)
+            if (batch.any { it.size < 500 }) break
+            offset += 2000
+        }
+        all.distinctBy { it.id }
+    }
 
     suspend fun star(id: String) { call("star", "id" to id) }
     suspend fun unstar(id: String) { call("unstar", "id" to id) }
@@ -175,7 +191,7 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
      * embedded tags and .lrc files), then the legacy getLyrics text, parsed as LRC when it
      * carries timestamps.
      */
-    suspend fun lyrics(song: Song): Lyrics? {
+    override suspend fun lyrics(song: Song): Lyrics? {
         runCatching {
             val list = call("getLyricsBySongId", "id" to song.id)["lyricsList"]?.jsonObject
                 ?.get("structuredLyrics") as? JsonArray

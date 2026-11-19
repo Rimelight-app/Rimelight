@@ -30,7 +30,10 @@ object FakeServer {
             Song(
                 id = "${a.id}-s${i + 1}", title = t, artist = a.artist, artistId = "ar-${a.artist.hashCode()}",
                 album = a.name, albumId = a.id, coverArt = a.id, duration = 54 + (i * 37) % 180, track = i + 1,
-                year = a.year, genre = a.genre, suffix = "mp3", bitRate = 128,
+                year = a.year, genre = a.genre,
+                suffix = if (a.id == "al3") "flac" else "mp3", bitRate = if (a.id == "al3") 1411 else 320,
+                samplingRate = if (a.id == "al3") 96_000 else 44_100, bitDepth = if (a.id == "al3") 24 else null,
+                playCount = (a.songs.size - i) * 7 + a.year % 13, size = 6_000_000L,
                 starred = if (i % 3 == 1) "2026-11-01T00:00:00Z" else null, userRating = if (i == 1) 4 else 0,
             )
         }

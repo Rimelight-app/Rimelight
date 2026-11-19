@@ -30,6 +30,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -154,7 +156,7 @@ private fun LazyListScope.songCard(songs: List<Song>, playingId: String?, action
 @Composable
 fun AlbumScreen(id: String, bottomPadding: Dp, playingId: String?, onBack: () -> Unit) {
     val state by rememberLoad(id) { album(id) }
-    Box(Modifier.fillMaxSize()) {
+    PullDownToGoBack(onBack) {
         LoadBox(state, Modifier.statusBarsPadding().padding(top = 80.dp)) { a -> AlbumContent(a, bottomPadding, playingId) }
         BackButton(onBack)
     }
@@ -179,7 +181,7 @@ fun AlbumContent(a: Album, bottomPadding: Dp, playingId: String?) {
 fun PlaylistScreen(id: String, bottomPadding: Dp, playingId: String?, onBack: () -> Unit) {
     val actions = LocalActions.current
     val state by rememberLoad(id) { playlist(id) }
-    Box(Modifier.fillMaxSize()) {
+    PullDownToGoBack(onBack) {
         LoadBox(state, Modifier.statusBarsPadding().padding(top = 80.dp)) { p: Playlist ->
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)) {
                 item {
@@ -196,7 +198,7 @@ fun PlaylistScreen(id: String, bottomPadding: Dp, playingId: String?, onBack: ()
 fun GenreScreen(name: String, bottomPadding: Dp, playingId: String?, onBack: () -> Unit) {
     val actions = LocalActions.current
     val state by rememberLoad(name) { songsByGenre(name, 300) }
-    Box(Modifier.fillMaxSize()) {
+    PullDownToGoBack(onBack) {
         LoadBox(state, Modifier.statusBarsPadding().padding(top = 80.dp)) { songs: List<Song> ->
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)) {
                 item { DetailHeader("Genre", name, songs.firstOrNull()?.coverArt, listOf("${songs.size} songs"), songs) }
@@ -218,7 +220,7 @@ fun ArtistScreen(id: String, bottomPadding: Dp, onBack: () -> Unit) {
         }.flatten()
         artist to songs
     }
-    Box(Modifier.fillMaxSize()) {
+    PullDownToGoBack(onBack) {
         LoadBox(state, Modifier.statusBarsPadding().padding(top = 80.dp)) { (a: Artist, songs: List<Song>) ->
             LazyVerticalGrid(
                 GridCells.Adaptive(150.dp),
@@ -250,6 +252,9 @@ fun DownloadButton(songs: List<Song>) {
     val mine = songs.mapNotNull { states[it.id] }
     val allDone = songs.isNotEmpty() && mine.size == songs.size && mine.all { it.done }
     val active = mine.any { it.active }
+    // Offline or phone music: nothing to download (still show the check if it's all here).
+    val canDownload = com.tonihk00.clearplay.ui.LocalLibrary.current?.isRemote != false && songs.any { !it.isLocal }
+    if (!canDownload && !allDone) return
     when {
         active -> Box(Modifier.size(46.dp).glassPanel(CircleShape), contentAlignment = Alignment.Center) {
             val pct = songs.sumOf { (states[it.id]?.let { s -> if (s.done) 100f else s.percent } ?: 0f).toDouble() } / songs.size
@@ -264,4 +269,27 @@ fun DownloadButton(songs: List<Song>) {
         allDone -> IconButtonCp(R.drawable.ic_circle_check, "Remove download", { actions.removeDownload(songs) }, size = 46.dp, outlined = true, tint = Cp.TextStrong)
         else -> IconButtonCp(R.drawable.ic_download, "Download", { actions.download(songs) }, size = 46.dp, outlined = true)
     }
+}
+
+/**
+ * Pull the page down from its top to go back, like the full player: the page follows the
+ * finger, shrinks a little and pops when let go far enough.
+ */
+@Composable
+fun PullDownToGoBack(onBack: () -> Unit, content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit) {
+    val pull = com.tonihk00.clearplay.ui.player.rememberPullToDismiss(onBack)
+    Box(
+        Modifier.fillMaxSize()
+            .graphicsLayer {
+                translationY = pull.offset
+                val f = (pull.offset / size.height).coerceIn(0f, 1f)
+                scaleX = 1f - f * 0.1f
+                scaleY = 1f - f * 0.1f
+                alpha = 1f - f * 0.6f
+                shape = androidx.compose.foundation.shape.RoundedCornerShape((f * 160).coerceAtMost(28f).dp)
+                clip = pull.offset > 0f
+            }
+            .nestedScroll(pull.connection),
+        content = content,
+    )
 }

@@ -105,7 +105,7 @@ class PlayerConnection(
     }
 
     private fun items(songs: List<Song>): List<MediaItem>? {
-        val cl = client() ?: return null
+        val cl = client()
         val app = context.applicationContext as? com.tonihk00.clearplay.ClearPlayApp
         val bitrate = app?.streamBitrate() ?: 0
         val format = app?.settings?.state?.value?.format?.param
@@ -153,10 +153,13 @@ class PlayerConnection(
     }
 
     /** Plays the whole library in random order and keeps adding random songs at the end. */
+    /** Library to draw random songs from (server, or downloads/phone music offline). */
+    var library: () -> com.tonihk00.clearplay.data.api.MusicLibrary? = { client() }
+
     fun shuffleLibrary() {
-        val cl = client() ?: return
+        val lib = library() ?: return
         scope.launch {
-            val songs = runCatching { cl.randomSongs(100) }.getOrNull().orEmpty()
+            val songs = runCatching { lib.randomSongs(100) }.getOrNull().orEmpty()
             if (songs.isEmpty()) return@launch
             play(songs)
             controller?.shuffleModeEnabled = false
@@ -169,10 +172,10 @@ class PlayerConnection(
         val c = controller ?: return
         if (!endless || filling) return
         if (c.mediaItemCount - c.currentMediaItemIndex > 5) return
-        val cl = client() ?: return
+        val lib = library() ?: return
         filling = true
         scope.launch {
-            runCatching { cl.randomSongs(50) }.getOrNull()?.let { more ->
+            runCatching { lib.randomSongs(50) }.getOrNull()?.let { more ->
                 val have = (0 until c.mediaItemCount).map { c.getMediaItemAt(it).mediaId }.toSet()
                 c.addMediaItems(items(more.filterNot { it.id in have }).orEmpty())
             }

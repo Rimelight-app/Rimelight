@@ -156,7 +156,7 @@ class ScreenshotTest {
     }
 
     @Test fun settings() = shoot("10-settings") {
-        WithDock(2) {
+        WithDock(3) {
             com.tonihk00.clearplay.ui.settings.SettingsScreen(
                 com.tonihk00.clearplay.ui.settings.SettingsUi(
                     servers = listOf(
@@ -174,7 +174,7 @@ class ScreenshotTest {
         }
     }
 
-    @Test fun downloads() = shoot("11-downloads", "Small Hours") {
+    @Test fun downloads() = shoot("11-downloads", "Neon Tides") {
         val songs = FakeServer.songs.take(9)
         CompositionLocalProvider(
             com.tonihk00.clearplay.ui.LocalDownloadedSongs provides songs,
@@ -187,7 +187,13 @@ class ScreenshotTest {
         }
     }
 
+    @Test fun stats() = shoot("12-stats") {
+        WithDock(2) {
+            com.tonihk00.clearplay.ui.stats.StatsScreen(170.dp, preset = com.tonihk00.clearplay.ui.stats.computeStats(FakeServer.songs))
+        }
+    }
+
     @Test fun login() = shoot("09-login") {
-        LoginScreen(onLoggedIn = {})
+        LoginScreen(onLoggedIn = {}, onUsePhone = {})
     }
 }

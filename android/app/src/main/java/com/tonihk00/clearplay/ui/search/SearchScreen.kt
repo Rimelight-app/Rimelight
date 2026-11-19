@@ -44,7 +44,7 @@ import kotlinx.coroutines.delay
 /** Searches as you type (60 songs, 18 albums, 12 artists), like the desktop search page. */
 @Composable
 fun SearchScreen(bottomPadding: Dp, playingId: String?, autoFocus: Boolean = true, initialQuery: String = "") {
-    val client = LocalClient.current
+    val client = com.tonihk00.clearplay.ui.LocalLibrary.current ?: LocalClient.current
     var query by rememberSaveable { mutableStateOf(initialQuery) }
     var result by remember { mutableStateOf<SearchResult?>(null) }
     var failed by remember { mutableStateOf(false) }

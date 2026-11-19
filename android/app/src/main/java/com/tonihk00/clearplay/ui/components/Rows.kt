@@ -2,6 +2,9 @@ package com.tonihk00.clearplay.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -101,10 +104,44 @@ fun SongRow(
     }
 }
 
+/**
+ * Album tile. Long-press starts selecting; while selecting ([selected] not null) a tap
+ * toggles it, and a selected tile shrinks slightly with a white ring and check.
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AlbumCard(album: Album, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier.clip(RoundedCornerShape(18.dp)).clickable(onClick = onClick).padding(4.dp)) {
-        SquareCover(album.coverArt, shape = Cp.Shape)
+fun AlbumCard(
+    album: Album,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    selected: Boolean? = null,
+    onLongClick: (() -> Unit)? = null,
+) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val on = selected == true
+    val scale by androidx.compose.animation.core.animateFloatAsState(if (on) 0.92f else 1f, androidx.compose.animation.core.tween(Cp.ControlMs, easing = Cp.EaseOutSoft), label = "sel")
+    Column(
+        modifier.clip(RoundedCornerShape(18.dp))
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick?.let { lc -> { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); lc() } },
+            )
+            .padding(4.dp),
+    ) {
+        Box(Modifier.graphicsLayer { scaleX = scale; scaleY = scale }) {
+            SquareCover(album.coverArt, shape = Cp.Shape)
+            if (on) {
+                Box(Modifier.matchParentSize().clip(Cp.Shape).background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.25f)).border(2.dp, Cp.TextStrong, Cp.Shape))
+            }
+            if (selected != null) {
+                Box(
+                    Modifier.align(Alignment.TopEnd).padding(8.dp).size(24.dp).clip(CircleShape)
+                        .background(if (on) Cp.Primary else androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.35f))
+                        .border(1.5.dp, Cp.TextStrong, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) { if (on) CpIcon(R.drawable.ic_check, size = 14.dp, tint = Cp.OnPrimary) }
+            }
+        }
         Spacer(Modifier.height(8.dp))
         Text(album.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(

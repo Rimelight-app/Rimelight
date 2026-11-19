@@ -25,6 +25,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
@@ -46,7 +49,7 @@ import kotlinx.coroutines.launch
  * (md5(password + salt)) right away and only the token is stored.
  */
 @Composable
-fun LoginScreen(onLoggedIn: suspend (ServerConfig) -> Unit, initialError: String? = null) {
+fun LoginScreen(onLoggedIn: suspend (ServerConfig) -> Unit, initialError: String? = null, onUsePhone: (() -> Unit)? = null) {
     var url by rememberSaveable { mutableStateOf("") }
     var user by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
@@ -110,6 +113,25 @@ fun LoginScreen(onLoggedIn: suspend (ServerConfig) -> Unit, initialError: String
             }
             Spacer(Modifier.height(4.dp))
             PrimaryPill(if (busy) "Connecting…" else "Connect", null, { submit() }, Modifier.align(Alignment.CenterHorizontally))
+        }
+        if (onUsePhone != null) {
+            Spacer(Modifier.height(18.dp))
+            // Skip the server: play the phone's own music (and any ClearPlay downloads).
+            Row(
+                Modifier.clip(androidx.compose.foundation.shape.CircleShape)
+                    .clickable(onClick = onUsePhone)
+                    .glassPanel(androidx.compose.foundation.shape.CircleShape)
+                    .padding(horizontal = 18.dp, vertical = 11.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                com.tonihk00.clearplay.ui.components.CpIcon(R.drawable.ic_smartphone, size = 18.dp, tint = Cp.TextSoft)
+                Text("Use music on this phone", style = MaterialTheme.typography.titleSmall, color = Cp.TextStrong, modifier = Modifier.padding(start = 10.dp))
+            }
+            Text(
+                "No server needed. You can connect one later in Settings.",
+                style = MaterialTheme.typography.bodySmall, color = Cp.TextFaint, textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
     }
 }

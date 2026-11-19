@@ -56,14 +56,14 @@ class Scrobbler(
 
     private fun sendNowPlaying() {
         val id = songId ?: return
-        if (!enabled) return
+        if (!enabled || id.startsWith(com.tonihk00.clearplay.data.api.Song.LOCAL_PREFIX)) return
         nowPlayingSent = true
         scope.launch { runCatching { client()?.scrobble(id, submission = false) } }
     }
 
     private fun maybeSubmit() {
         val id = songId ?: return
-        if (submitted || !enabled) return
+        if (submitted || !enabled || id.startsWith(com.tonihk00.clearplay.data.api.Song.LOCAL_PREFIX)) return
         val dur = if (durationMs > 0) durationMs else player.duration.coerceAtLeast(0)
         if (dur in 1 until 30_000) return
         if (listenedMs < minOf(dur / 2, 240_000L).coerceAtLeast(30_000L)) return

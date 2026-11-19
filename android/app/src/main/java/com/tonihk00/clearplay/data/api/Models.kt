@@ -22,8 +22,20 @@ data class Song(
     val bitRate: Int? = null,
     val samplingRate: Int? = null,
     val bitDepth: Int? = null,
+    val playCount: Int = 0,
+    val size: Long = 0,
+    val contentType: String? = null,
+    /** Server the song came from; kept with downloads so covers resolve offline. */
+    val server: String? = null,
 ) {
     val isStarred get() = starred != null
+
+    /** On this phone (MediaStore), not from a server. */
+    val isLocal get() = id.startsWith(LOCAL_PREFIX)
+
+    companion object {
+        const val LOCAL_PREFIX = "local:"
+    }
 }
 
 @Serializable
@@ -82,8 +94,10 @@ data class Starred(
 )
 
 /** One lyrics line; [timeMs] is null for unsynced lyrics. */
+@Serializable
 data class LyricLine(val timeMs: Long?, val text: String)
 
+@Serializable
 data class Lyrics(val lines: List<LyricLine>) {
     val synced get() = lines.isNotEmpty() && lines.all { it.timeMs != null }
 }

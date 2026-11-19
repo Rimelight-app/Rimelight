@@ -15,6 +15,23 @@ private val Context.dataStore by preferencesDataStore("clearplay")
 class ServerStore(private val context: Context) {
     private val serversKey = stringPreferencesKey("servers")
     private val activeKey = stringPreferencesKey("active")
+    private val localKey = androidx.datastore.preferences.core.booleanPreferencesKey("local_mode")
+
+    /** "Use music on this phone": signed in without a server. */
+    val localMode: Flow<Boolean> = context.dataStore.data.map { it[localKey] ?: false }
+
+    private val lastUrlKey = stringPreferencesKey("last_url")
+
+    /** The last server used; finds cached covers of older downloads that don't record it. */
+    val lastUrl: Flow<String?> = context.dataStore.data.map { it[lastUrlKey] }
+
+    suspend fun rememberUrl(url: String) {
+        context.dataStore.edit { if (it[lastUrlKey] != url) it[lastUrlKey] = url }
+    }
+
+    suspend fun setLocalMode(on: Boolean) {
+        context.dataStore.edit { it[localKey] = on }
+    }
 
     val servers: Flow<List<ServerConfig>> = context.dataStore.data.map { p ->
         p[serversKey]?.let { runCatching { SubsonicClient.json.decodeFromString<List<ServerConfig>>(it) }.getOrNull() }
@@ -35,6 +52,8 @@ class ServerStore(private val context: Context) {
             }.orEmpty().filterNot { key(it) == key(server) } + server
             p[serversKey] = SubsonicClient.json.encodeToString(list)
             p[activeKey] = key(server)
+            p[localKey] = false
+            p[lastUrlKey] = server.baseUrl
         }
     }
 

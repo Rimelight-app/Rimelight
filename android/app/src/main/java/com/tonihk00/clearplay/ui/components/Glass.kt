@@ -71,15 +71,29 @@ fun IconButtonCp(
     tint: Color = if (active) Cp.TextStrong else Cp.TextSoft,
 ) {
     val source = remember { MutableInteractionSource() }
-    val bg by animateColorAsState(if (active) Color.White.copy(alpha = 0.16f) else Color.Transparent, tween(Cp.ControlMs), label = "bg")
+    val pressed by source.collectIsPressedAsState()
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    // Pressed: a soft white glow (quick in, slower out) so every tap visibly lands.
+    val bg by animateColorAsState(
+        when {
+            pressed -> Color.White.copy(alpha = 0.22f)
+            active -> Color.White.copy(alpha = 0.16f)
+            else -> Color.Transparent
+        },
+        tween(if (pressed) 60 else 260),
+        label = "bg",
+    )
     Box(
         modifier
             .size(size)
-            .pressScale(source)
+            .pressScale(source, 0.88f)
             .clip(CircleShape)
             .background(bg)
             .then(if (outlined) Modifier.border(1.dp, Cp.GlassStroke, CircleShape) else Modifier)
-            .clickable(source, null, role = Role.Button, onClick = onClick),
+            .clickable(source, null, role = Role.Button) {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                onClick()
+            },
         contentAlignment = Alignment.Center,
     ) {
         CpIcon(icon, size = iconSize, tint = tint, contentDescription = contentDescription)
@@ -90,12 +104,18 @@ fun IconButtonCp(
 @Composable
 fun PrimaryPill(text: String, @DrawableRes icon: Int?, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val bg by animateColorAsState(if (pressed) Color(0xFFD4D4D8) else Cp.Primary, tween(if (pressed) 60 else 260), label = "pill")
     Row(
         modifier
-            .pressScale(source, 0.96f)
+            .pressScale(source, 0.94f)
             .clip(CircleShape)
-            .background(Cp.Primary)
-            .clickable(source, null, role = Role.Button, onClick = onClick)
+            .background(bg)
+            .clickable(source, null, role = Role.Button) {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                onClick()
+            }
             .padding(horizontal = 22.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),

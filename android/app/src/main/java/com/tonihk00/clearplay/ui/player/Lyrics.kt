@@ -139,7 +139,7 @@ fun SyncedLyrics(
     ) {
         val boxH = with(LocalDensity.current) { maxHeight.toPx() }
         val idx = max(0, active)
-        val target = boxH * 0.40f - (tops.getOrElse(idx) { 0f } + heights.getOrElse(idx) { 0f } / 2f)
+        val target = boxH * 0.30f - (tops.getOrElse(idx) { 0f } + heights.getOrElse(idx) { 0f } / 2f)
         LaunchedEffect(active, boxH, heights.getOrElse(idx) { 0f }) {
             manualJob?.cancel()
             manual.snapTo(0f)

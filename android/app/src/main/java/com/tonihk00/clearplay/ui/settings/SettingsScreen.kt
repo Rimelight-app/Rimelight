@@ -72,6 +72,10 @@ data class SettingsUi(
     val imageCacheBytes: Long = 0,
     val sleep: PlayerConnection.Sleep? = null,
     val version: String = "",
+    /** Songs found on the phone, or null without permission. */
+    val phoneSongs: Int? = null,
+    /** Signed in with "Use music on this phone" (no server). */
+    val localMode: Boolean = false,
 )
 
 interface SettingsActions {
@@ -83,6 +87,7 @@ interface SettingsActions {
     fun removeAllDownloads() {}
     fun clearImageCache() {}
     fun setSleep(minutes: Int?, endOfSong: Boolean) {}
+    fun phoneMusic(on: Boolean) {}
 }
 
 private val Bitrates = listOf(0, 320, 256, 192, 128, 96)
@@ -110,7 +115,7 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
         Text("Settings", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
 
         // Servers ---------------------------------------------------------------
-        Group("Servers", "Your Navidrome addresses. Tap one to switch.") {
+        Group("Servers", if (ui.localMode) "Playing music on this phone. Connect a server for your whole library." else "Your Navidrome addresses. Tap one to switch.") {
             ui.servers.forEach { srv ->
                 val isActive = ui.active?.let { it.baseUrl == srv.baseUrl && it.user == srv.user } == true
                 Row(
@@ -139,7 +144,23 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
             }
             ActionRow(R.drawable.ic_plus, "Add a server", "Home, Tailscale or a friend's") { actions.addServer() }
             Divider()
-            ActionRow(R.drawable.ic_x, "Sign out", ui.active?.let { "${it.user} on ${it.baseUrl.removePrefix("http://").removePrefix("https://")}" }) { confirmSignOut = true }
+            if (ui.localMode) {
+                ActionRow(R.drawable.ic_x, "Back to sign-in", "Leave phone-only mode") { actions.signOut() }
+            } else {
+                ActionRow(R.drawable.ic_x, "Sign out", ui.active?.let { "${it.user} on ${it.baseUrl.removePrefix("http://").removePrefix("https://")}" }) { confirmSignOut = true }
+            }
+        }
+
+        // Library ---------------------------------------------------------------
+        Group("Library", "Used when the server can't be reached, or without a server.") {
+            SwitchRow(
+                R.drawable.ic_smartphone, "Music on this phone",
+                when (ui.phoneSongs) {
+                    null -> "Allow access to show your phone's music"
+                    else -> "${ui.phoneSongs} song${if (ui.phoneSongs == 1) "" else "s"} found"
+                },
+                s.phoneMusic && ui.phoneSongs != null,
+            ) { actions.phoneMusic(it) }
         }
 
         // Streaming -------------------------------------------------------------

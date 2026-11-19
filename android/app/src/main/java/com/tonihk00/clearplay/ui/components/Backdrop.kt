@@ -52,13 +52,8 @@ fun CoverBackdrop(coverArt: String?, modifier: Modifier = Modifier, dim: Float =
     var blurred by remember { mutableStateOf<ImageBitmap?>(null) }
 
     LaunchedEffect(coverArt, client) {
-        if (coverArt == null || client == null) return@LaunchedEffect
-        val req = ImageRequest.Builder(context)
-            .data(client.coverUrl(coverArt, 150))
-            .memoryCacheKey("cover:${client.server.baseUrl}:$coverArt:150")
-            .diskCacheKey("cover:${client.server.baseUrl}:$coverArt:150")
-            .allowHardware(false)
-            .build()
+        if (coverArt == null) return@LaunchedEffect
+        val req = coverRequest(context, client, coverArt, 150)?.newBuilder()?.allowHardware(false)?.build() ?: return@LaunchedEffect
         val result = SingletonImageLoader.get(context).execute(req) as? SuccessResult ?: return@LaunchedEffect
         blurred = withContext(Dispatchers.Default) { blurOnce(result.image.toBitmap()).asImageBitmap() }
     }
@@ -108,7 +103,9 @@ fun BackdropLayer(blurred: ImageBitmap?, modifier: Modifier = Modifier, dim: Flo
 }
 
 /** Shrinks the cover to 48 px, box-blurs it three times and boosts saturation (like the desktop's 160 %). */
-fun blurOnce(src: Bitmap, size: Int = 48, radius: Int = 3): Bitmap {
+fun blurOnce(input: Bitmap, size: Int = 48, radius: Int = 3): Bitmap {
+    // A hardware bitmap (shared from the memory cache) can't be drawn on a software canvas.
+    val src = if (input.config == Bitmap.Config.HARDWARE) input.copy(Bitmap.Config.ARGB_8888, false) else input
     val out = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(out)
     val paint = Paint(Paint.FILTER_BITMAP_FLAG).apply {

@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -96,6 +97,8 @@ fun FullPlayer(
     fixedPositionMs: Long? = null,
     backdrop: @Composable () -> Unit = { CoverBackdrop(state.current?.coverArt, dim = 0.05f) },
     sleep: com.tonihk00.clearplay.player.PlayerConnection.Sleep? = null,
+    /** Bitrate cap and format in use (to show "→ OPUS 192"), or null. */
+    streamCap: Pair<Int, String>? = null,
 ) {
     val raw = state.current ?: return
     val song = raw.edited()
@@ -103,6 +106,17 @@ fun FullPlayer(
     var sleepSheet by remember { mutableStateOf(false) }
     fun toggle(p: Panel) { panel = if (panel == p) Panel.None else p }
     val pull = rememberPullToDismiss(onClose)
+    // Predictive back: the player follows the back swipe down, then closes (or springs back).
+    val screenPx = with(androidx.compose.ui.platform.LocalDensity.current) { androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp.toPx() }
+    androidx.activity.compose.PredictiveBackHandler { progress ->
+        try {
+            progress.collect { e -> pull.follow(e.progress * screenPx * 0.35f) }
+            onClose()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            pull.settle(0f)
+            throw e
+        }
+    }
 
     Box(
         modifier.fillMaxSize()
@@ -120,11 +134,11 @@ fun FullPlayer(
         backdrop()
         Column(Modifier.fillMaxSize().systemBarsPadding()) {
             // Grab handle: pull down anywhere outside the lyrics to minimise.
-            Box(Modifier.fillMaxWidth().padding(top = 6.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxWidth().padding(top = 2.dp), contentAlignment = Alignment.Center) {
                 Box(Modifier.size(width = 36.dp, height = 4.dp).clip(CircleShape).background(Cp.TextFaint.copy(alpha = 0.5f)))
             }
             // Top bar: close on the left, lyrics/queue toggles in a glass chip on the right.
-            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButtonCp(R.drawable.ic_chevron_down, "Close", onClose, size = 40.dp, tint = Cp.TextSoft)
                 Spacer(Modifier.weight(1f))
                 Row(Modifier.glassPanel(CircleShape, strong = true).padding(2.dp)) {
@@ -141,7 +155,11 @@ fun FullPlayer(
                 label = "panel",
             ) { p ->
                 when (p) {
-                    Panel.None -> BigCover(song)
+                    Panel.None -> CoverAndTitle(song, streamCap) {
+                        SeekBar(controls::position, state.durationMs, state.isPlaying, raw.id, controls::seekTo)
+                        Spacer(Modifier.height(6.dp))
+                        TransportRow(state, controls)
+                    }
                     Panel.Lyrics -> Column(Modifier.fillMaxSize()) {
                         SmallHeader(song)
                         Box(Modifier.weight(1f).padding(horizontal = 24.dp)) {
@@ -162,8 +180,7 @@ fun FullPlayer(
                 }
             }
 
-            Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 12.dp)) {
-                if (panel == Panel.None) TitleBlock(song)
+            if (panel != Panel.None) Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 12.dp)) {
                 Spacer(Modifier.height(10.dp))
                 SeekBar(controls::position, state.durationMs, state.isPlaying, raw.id, controls::seekTo)
                 Spacer(Modifier.height(6.dp))
@@ -180,6 +197,9 @@ class PullToDismiss(private val scope: kotlinx.coroutines.CoroutineScope, privat
     val offset get() = anim.value
 
     val draggable = androidx.compose.foundation.gestures.DraggableState { d -> scope.launch { anim.snapTo((anim.value + d).coerceAtLeast(0f)) } }
+
+    /** Follow an external drag (predictive back) to [px]. */
+    suspend fun follow(px: Float) = anim.snapTo(px.coerceAtLeast(0f))
 
     fun settle(velocity: Float) {
         scope.launch {
@@ -225,21 +245,35 @@ fun rememberPullToDismiss(onDismiss: () -> Unit): PullToDismiss {
     return remember { PullToDismiss(scope, threshold) { latest.value() } }
 }
 
+/**
+ * Cover, title, seek bar and controls as one group, sitting a little above centre: spare
+ * height is split one third above, two thirds below, so nothing floats apart on tall phones.
+ */
 @Composable
-private fun BigCover(song: Song) {
-    BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
-        val side = minOf(maxWidth, maxHeight)
-        Cover(
-            song.coverArt,
-            Modifier.size(side).shadow(36.dp, Cp.BigCoverShape, ambientColor = androidx.compose.ui.graphics.Color.Black, spotColor = androidx.compose.ui.graphics.Color.Black),
-            Cp.BigCoverShape,
-            sizePx = 800,
-        )
+private fun CoverAndTitle(song: Song, streamCap: Pair<Int, String>?, controls: @Composable () -> Unit) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val side = minOf(maxWidth - 56.dp, maxHeight - 330.dp).coerceAtLeast(160.dp)
+        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(Modifier.weight(1f))
+            Cover(
+                song.coverArt,
+                Modifier.size(side).shadow(36.dp, Cp.BigCoverShape, ambientColor = androidx.compose.ui.graphics.Color.Black, spotColor = androidx.compose.ui.graphics.Color.Black),
+                Cp.BigCoverShape,
+                sizePx = 600,
+            )
+            Spacer(Modifier.height(22.dp))
+            Column(Modifier.padding(horizontal = 24.dp)) {
+                TitleBlock(song, streamCap)
+                Spacer(Modifier.height(10.dp))
+                controls()
+            }
+            Spacer(Modifier.weight(2f))
+        }
     }
 }
 
 @Composable
-private fun TitleBlock(song: Song) {
+private fun TitleBlock(song: Song, streamCap: Pair<Int, String>?) {
     val actions = LocalActions.current
     Row(verticalAlignment = Alignment.Top) {
         Column(Modifier.weight(1f)) {
@@ -253,10 +287,39 @@ private fun TitleBlock(song: Song) {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.clickable { song.albumId?.let(actions::openAlbum) },
             )
-            Spacer(Modifier.height(6.dp))
-            StarRating(song.userRating, { actions.rate(song, it) }, Modifier.padding(start = 0.dp), starSize = 17.dp)
+            QualityLine(song, streamCap, Modifier.padding(top = 6.dp))
+            Spacer(Modifier.height(4.dp))
+            if (!song.isLocal) StarRating(song.userRating, { actions.rate(song, it) }, Modifier.padding(start = 0.dp), starSize = 17.dp)
         }
-        LikeButton(song.isStarred, { actions.toggleLike(song) })
+        if (!song.isLocal) LikeButton(song.isStarred, { actions.toggleLike(song) })
+    }
+}
+
+/** "FLAC · 24-bit · 96 kHz · 2 304 kbps" with a Hi-Res badge, like the desktop player bar. */
+@Composable
+fun QualityLine(song: Song, streamCap: Pair<Int, String>?, modifier: Modifier = Modifier) {
+    val parts = listOfNotNull(
+        song.suffix?.uppercase(),
+        song.bitDepth?.takeIf { it > 0 }?.let { "$it-bit" },
+        song.samplingRate?.takeIf { it > 0 }?.let { r -> if (r % 1000 == 0) "${r / 1000} kHz" else "%.1f kHz".format(r / 1000.0) },
+        song.bitRate?.takeIf { it > 0 }?.let { "$it kbps" },
+    )
+    if (parts.isEmpty()) return
+    val hiRes = (song.bitDepth ?: 0) >= 24 && (song.samplingRate ?: 0) >= 48_000
+    val downloaded = com.tonihk00.clearplay.ui.LocalDownloadStates.current[song.id]?.done == true
+    val converted = streamCap?.takeIf { (cap, _) -> !song.isLocal && !downloaded && cap > 0 && (song.bitRate ?: 0) > cap }
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Text(parts.joinToString(" · "), style = MaterialTheme.typography.labelMedium, color = Cp.TextFaint, maxLines = 1)
+        if (hiRes && converted == null) {
+            Text(
+                "Hi-Res",
+                Modifier.padding(start = 8.dp).border(1.dp, Cp.TextFaint, RoundedCornerShape(4.dp)).padding(horizontal = 5.dp, vertical = 1.dp),
+                style = MaterialTheme.typography.labelSmall, color = Cp.TextSoft,
+            )
+        }
+        if (converted != null) {
+            Text("  →  ${converted.second.uppercase()} ${converted.first}", style = MaterialTheme.typography.labelMedium, color = Cp.TextSoft, maxLines = 1)
+        }
     }
 }
 
@@ -269,7 +332,7 @@ private fun SmallHeader(song: Song) {
             Text(song.title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(song.artist.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = Cp.TextSoft, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        LikeButton(song.isStarred, { actions.toggleLike(song) }, size = 40.dp, iconSize = 20.dp)
+        if (!song.isLocal) LikeButton(song.isStarred, { actions.toggleLike(song) }, size = 40.dp, iconSize = 20.dp)
     }
 }
 

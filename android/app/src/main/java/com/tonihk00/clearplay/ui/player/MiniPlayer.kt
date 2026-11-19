@@ -62,7 +62,7 @@ fun MiniPlayer(state: PlayerState, controls: PlayerControls, onOpen: () -> Unit,
                     Text(song.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(song.artist.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = Cp.TextSoft, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                LikeButton(song.isStarred, { actions.toggleLike(song) }, size = 40.dp, iconSize = 20.dp)
+                if (!song.isLocal) LikeButton(song.isStarred, { actions.toggleLike(song) }, size = 40.dp, iconSize = 20.dp)
                 Spacer(Modifier.width(2.dp))
                 PlayButton(state.isPlaying, controls::togglePlay, size = 42.dp)
                 IconButtonCp(R.drawable.ic_skip_forward_filled, "Next", controls::next, size = 42.dp, iconSize = 20.dp, tint = Cp.TextStrong)

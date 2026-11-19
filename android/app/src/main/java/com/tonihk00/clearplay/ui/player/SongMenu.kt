@@ -62,15 +62,15 @@ fun SongMenuContent(raw: Song, onDismiss: () -> Unit) {
                 )
             }
         }
-        StarRating(song.userRating, { actions.rate(song, it) }, Modifier.padding(start = 14.dp, top = 4.dp, bottom = 6.dp), starSize = 20.dp)
+        if (!song.isLocal) StarRating(song.userRating, { actions.rate(song, it) }, Modifier.padding(start = 14.dp, top = 4.dp, bottom = 6.dp), starSize = 20.dp)
         HorizontalDivider(color = Cp.Border, modifier = Modifier.padding(vertical = 6.dp))
         MenuItem(R.drawable.ic_list_start, "Play next") { actions.playNext(listOf(raw)); onDismiss() }
         MenuItem(R.drawable.ic_list_plus, "Add to queue") { actions.addToQueue(listOf(raw)); onDismiss() }
-        MenuItem(if (song.isStarred) R.drawable.ic_heart_filled else R.drawable.ic_heart, if (song.isStarred) "Remove from favourites" else "Add to favourites") {
+        if (!song.isLocal) MenuItem(if (song.isStarred) R.drawable.ic_heart_filled else R.drawable.ic_heart, if (song.isStarred) "Remove from favourites" else "Add to favourites") {
             actions.toggleLike(song)
         }
         val dl = com.tonihk00.clearplay.ui.LocalDownloadStates.current[raw.id]
-        when {
+        if (!raw.isLocal) when {
             dl?.done == true -> MenuItem(R.drawable.ic_circle_check, "Remove download") { actions.removeDownload(listOf(raw)); onDismiss() }
             dl?.active == true -> MenuItem(R.drawable.ic_download, "Downloading… ${dl.percent.toInt()}%") {}
             else -> MenuItem(R.drawable.ic_download, "Download") { actions.download(listOf(raw)); onDismiss() }

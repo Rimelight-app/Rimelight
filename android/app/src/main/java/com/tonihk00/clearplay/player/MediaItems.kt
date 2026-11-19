@@ -17,8 +17,13 @@ private const val EXTRA_SONG = "cp.song"
  * strips localConfiguration when items cross from the controller to the session; the
  * service puts it back in onAddMediaItems.
  */
-fun Song.toMediaItem(client: SubsonicClient, maxBitRate: Int = 0, format: String? = null): MediaItem {
-    val stream = client.streamUrl(id, maxBitRate, format).toUri()
+fun Song.toMediaItem(client: SubsonicClient?, maxBitRate: Int = 0, format: String? = null): MediaItem {
+    val stream = when {
+        isLocal -> com.tonihk00.clearplay.data.PhoneMusic.uriOf(id)
+        client != null -> client.streamUrl(id, maxBitRate, format).toUri()
+        // Downloaded song without a server: the URL only names it; the bytes come from storage.
+        else -> "${server ?: "http://offline.invalid"}/rest/stream?id=$id".toUri()
+    }
     return MediaItem.Builder()
         .setMediaId(id)
         .setUri(stream)
@@ -39,7 +44,8 @@ fun Song.toMetadata(client: SubsonicClient?): MediaMetadata =
         .setDiscNumber(discNumber)
         .setRecordingYear(year)
         .setDurationMs(duration * 1000L)
-        .setArtworkUri(client?.coverUrl(coverArt, 600)?.let(Uri::parse))
+        // Artwork is loaded by CoverBitmapLoader from the song in the extras (works offline).
+        .setArtworkUri(coverArt?.let { Uri.parse("clearplay-cover://$it") })
         .setIsPlayable(true)
         .setIsBrowsable(false)
         .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)

@@ -1,10 +1,15 @@
 package com.tonihk00.clearplay.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -33,9 +38,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
@@ -47,9 +52,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import coil3.SingletonImageLoader
 import com.tonihk00.clearplay.ClearPlayApp
 import com.tonihk00.clearplay.R
 import com.tonihk00.clearplay.Session
+import com.tonihk00.clearplay.data.api.Album
 import com.tonihk00.clearplay.data.api.Song
 import com.tonihk00.clearplay.data.api.SubsonicClient
 import com.tonihk00.clearplay.player.PlayerConnection
@@ -58,9 +65,13 @@ import com.tonihk00.clearplay.ui.components.BackdropLayer
 import com.tonihk00.clearplay.ui.components.CoverBackdrop
 import com.tonihk00.clearplay.ui.components.CpIcon
 import com.tonihk00.clearplay.ui.components.LocalClient
+import com.tonihk00.clearplay.ui.components.ToastHost
+import com.tonihk00.clearplay.ui.components.ToastState
+import com.tonihk00.clearplay.ui.components.coverRequest
 import com.tonihk00.clearplay.ui.components.liveGlass
 import com.tonihk00.clearplay.ui.library.AlbumScreen
 import com.tonihk00.clearplay.ui.library.ArtistScreen
+import com.tonihk00.clearplay.ui.library.BackButton
 import com.tonihk00.clearplay.ui.library.GenreScreen
 import com.tonihk00.clearplay.ui.library.LibraryScreen
 import com.tonihk00.clearplay.ui.library.PlaylistScreen
@@ -72,14 +83,33 @@ import com.tonihk00.clearplay.ui.player.PlayerControls
 import com.tonihk00.clearplay.ui.player.SongMenu
 import com.tonihk00.clearplay.ui.search.SearchScreen
 import com.tonihk00.clearplay.ui.settings.SettingsScreen
+import com.tonihk00.clearplay.ui.stats.StatsScreen
 import com.tonihk00.clearplay.ui.theme.Cp
 import com.tonihk00.clearplay.ui.theme.LocalReduceMotion
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.net.URLDecoder
 import java.net.URLEncoder
+
+/** Asks for the audio permission, then switches to "music on this phone". */
+@Composable
+fun rememberUsePhone(onDone: () -> Unit = {}): () -> Unit {
+    val app = ClearPlayApp.instance
+    val scope = rememberCoroutineScope()
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        app.phone.refresh()
+        scope.launch { app.servers.setLocalMode(true); onDone() }
+    }
+    return {
+        if (app.phone.hasPermission()) scope.launch { app.phone.refresh(); app.servers.setLocalMode(true); onDone() }
+        else launcher.launch(app.phone.permission)
+    }
+}
 
 @Composable
 fun AppRoot() {
@@ -87,22 +117,31 @@ fun AppRoot() {
     val session by app.session.collectAsState()
     val settings by app.settings.state.collectAsState()
     val scope = rememberCoroutineScope()
+    val usePhone = rememberUsePhone()
     CompositionLocalProvider(LocalBackdropMode provides settings.backdrop) {
-    when (val s = session) {
-        Session.Loading -> BackdropLayer(null)
-        Session.LoggedOut -> Box(Modifier.fillMaxSize()) {
-            BackdropLayer(null)
-            LoginScreen(onLoggedIn = { app.servers.saveAndActivate(it) })
-        }
-        is Session.Active -> CompositionLocalProvider(LocalClient provides s.client, LocalEdits provides app.edits) {
-            MainScaffold(app.player, s.client) {
-                scope.launch {
-                    app.player.reset()
-                    app.servers.remove(s.client.server)
+        when (val s = session) {
+            Session.Loading -> BackdropLayer(null)
+            Session.LoggedOut -> Box(Modifier.fillMaxSize()) {
+                BackdropLayer(null)
+                LoginScreen(onLoggedIn = { app.servers.saveAndActivate(it) }, onUsePhone = usePhone)
+            }
+            is Session.Active -> CompositionLocalProvider(LocalClient provides s.client, LocalEdits provides app.edits) {
+                MainScaffold(app.player, s.client) {
+                    scope.launch {
+                        app.player.reset()
+                        app.servers.remove(s.client.server)
+                    }
+                }
+            }
+            Session.Local -> CompositionLocalProvider(LocalClient provides null, LocalEdits provides app.edits) {
+                MainScaffold(app.player, null) {
+                    scope.launch {
+                        app.player.reset()
+                        app.servers.setLocalMode(false)
+                    }
                 }
             }
         }
-    }
     }
 }
 
@@ -123,86 +162,153 @@ private class PlayerControlsImpl(private val p: PlayerConnection) : PlayerContro
 private enum class Tab(val route: String, val label: String, val icon: Int) {
     Library("library", "Library", R.drawable.ic_library),
     Search("search", "Search", R.drawable.ic_search),
+    Stats("stats", "Stats", R.drawable.ic_chart_line),
     Settings("settings", "Settings", R.drawable.ic_settings),
 }
 
+private fun plural(n: Int, one: String) = "$n $one${if (n == 1) "" else "s"}"
+
 @Composable
-private fun MainScaffold(player: PlayerConnection, client: SubsonicClient, onLogout: () -> Unit) {
+private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLogout: () -> Unit) {
     val app = ClearPlayApp.instance
+    val context = LocalContext.current
     val state by player.state.collectAsState()
     val nav = rememberNavController()
     val scope = rememberCoroutineScope()
-    val settings by app.settings.state.collectAsState()
     val hazeState = rememberHazeState()
-    val haze = if (settings.liveBlur) hazeState else null
-    val dlStates by app.downloads.states.collectAsState()
-    val dlSongs by app.downloads.songs.collectAsState()
-    val sleep by player.sleep.collectAsState()
-    var addingServer by remember { mutableStateOf(false) }
     val reduce = LocalReduceMotion.current
     val controls = remember(player) { PlayerControlsImpl(player) }
+    val settings by app.settings.state.collectAsState()
+    val haze = if (settings.liveBlur) hazeState else null
+    val dlStates by app.downloads.states.collectAsState()
+    val dlSongsRaw by app.downloads.songs.collectAsState()
+    val lastUrl by app.lastServerUrl.collectAsState()
+    val dlSongs = remember(dlSongsRaw, lastUrl) { dlSongsRaw.map(app::withOfflineCover) }
+    val library by app.library.collectAsState()
+    val online by app.connection.online.collectAsState()
+    val sleep by player.sleep.collectAsState()
+    val toast = remember { ToastState() }
     var fullOpen by remember { mutableStateOf(false) }
     var menuSong by remember { mutableStateOf<Song?>(null) }
+    var addingServer by remember { mutableStateOf(false) }
     var dockHeight by remember { mutableStateOf(0.dp) }
     val density = LocalDensity.current
+    player.library = { app.library.value }
 
-    val actions = remember(nav, player, client) {
-        object : UiActions {
-            override fun openAlbum(id: String) { fullOpen = false; nav.navigate("album/$id") }
-            override fun openArtist(id: String) { fullOpen = false; nav.navigate("artist/$id") }
-            override fun openPlaylist(id: String) = nav.navigate("playlist/$id")
-            override fun openGenre(name: String) = nav.navigate("genre/${URLEncoder.encode(name, "UTF-8")}")
-            override fun play(songs: List<Song>, index: Int, shuffle: Boolean) = player.play(songs, index, shuffle)
-            override fun playNext(songs: List<Song>) = player.playNext(songs)
-            override fun addToQueue(songs: List<Song>) = player.addToQueue(songs)
-            override fun shuffleLibrary() = player.shuffleLibrary()
-            override fun songMenu(song: Song) { menuSong = song }
-            override fun toggleLike(song: Song) { scope.launch { app.edits.toggleStar(client, song) } }
-            override fun rate(song: Song, stars: Int) { scope.launch { app.edits.rate(client, song, stars) } }
-            override fun download(songs: List<Song>) {
-                val st = app.settings.state.value
-                app.downloads.download(client, songs, st.downloadBitrate, st.format.param)
-            }
-            override fun removeDownload(songs: List<Song>) = app.downloads.remove(songs.map { it.id })
+    suspend fun songsOf(albums: List<Album>): List<Song> {
+        val lib = app.library.value ?: return emptyList()
+        return coroutineScope {
+            albums.map { a -> async { a.song.ifEmpty { runCatching { lib.album(a.id).song }.getOrDefault(emptyList()) } } }.awaitAll().flatten()
         }
     }
 
-    // Lyrics for the current song: synced from the server first, then plain/legacy text.
-    var lyrics by remember { mutableStateOf<LyricsState>(LyricsState.None) }
-    val current = state.current
-    LaunchedEffect(current?.id, client) {
-        if (current == null) { lyrics = LyricsState.None; return@LaunchedEffect }
-        lyrics = LyricsState.Loading
-        lyrics = runCatching { client.lyrics(current) }.getOrNull()?.let { LyricsState.Ready(it) } ?: LyricsState.None
+    val actions = remember(nav, player, client) {
+        object : UiActions {
+            override fun openAlbum(id: String) { fullOpen = false; nav.navigate("album/${URLEncoder.encode(id, "UTF-8")}") }
+            override fun openArtist(id: String) { fullOpen = false; nav.navigate("artist/${URLEncoder.encode(id, "UTF-8")}") }
+            override fun openPlaylist(id: String) = nav.navigate("playlist/${URLEncoder.encode(id, "UTF-8")}")
+            override fun openGenre(name: String) = nav.navigate("genre/${URLEncoder.encode(name, "UTF-8")}")
+            override fun play(songs: List<Song>, index: Int, shuffle: Boolean) = player.play(songs, index, shuffle)
+            override fun playNext(songs: List<Song>) {
+                player.playNext(songs)
+                toast.show(if (songs.size == 1) "Playing next: ${songs[0].title}" else "${plural(songs.size, "song")} play next")
+            }
+            override fun addToQueue(songs: List<Song>) {
+                player.addToQueue(songs)
+                toast.show(if (songs.size == 1) "Added to queue: ${songs[0].title}" else "${plural(songs.size, "song")} added to queue")
+            }
+            override fun shuffleLibrary() {
+                player.shuffleLibrary()
+                toast.show("Shuffling your library")
+            }
+            override fun songMenu(song: Song) { menuSong = song }
+            override fun toggleLike(song: Song) {
+                val c = client
+                if (c == null || !app.connection.online.value) return toast.show("Likes need your server")
+                scope.launch { app.edits.toggleStar(c, song) }
+            }
+            override fun rate(song: Song, stars: Int) {
+                val c = client
+                if (c == null || !app.connection.online.value) return toast.show("Ratings need your server")
+                scope.launch { app.edits.rate(c, song, stars) }
+            }
+            override fun download(songs: List<Song>) {
+                val c = client
+                if (c == null || !app.connection.online.value) return toast.show("Downloading needs your server")
+                val st = app.settings.state.value
+                app.downloads.download(c, songs, st.downloadBitrate, st.format.param)
+                toast.show(if (st.downloadWifiOnly && !isUnmetered(context)) "Will download on Wi-Fi" else "Downloading ${plural(songs.size, "song")}")
+            }
+            override fun removeDownload(songs: List<Song>) {
+                app.downloads.remove(songs.map { it.id })
+                toast.show("Removed ${plural(songs.size, "download")}")
+            }
+            override fun albums(albums: List<Album>, action: AlbumBulk) {
+                scope.launch {
+                    val songs = songsOf(albums)
+                    if (songs.isEmpty()) return@launch toast.show("Nothing to play")
+                    when (action) {
+                        AlbumBulk.Play -> player.play(songs)
+                        AlbumBulk.Shuffle -> player.play(songs, shuffle = true)
+                        AlbumBulk.PlayNext -> playNext(songs)
+                        AlbumBulk.AddToQueue -> addToQueue(songs)
+                        AlbumBulk.Download -> download(songs)
+                        AlbumBulk.RemoveDownload -> removeDownload(songs.filter { dlStates[it.id] != null })
+                    }
+                }
+            }
+        }
     }
 
-    BackHandler(enabled = fullOpen) { fullOpen = false }
+    // Lyrics for the current song: from the server, or the copy saved with a download.
+    var lyrics by remember { mutableStateOf<LyricsState>(LyricsState.None) }
+    val current = state.current
+    LaunchedEffect(current?.id, library) {
+        if (current == null) { lyrics = LyricsState.None; return@LaunchedEffect }
+        lyrics = LyricsState.Loading
+        val l = runCatching { library?.lyrics(current) }.getOrNull() ?: app.downloads.savedLyrics(current.id)
+        lyrics = l?.let { LyricsState.Ready(it) } ?: LyricsState.None
+    }
+    // Warm the big cover as soon as a song starts, so the full player opens without a blink.
+    LaunchedEffect(current?.coverArt) {
+        current?.coverArt?.let { art ->
+            listOf(150, 600).forEach { size -> coverRequest(context, client, art, size)?.let { SingletonImageLoader.get(context).enqueue(it) } }
+        }
+    }
+
     val playingId = current?.id
+    val streamCap = remember(settings, online) { app.streamBitrate().takeIf { it > 0 }?.let { it to settings.format.param } }
 
     CompositionLocalProvider(
         LocalActions provides actions,
         LocalDownloadStates provides dlStates,
         LocalDownloadedSongs provides dlSongs,
+        LocalLibrary provides library,
+        LocalOnline provides (client == null || online),
+        LocalToast provides toast::show,
+        LocalConnectionLost provides { app.connection.recheck() },
     ) {
         Box(Modifier.fillMaxSize()) {
-            // Everything under the dock is a Haze source, so the mini player can blur it.
+            // Everything under the dock is a Haze source, so the bars can blur it.
             // While the fullscreen player covers them, the page and dock are hidden from TalkBack.
             val hidden = if (fullOpen) Modifier.clearAndSetSemantics {} else Modifier
             Box(Modifier.fillMaxSize().hazeSource(hazeState).then(hidden)) {
                 CoverBackdrop(current?.coverArt)
                 AppNavHost(nav, dockHeight, playingId, client, onLogout, sleep) { addingServer = true }
             }
-            Dock(
-                nav, state, controls, haze,
-                onOpen = { fullOpen = true },
-                modifier = Modifier.align(Alignment.BottomCenter).then(hidden).onSizeChanged { dockHeight = with(density) { it.height.toDp() } },
-            )
+            Column(
+                Modifier.align(Alignment.BottomCenter).then(hidden).onSizeChanged { dockHeight = with(density) { it.height.toDp() } },
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                ToastHost(toast, haze, Modifier.padding(bottom = 8.dp))
+                Dock(nav, state, controls, haze, onOpen = { fullOpen = true })
+            }
             AnimatedVisibility(
                 fullOpen && current != null,
                 enter = slideInVertically(tween(if (reduce) 0 else Cp.ScreenMs, easing = Cp.EaseOutSoft)) { it } + fadeIn(tween(if (reduce) 0 else 200)),
                 exit = slideOutVertically(tween(if (reduce) 0 else Cp.ScreenMs, easing = Cp.EaseOutSoft)) { it } + fadeOut(tween(if (reduce) 0 else 250)),
             ) {
-                FullPlayer(state, controls, lyrics, onClose = { fullOpen = false }, sleep = sleep)
+                FullPlayer(state, controls, lyrics, onClose = { fullOpen = false }, sleep = sleep, streamCap = streamCap)
             }
             menuSong?.let { SongMenu(it) { menuSong = null } }
             if (addingServer) {
@@ -214,11 +320,16 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient, onLog
                         app.servers.saveAndActivate(srv)
                         addingServer = false
                     })
-                    com.tonihk00.clearplay.ui.library.BackButton({ addingServer = false })
+                    BackButton({ addingServer = false })
                 }
             }
         }
     }
+}
+
+private fun isUnmetered(context: android.content.Context): Boolean {
+    val cm = context.getSystemService(android.net.ConnectivityManager::class.java) ?: return true
+    return cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED) ?: false
 }
 
 @Composable
@@ -226,36 +337,43 @@ private fun AppNavHost(
     nav: NavHostController,
     bottom: Dp,
     playingId: String?,
-    client: SubsonicClient,
+    client: SubsonicClient?,
     onLogout: () -> Unit,
     sleep: PlayerConnection.Sleep?,
     onAddServer: () -> Unit,
 ) {
-    val enter = fadeIn(tween(Cp.ScreenMs, easing = Cp.EaseOutSoft))
-    val exit = fadeOut(tween(150))
+    val reduce = LocalReduceMotion.current
+    val t = if (reduce) 0 else Cp.ScreenMs
+    fun dec(s: String?) = URLDecoder.decode(s.orEmpty(), "UTF-8")
     NavHost(
         nav, startDestination = Tab.Library.route,
-        enterTransition = { enter }, exitTransition = { exit }, popEnterTransition = { enter }, popExitTransition = { exit },
+        // Pages slide in a little from the right and fade; going back (also the predictive
+        // back swipe) shrinks the page away and reveals the one below.
+        enterTransition = { fadeIn(tween(t, easing = Cp.EaseOutSoft)) + slideInHorizontally(tween(t, easing = Cp.EaseOutSoft)) { it / 10 } },
+        exitTransition = { fadeOut(tween(t / 2)) + scaleOut(tween(t, easing = Cp.EaseOutSoft), 0.97f) },
+        popEnterTransition = { fadeIn(tween(t, easing = Cp.EaseOutSoft)) + scaleIn(tween(t, easing = Cp.EaseOutSoft), 0.97f) },
+        popExitTransition = { fadeOut(tween(t, easing = Cp.EaseOutSoft)) + scaleOut(tween(t, easing = Cp.EaseOutSoft), 0.9f) },
     ) {
         composable(Tab.Library.route) { LibraryScreen(bottom, playingId) }
         composable(Tab.Search.route) { SearchScreen(bottom, playingId) }
+        composable(Tab.Stats.route) { StatsScreen(bottom) }
         composable(Tab.Settings.route) { SettingsRoute(client, bottom, sleep, onLogout, onAddServer) }
         composable("album/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
-            AlbumScreen(it.arguments?.getString("id").orEmpty(), bottom, playingId) { nav.popBackStack() }
+            AlbumScreen(dec(it.arguments?.getString("id")), bottom, playingId) { nav.popBackStack() }
         }
         composable("artist/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
-            ArtistScreen(it.arguments?.getString("id").orEmpty(), bottom) { nav.popBackStack() }
+            ArtistScreen(dec(it.arguments?.getString("id")), bottom) { nav.popBackStack() }
         }
         composable("playlist/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
-            PlaylistScreen(it.arguments?.getString("id").orEmpty(), bottom, playingId) { nav.popBackStack() }
+            PlaylistScreen(dec(it.arguments?.getString("id")), bottom, playingId) { nav.popBackStack() }
         }
         composable("genre/{name}", listOf(navArgument("name") { type = NavType.StringType })) {
-            GenreScreen(URLDecoder.decode(it.arguments?.getString("name").orEmpty(), "UTF-8"), bottom, playingId) { nav.popBackStack() }
+            GenreScreen(dec(it.arguments?.getString("name")), bottom, playingId) { nav.popBackStack() }
         }
     }
 }
 
-/** Mini player (live glass) above the tab bar (solid fade, no blur). */
+/** Mini player and tab bar, both frosted glass floating over the page. */
 @Composable
 private fun Dock(nav: NavHostController, state: PlayerState, controls: PlayerControls, haze: HazeState?, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val entry by nav.currentBackStackEntryAsState()
@@ -285,11 +403,10 @@ private fun DockContent(
     onTab: (Tab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Both bars float as frosted glass over the page, like the desktop player bar.
     Column(modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 10.dp).padding(bottom = 6.dp)) {
         MiniPlayer(state, controls, onOpen, haze, Modifier.padding(bottom = 8.dp))
         Row(
-            Modifier.fillMaxWidth().liveGlass(haze, RoundedCornerShape(22.dp)).padding(horizontal = 8.dp, vertical = 2.dp),
+            Modifier.fillMaxWidth().liveGlass(haze, RoundedCornerShape(22.dp)).padding(horizontal = 6.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceAround,
         ) {
             Tab.entries.forEach { t -> TabItem(t, t == selected) { onTab(t) } }
@@ -305,7 +422,7 @@ private fun TabItem(tab: Tab, selected: Boolean, onClick: () -> Unit) {
             .clip(RoundedCornerShape(16.dp))
             .background(if (selected) Cp.Accent else Color.Transparent)
             .clickable(remember { MutableInteractionSource() }, null, onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 6.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CpIcon(tab.icon, size = 22.dp, tint = color)
@@ -321,17 +438,22 @@ internal fun DockPreview(state: PlayerState, selectedIndex: Int) {
 
 /** Settings page wired to the app: servers (with latency), settings, downloads, caches. */
 @Composable
-private fun SettingsRoute(client: SubsonicClient, bottom: Dp, sleep: PlayerConnection.Sleep?, onLogout: () -> Unit, onAddServer: () -> Unit) {
+private fun SettingsRoute(client: SubsonicClient?, bottom: Dp, sleep: PlayerConnection.Sleep?, onLogout: () -> Unit, onAddServer: () -> Unit) {
     val app = ClearPlayApp.instance
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val servers by app.servers.servers.collectAsState(emptyList())
     val settings by app.settings.state.collectAsState()
     val dlSongs by app.downloads.songs.collectAsState()
     val dlBytes by app.downloads.bytes.collectAsState()
+    val phoneSongs by app.phone.songs.collectAsState()
     var latency by remember { mutableStateOf<Map<String, Long?>>(emptyMap()) }
     var imageBytes by remember { mutableStateOf(0L) }
-    val loader = coil3.SingletonImageLoader.get(context)
+    val loader = SingletonImageLoader.get(context)
+    val askPhone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        app.phone.refresh()
+        scope.launch { app.settings.update { s -> s.copy(phoneMusic = true) } }
+    }
 
     LaunchedEffect(servers) {
         latency = servers.associate { it.baseUrl to null }
@@ -363,13 +485,19 @@ private fun SettingsRoute(client: SubsonicClient, bottom: Dp, sleep: PlayerConne
                 imageBytes = 0L
             }
             override fun setSleep(minutes: Int?, endOfSong: Boolean) = app.player.setSleepTimer(minutes, endOfSong)
+            override fun phoneMusic(on: Boolean) {
+                if (on && !app.phone.hasPermission()) askPhone.launch(app.phone.permission)
+                else scope.launch { app.settings.update { s -> s.copy(phoneMusic = on) } }
+            }
         }
     }
     SettingsScreen(
         com.tonihk00.clearplay.ui.settings.SettingsUi(
-            servers = servers, active = client.server, latency = latency, settings = settings,
+            servers = servers, active = client?.server, latency = latency, settings = settings,
             downloadCount = dlSongs.size, downloadBytes = dlBytes, imageCacheBytes = imageBytes,
             sleep = sleep, version = com.tonihk00.clearplay.BuildConfigInfo.versionName,
+            phoneSongs = if (app.phone.hasPermission()) phoneSongs.size else null,
+            localMode = client == null,
         ),
         actions, bottom,
     )

@@ -15,7 +15,6 @@ import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.scheduler.Requirements
 import coil3.SingletonImageLoader
-import coil3.request.ImageRequest
 import com.tonihk00.clearplay.data.api.Song
 import com.tonihk00.clearplay.data.api.SubsonicClient
 import com.tonihk00.clearplay.player.CpDownloadService
@@ -88,32 +87,53 @@ class Downloads(private val context: Context, private val scope: CoroutineScope)
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
     fun download(client: SubsonicClient, songs: List<Song>, maxBitRate: Int, format: String?) {
-        for (s in songs) {
-            if (_states.value[s.id]?.let { it.done || it.active } == true) continue
+        val todo = songs.filter { !it.isLocal && _states.value[it.id]?.let { st -> st.done || st.active } != true }
+        for (s in todo) {
+            val meta = s.copy(server = client.server.baseUrl)
             val request = DownloadRequest.Builder(s.id, client.streamUrl(s.id, maxBitRate, format).toUri())
                 .setCustomCacheKey(cacheKey(s.id))
-                .setData(SubsonicClient.json.encodeToString(Song.serializer(), s).toByteArray())
+                .setData(SubsonicClient.json.encodeToString(Song.serializer(), meta).toByteArray())
                 .build()
             DownloadService.sendAddDownload(context, CpDownloadService::class.java, request, false)
         }
-        prefetchCovers(client, songs)
+        prefetchCovers(client, todo)
+        // Lyrics too, so the lyrics view works offline.
+        scope.launch(Dispatchers.IO) {
+            todo.forEach { s ->
+                val file = lyricsFile(s.id)
+                if (!file.exists()) runCatching { client.lyrics(s) }.getOrNull()?.let {
+                    file.writeText(SubsonicClient.json.encodeToString(com.tonihk00.clearplay.data.api.Lyrics.serializer(), it))
+                }
+            }
+        }
     }
+
+    private val lyricsDir = File(context.filesDir, "lyrics").apply { mkdirs() }
+    private fun lyricsFile(id: String) = File(lyricsDir, id.replace(Regex("[^A-Za-z0-9_-]"), "_") + ".json")
+
+    /** Lyrics saved with a download, or null. */
+    fun savedLyrics(id: String): com.tonihk00.clearplay.data.api.Lyrics? = runCatching {
+        SubsonicClient.json.decodeFromString(com.tonihk00.clearplay.data.api.Lyrics.serializer(), lyricsFile(id).readText())
+    }.getOrNull()
 
     fun remove(ids: Collection<String>) {
-        ids.forEach { DownloadService.sendRemoveDownload(context, CpDownloadService::class.java, it, false) }
+        ids.forEach {
+            DownloadService.sendRemoveDownload(context, CpDownloadService::class.java, it, false)
+            lyricsFile(it).delete()
+        }
     }
 
-    fun removeAll() = DownloadService.sendRemoveAllDownloads(context, CpDownloadService::class.java, false)
+    fun removeAll() {
+        DownloadService.sendRemoveAllDownloads(context, CpDownloadService::class.java, false)
+        lyricsDir.listFiles()?.forEach { it.delete() }
+    }
 
     /** Covers in the sizes the app shows, so downloaded albums still have art offline. */
     private fun prefetchCovers(client: SubsonicClient, songs: List<Song>) {
         val loader = SingletonImageLoader.get(context)
         for (art in songs.mapNotNull { it.coverArt }.distinct()) {
-            for (size in listOf(120, 150, 300, 600)) {
-                val key = "cover:${client.server.baseUrl}:$art:$size"
-                loader.enqueue(
-                    ImageRequest.Builder(context).data(client.coverUrl(art, size)).memoryCacheKey(key).diskCacheKey(key).build(),
-                )
+            for (size in listOf(150, 300, 600)) {
+                com.tonihk00.clearplay.ui.components.coverRequest(context, client, art, size)?.let { loader.enqueue(it) }
             }
         }
     }
