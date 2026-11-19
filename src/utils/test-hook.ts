@@ -1,3 +1,4 @@
+import { useAppStore } from '@/store/app.store'
 import { useAudioFx } from '@/store/audio-fx.store'
 import { usePlayerStore } from '@/store/player.store'
 import { useRatingsStore } from '@/store/ratings.store'
@@ -12,6 +13,7 @@ export function installTestHook() {
   if (new URLSearchParams(window.location.search).get('e2e') !== '1') return
   Object.assign(window, {
     __cp: {
+      app: useAppStore,
       player: usePlayerStore,
       ratings: useRatingsStore,
       audioFx: useAudioFx,
