@@ -21,6 +21,11 @@ Dependencies are installed from npm and keep their own licences; see
 - **Inter** typeface, Copyright 2016 The Inter Project Authors, SIL Open Font
   Licence 1.1 (`licenses/Inter-OFL-1.1.txt`), via `@fontsource-variable/inter`.
 - **Lucide** icons (ISC licence), via `lucide-react`.
+- **music-metadata** (MIT licence, Copyright Borewit), bundled into the app to
+  read tags, lyrics and cover art from local music files. Its dependencies are
+  MIT-licensed except `ieee754` (BSD-3-Clause, Copyright 2008 Fair Oaks Labs, Inc.).
+  Their licence texts are in `licenses/music-metadata/` (`@tokenizer/token` is
+  MIT per its package.json and ships no licence file).
 
 The ClearPlay logo (`build/icon.svg`, `src/app/components/glass/logo.tsx`) was supplied by the project owner.
 

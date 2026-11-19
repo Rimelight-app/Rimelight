@@ -1,5 +1,6 @@
 import { electronApp, optimizer, platform } from '@electron-toolkit/utils'
 import { app } from 'electron'
+import { initLocalLibrary } from './core/local-library'
 import { createAppMenu } from './core/menu'
 import { initAutoUpdater } from './core/updater'
 import { createWindow, mainWindow } from './window'
@@ -18,6 +19,7 @@ if (!instanceLock) {
   app.quit()
 } else {
   createAppMenu()
+  initLocalLibrary()
 
   app.on('second-instance', () => {
     if (!mainWindow || mainWindow.isDestroyed()) return

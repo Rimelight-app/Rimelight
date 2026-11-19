@@ -76,6 +76,16 @@ const api: IClearPlayAPI = {
   onUpdateDownloaded: (callback) => {
     ipcRenderer.on(IpcChannels.UpdateDownloaded, (_, info) => callback(info))
   },
+  localLibrary: {
+    state: () => ipcRenderer.invoke(IpcChannels.LocalLibraryState),
+    addFolder: () => ipcRenderer.invoke(IpcChannels.LocalLibraryAddFolder),
+    addPath: (folder) =>
+      ipcRenderer.invoke(IpcChannels.LocalLibraryAddPath, folder),
+    removeFolder: (folder) =>
+      ipcRenderer.invoke(IpcChannels.LocalLibraryRemoveFolder, folder),
+    rescan: () => ipcRenderer.invoke(IpcChannels.LocalLibraryRescan),
+    connect: () => ipcRenderer.invoke(IpcChannels.LocalLibraryConnect),
+  },
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

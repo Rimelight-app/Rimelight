@@ -32,6 +32,29 @@ export enum IpcChannels {
   UpdateError = 'update-error',
   DownloadProgress = 'download-progress',
   UpdateDownloaded = 'update-downloaded',
+  LocalLibraryState = 'local-library-state',
+  LocalLibraryAddFolder = 'local-library-add-folder',
+  LocalLibraryAddPath = 'local-library-add-path',
+  LocalLibraryRemoveFolder = 'local-library-remove-folder',
+  LocalLibraryRescan = 'local-library-rescan',
+  LocalLibraryConnect = 'local-library-connect',
+}
+
+/** Music folders on this computer, served to the app like a server. */
+export type LocalLibraryState = {
+  folders: string[]
+  running: boolean
+  url: string
+  scanning: boolean
+  scanned: number
+  tracks: number
+  albums: number
+}
+
+export type LocalLibraryConnection = {
+  url: string
+  username: string
+  password: string
 }
 
 export type OverlayColors = {
@@ -84,4 +107,12 @@ export interface IClearPlayAPI {
   onUpdateError: (callback: (error: string) => void) => void
   onDownloadProgress: (callback: (progress: ProgressInfo) => void) => void
   onUpdateDownloaded: (callback: (info: UpdateDownloadedEvent) => void) => void
+  localLibrary: {
+    state: () => Promise<LocalLibraryState>
+    addFolder: () => Promise<LocalLibraryState>
+    addPath: (folder: string) => Promise<LocalLibraryState>
+    removeFolder: (folder: string) => Promise<LocalLibraryState>
+    rescan: () => Promise<LocalLibraryState>
+    connect: () => Promise<LocalLibraryConnection>
+  }
 }
