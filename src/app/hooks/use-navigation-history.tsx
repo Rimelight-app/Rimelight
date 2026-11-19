@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useNavigationType } from 'react-router-dom'
+import { usePlayerStore } from '@/store/player.store'
 import { MouseButton } from '@/utils/browser'
 import { isMacOS } from '@/utils/desktop'
 
@@ -40,23 +41,39 @@ const useNavigationHistory = () => {
     if (canGoForward) navigate(1)
   }
 
-  // Mac only: Intercept mouse back/forward buttons (3/4) for in-app navigation.
-  // Reads window.history.state directly to avoid stale canGoBack/canGoForward closures.
+  // Mouse back/forward buttons (3/4) on every system. Electron does not
+  // navigate on them by itself. Back first closes the fullscreen player if
+  // it is open. Reads window.history.state directly to avoid stale closures.
   useEffect(() => {
-    if (!isMacOS) return
-
     const handleMouseButtons = (e: MouseEvent) => {
+      if (e.button !== MouseButton.Back && e.button !== MouseButton.Forward) {
+        return
+      }
+      e.preventDefault()
       if (e.button === MouseButton.Back) {
+        const { fullscreen } = usePlayerStore.getState()
+        if (fullscreen.isFullscreen) {
+          fullscreen.setIsFullscreen(false)
+        } else if (window.history.state?.idx > 0) {
+          navigate(-1)
+        }
+      } else if (window.history.state?.idx < window.history.length - 1) {
+        navigate(1)
+      }
+    }
+    // Some systems also start a native back/forward on mousedown.
+    const swallow = (e: MouseEvent) => {
+      if (e.button === MouseButton.Back || e.button === MouseButton.Forward) {
         e.preventDefault()
-        if (window.history.state?.idx > 0) navigate(-1)
-      } else if (e.button === MouseButton.Forward) {
-        e.preventDefault()
-        if (window.history.state?.idx < window.history.length - 1) navigate(1)
       }
     }
 
-    window.addEventListener('mousedown', handleMouseButtons)
-    return () => window.removeEventListener('mousedown', handleMouseButtons)
+    window.addEventListener('mouseup', handleMouseButtons)
+    window.addEventListener('mousedown', swallow)
+    return () => {
+      window.removeEventListener('mouseup', handleMouseButtons)
+      window.removeEventListener('mousedown', swallow)
+    }
   }, [navigate])
 
   // Mac only: two-finger swipe gesture for in-app navigation.
