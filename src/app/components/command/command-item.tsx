@@ -4,6 +4,7 @@ import {
   ListMusic,
   Palette,
   PlusIcon,
+  Shuffle,
   SquareArrowOutUpRight,
 } from 'lucide-react'
 import { ReactNode } from 'react'
@@ -14,6 +15,7 @@ type Variant =
   | 'Playlists'
   | 'CreatePlaylist'
   | 'ServerManagement'
+  | 'ShuffleLibrary'
 
 type CommandItemProps = {
   children: ReactNode
@@ -40,6 +42,10 @@ const icons = {
   ServerManagement: {
     className: '',
     icon: <Cog />,
+  },
+  ShuffleLibrary: {
+    className: '',
+    icon: <Shuffle />,
   },
 }
 

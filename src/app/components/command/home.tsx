@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { CommandGroup, CommandItem } from '@/app/components/ui/command'
+import { shuffleLibrary } from '@/service/library-shuffle'
 import { useAppStore } from '@/store/app.store'
 import { usePlaylists } from '@/store/playlists.store'
 import { CustomCommandItem } from './command-item'
@@ -22,6 +23,11 @@ export function CommandHome({ pages, setPages, runCommand }: HomeProps) {
 
   return (
     <CommandGroup heading={t('command.commands.heading')}>
+      <CommandItem onSelect={() => runCommand(() => shuffleLibrary())}>
+        <CustomCommandItem variant="ShuffleLibrary">
+          {t('clearplay.shuffleLibrary.label')}
+        </CustomCommandItem>
+      </CommandItem>
       <CommandItem onSelect={() => setPages([...pages, 'GOTO'])}>
         <CustomCommandItem variant="GotoPage">
           {t('command.commands.pages')}

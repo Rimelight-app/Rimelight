@@ -1,16 +1,21 @@
-import { CloudDownload, CloudUpload, ListPlus } from 'lucide-react'
+import { CloudDownload, CloudUpload, ListPlus, ListX } from 'lucide-react'
 import { FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'react-toastify'
 import { SimpleTooltip } from '@/app/components/ui/simple-tooltip'
 import { queueSync } from '@/service/queue-sync'
+import { usePlayerActions } from '@/store/player.store'
 
 const btn =
   'flex size-8 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-40'
 
-/** Queue tools: save/load the queue on the server, save it as a playlist. */
+/**
+ * Queue tools: save/load the queue on the server, save it as a playlist, and
+ * clear it (the playing song stays).
+ */
 export function QueueActions() {
   const { t } = useTranslation()
+  const { clearQueue } = usePlayerActions()
   const [naming, setNaming] = useState(false)
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
@@ -108,6 +113,16 @@ export function QueueActions() {
           onClick={() => setNaming(true)}
         >
           <ListPlus className="size-4" />
+        </button>
+      </SimpleTooltip>
+      <SimpleTooltip text={t('clearplay.queue.clear')}>
+        <button
+          type="button"
+          className={btn}
+          onClick={clearQueue}
+          data-testid="queue-clear"
+        >
+          <ListX className="size-4" />
         </button>
       </SimpleTooltip>
     </div>

@@ -20,7 +20,7 @@ export function QueueSongList() {
   const { t } = useTranslation()
   const currentList = usePlayerCurrentList()
   const currentSongIndex = usePlayerCurrentSongIndex()
-  const { clearPlayerState, setSongList } = usePlayerActions()
+  const { clearQueue, setSongList } = usePlayerActions()
   const { source } = usePlayerContext()
 
   const columns = useMemo(() => queueColumns(), [])
@@ -75,7 +75,7 @@ export function QueueSongList() {
           <Button
             variant="ghost"
             className="px-4 h-8 rounded-full py-0 flex items-center justify-center hover:bg-foreground/20"
-            onClick={clearPlayerState}
+            onClick={clearQueue}
           >
             <ListXIcon className="mr-1 w-5 h-5" />
             <span className="text-sm">{t('queue.clear')}</span>

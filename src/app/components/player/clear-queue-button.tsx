@@ -12,7 +12,7 @@ export function PlayerClearQueueButton({
   disabled,
 }: PlayerClearQueueButtonProps) {
   const { t } = useTranslation()
-  const { clearPlayerState } = usePlayerActions()
+  const { clearQueue } = usePlayerActions()
 
   return (
     <SimpleTooltip text={t('queue.clear')}>
@@ -20,7 +20,7 @@ export function PlayerClearQueueButton({
         variant="ghost"
         className="rounded-full w-10 h-10 p-2 text-secondary-foreground"
         disabled={disabled}
-        onClick={clearPlayerState}
+        onClick={clearQueue}
       >
         <ListXIcon className="w-4 h-4" />
       </Button>

@@ -1060,7 +1060,19 @@
       "loaded": "Queue loaded from the server",
       "nothing": "No saved queue on the server",
       "failed": "Something went wrong",
-      "playlistSaved": "Playlist “{{name}}” created"
+      "playlistSaved": "Playlist “{{name}}” created",
+      "clear": "Clear queue (keeps the playing song)"
+    },
+    "shuffleLibrary": {
+      "label": "Shuffle library",
+      "failed": "Couldn't load songs from the server"
+    },
+    "rating": {
+      "label": "Rating",
+      "star_one": "{{count}} star",
+      "star_other": "{{count}} stars",
+      "clear": "Remove rating",
+      "failed": "Couldn't save the rating"
     }
   }
 }

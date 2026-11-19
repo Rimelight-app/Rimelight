@@ -182,6 +182,10 @@ export interface IPlayerActions {
   hasPrevSong: () => boolean
   isPlayingOneSong: () => boolean
   clearPlayerState: () => void
+  /** Empties the queue but keeps the song that is playing. */
+  clearQueue: () => void
+  /** Updates a song's rating everywhere it appears in the queue. */
+  setSongRatingInQueue: (id: string, rating: number) => void
   resetProgress: () => void
   setProgress: (progress: number) => void
   setVolume: (volume: number) => void
@@ -190,7 +194,7 @@ export interface IPlayerActions {
   setPlayRadio: (list: Radio[], index: number) => void
   setAudioPlayerRef: (ref: HTMLAudioElement) => void
   setNextOnQueue: (songlist: ISong[]) => void
-  setLastOnQueue: (songlist: ISong[]) => void
+  setLastOnQueue: (songlist: ISong[], keepSource?: boolean) => void
   removeSongFromQueue: (id: string) => void
   setMainDrawerState: (state: boolean) => void
   setQueueState: (state: boolean) => void

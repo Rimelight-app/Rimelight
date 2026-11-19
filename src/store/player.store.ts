@@ -271,6 +271,11 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
                   state.playerState.mediaType = 'song'
                   state.songlist.currentList = [song]
                   state.songlist.currentSongIndex = 0
+                  // Keep the other lists in step, or toggling shuffle later
+                  // swaps back to a stale queue without this song.
+                  state.songlist.originalList = [song]
+                  state.songlist.originalSongIndex = 0
+                  state.songlist.shuffledList = []
                   state.playerState.isShuffleActive = false
                   state.playerState.isPlaying = true
                   state.songlist.radioList = []
@@ -319,7 +324,7 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
                 get().actions.setPlayingState(true)
               }
             },
-            setLastOnQueue: (list) => {
+            setLastOnQueue: (list, keepSource = false) => {
               const { currentList, originalList } = get().songlist
 
               const currentListIds = new Set(currentList.map((song) => song.id))
@@ -333,7 +338,7 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
               set((state) => {
                 state.songlist.currentList = newCurrentList
                 state.songlist.originalList = newOriginalList
-                state.playerState.playbackContext.source = null
+                if (!keepSource) state.playerState.playbackContext.source = null
               })
 
               const { isPlaying } = get().playerState
@@ -501,6 +506,15 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
                   (song) => song.id === currentSongId,
                 )
 
+                // The playing song is not in the original order (e.g. it was
+                // added on its own): stay on the current list.
+                if (index === -1) {
+                  set((state) => {
+                    state.playerState.isShuffleActive = false
+                  })
+                  return
+                }
+
                 set((state) => {
                   state.songlist.currentList = state.songlist.originalList
                   state.songlist.currentSongIndex = index
@@ -589,6 +603,42 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
                 state.settings.colors.currentSongColor = null
                 state.listenTime.accumulated = 0
                 state.playerState.playbackContext.source = null
+              })
+            },
+            clearQueue: () => {
+              const { mediaType } = get().playerState
+              const { currentList, currentSongIndex } = get().songlist
+              const song = currentList[currentSongIndex]
+
+              // Radio, podcasts, nothing playing, or only the playing song
+              // left: clear everything (this is how you stop the queue).
+              if (mediaType !== 'song' || !song || currentList.length <= 1) {
+                get().actions.clearPlayerState()
+                return
+              }
+
+              set((state) => {
+                state.songlist.currentList = [song]
+                state.songlist.originalList = [song]
+                state.songlist.shuffledList = []
+                state.songlist.currentSongIndex = 0
+                state.songlist.originalSongIndex = 0
+                state.playerState.isShuffleActive = false
+                state.playerState.playbackContext.source = null
+              })
+            },
+            setSongRatingInQueue: (id, rating) => {
+              const apply = (list: ISong[]) =>
+                list.some((s) => s.id === id)
+                  ? list.map((s) =>
+                      s.id === id ? { ...s, userRating: rating } : s,
+                    )
+                  : list
+
+              set((state) => {
+                state.songlist.currentList = apply(state.songlist.currentList)
+                state.songlist.originalList = apply(state.songlist.originalList)
+                state.songlist.shuffledList = apply(state.songlist.shuffledList)
               })
             },
             resetProgress: () => {

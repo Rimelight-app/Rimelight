@@ -70,7 +70,7 @@ function QueueMenuItems({ open, onOpenChange, children }: QueueMenuItemsProps) {
   const { t } = useTranslation()
   const { mainDrawerState } = useMainDrawerState()
   const { queueState, toggleQueueAction } = useQueueState()
-  const { clearPlayerState } = usePlayerActions()
+  const { clearQueue } = usePlayerActions()
 
   const isActive = mainDrawerState && queueState
 
@@ -85,7 +85,7 @@ function QueueMenuItems({ open, onOpenChange, children }: QueueMenuItemsProps) {
 
   function handleClearQueue() {
     closePopover()
-    clearPlayerState()
+    clearQueue()
   }
 
   return (

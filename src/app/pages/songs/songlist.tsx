@@ -1,6 +1,9 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { Shuffle } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
+import { Actions } from '@/app/components/actions'
 import { ShadowHeader } from '@/app/components/album/shadow-header'
 import { InfinitySongListFallback } from '@/app/components/fallbacks/song-fallbacks'
 import { HeaderTitle } from '@/app/components/header-title'
@@ -10,6 +13,7 @@ import { DataTableList } from '@/app/components/ui/data-table-list'
 import { useTotalSongs } from '@/app/hooks/use-total-songs'
 import { songsColumns } from '@/app/tables/songs-columns'
 import { getArtistAllSongs, songsSearch } from '@/queries/songs'
+import { shuffleLibrary } from '@/service/library-shuffle'
 import { usePlayerActions } from '@/store/player.store'
 import { ColumnFilter } from '@/types/columnFilter'
 import { AlbumsFilters, AlbumsSearchParams } from '@/utils/albumsFilter'
@@ -21,6 +25,7 @@ const DEFAULT_OFFSET = 100
 export default function SongList() {
   const { t } = useTranslation()
   const { setSongList } = usePlayerActions()
+  const [shuffling, setShuffling] = useState(false)
   const [searchParams] = useSearchParams()
   const { getSearchParam } = new SearchParamsHandler(searchParams)
   const columns = songsColumns()
@@ -102,7 +107,22 @@ export default function SongList() {
           loading={songCountIsLoading}
         />
 
-        <div className="flex gap-2 flex-1 justify-end">
+        <div className="flex gap-2 flex-1 justify-end items-center">
+          {!hasSomeFilter && (
+            <Actions.Button
+              tooltip={t('clearplay.shuffleLibrary.label')}
+              aria-label={t('clearplay.shuffleLibrary.label')}
+              disabled={shuffling}
+              data-testid="shuffle-library"
+              onClick={async () => {
+                setShuffling(true)
+                await shuffleLibrary()
+                setShuffling(false)
+              }}
+            >
+              <Shuffle className="size-[18px]" strokeWidth={1.75} />
+            </Actions.Button>
+          )}
           {filterByArtist && <ClearFilterButton />}
           <ExpandableSearchInput
             placeholder={t('songs.list.search.placeholder')}
