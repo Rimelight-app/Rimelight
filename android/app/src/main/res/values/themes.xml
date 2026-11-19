@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose draws everything; this only sets the dark window behind it. -->
+    <style name="Theme.ClearPlay" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/cp_base</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+    <color name="cp_base">#0B0B0E</color>
+    <color name="cp_logo">#F4F4F5</color>
+</resources>

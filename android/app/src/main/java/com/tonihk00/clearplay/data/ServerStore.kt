@@ -1,0 +1,52 @@
+package com.tonihk00.clearplay.data
+
+import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import com.tonihk00.clearplay.data.api.ServerConfig
+import com.tonihk00.clearplay.data.api.SubsonicClient
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+private val Context.dataStore by preferencesDataStore("clearplay")
+
+/** Saved servers and which one is active. Stored as JSON in DataStore. */
+class ServerStore(private val context: Context) {
+    private val serversKey = stringPreferencesKey("servers")
+    private val activeKey = stringPreferencesKey("active")
+
+    val servers: Flow<List<ServerConfig>> = context.dataStore.data.map { p ->
+        p[serversKey]?.let { runCatching { SubsonicClient.json.decodeFromString<List<ServerConfig>>(it) }.getOrNull() }
+            ?: emptyList()
+    }
+
+    val active: Flow<ServerConfig?> = context.dataStore.data.map { p ->
+        val list = p[serversKey]?.let {
+            runCatching { SubsonicClient.json.decodeFromString<List<ServerConfig>>(it) }.getOrNull()
+        }.orEmpty()
+        list.firstOrNull { key(it) == p[activeKey] } ?: list.firstOrNull()
+    }
+
+    suspend fun saveAndActivate(server: ServerConfig) {
+        context.dataStore.edit { p ->
+            val list = p[serversKey]?.let {
+                runCatching { SubsonicClient.json.decodeFromString<List<ServerConfig>>(it) }.getOrNull()
+            }.orEmpty().filterNot { key(it) == key(server) } + server
+            p[serversKey] = SubsonicClient.json.encodeToString(list)
+            p[activeKey] = key(server)
+        }
+    }
+
+    suspend fun remove(server: ServerConfig) {
+        context.dataStore.edit { p ->
+            val list = p[serversKey]?.let {
+                runCatching { SubsonicClient.json.decodeFromString<List<ServerConfig>>(it) }.getOrNull()
+            }.orEmpty().filterNot { key(it) == key(server) }
+            p[serversKey] = SubsonicClient.json.encodeToString(list)
+            if (p[activeKey] == key(server)) p.remove(activeKey)
+        }
+    }
+
+    private fun key(s: ServerConfig) = "${s.user}@${s.baseUrl}"
+}

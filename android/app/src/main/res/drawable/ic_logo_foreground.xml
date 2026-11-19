@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ClearPlay logo disc (from build/icon.svg), placed in the 66dp adaptive-icon safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:translateX="18" android:translateY="18" android:scaleX="0.72" android:scaleY="0.72">
+        <path android:fillColor="#0B0B0E"
+            android:pathData="M50,19a31,31 0,1 1,0 62a31,31 0,1 1,0 -62z" />
+        <path android:strokeColor="#F4F4F5" android:strokeWidth="1.9"
+            android:pathData="M50.78,24.37a25.63,25.63 0,1 1,0 51.26a25.63,25.63 0,1 1,0 -51.26z" />
+        <path android:strokeColor="#F4F4F5" android:strokeWidth="1.9"
+            android:pathData="M52.32,28.98a21.02,21.02 0,1 1,0 42.04a21.02,21.02 0,1 1,0 -42.04z" />
+        <path android:strokeColor="#F4F4F5" android:strokeWidth="1.9"
+            android:pathData="M54.56,32.89a17.11,17.11 0,1 1,0 34.22a17.11,17.11 0,1 1,0 -34.22z" />
+        <path android:fillColor="#F4F4F5"
+            android:pathData="M57.4,36.2a13.8,13.8 0,1 1,0 27.6a13.8,13.8 0,1 1,0 -27.6z" />
+    </group>
+</vector>

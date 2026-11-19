@@ -4,6 +4,10 @@ on:
   push:
     branches: ['**']
     tags: ['v*']
+    # The Android app has its own workflow (android.yml).
+    paths-ignore:
+      - 'android/**'
+      - '.github/workflows/android.yml'
   workflow_dispatch:
 
 concurrency:
