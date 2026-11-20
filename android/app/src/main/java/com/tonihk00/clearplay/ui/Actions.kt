@@ -16,6 +16,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +52,8 @@ interface UiActions {
     fun removeDownload(songs: List<Song>) {}
     fun openDownloads() {}
     fun openStats() {}
+    /** Albums from a decade, e.g. 1990 for the 1990s. */
+    fun openDecade(start: Int) {}
     /** Play, queue or download several albums at once (multi-select). */
     fun albums(albums: List<Album>, action: AlbumBulk) {}
 }
@@ -96,16 +100,50 @@ val LocalConnectionLost = staticCompositionLocalOf<() -> Unit> { {} }
 /** Short confirmation pill ("Added to queue"). */
 val LocalToast = staticCompositionLocalOf<(String) -> Unit> { {} }
 
+/**
+ * Data a screen loaded, kept for as long as the screen is in the back stack (a ViewModel
+ * per navigation entry). Going back shows it at once, so lists keep their scroll position.
+ */
+class ScreenCache : androidx.lifecycle.ViewModel() {
+    val map = HashMap<String, Any?>()
+}
+
+@Composable
+fun screenCache(): ScreenCache = androidx.lifecycle.viewmodel.compose.viewModel()
+
+/** Paged list kept in [ScreenCache]: items plus whether the end was reached. */
+class Paged<T> {
+    val items = androidx.compose.runtime.mutableStateListOf<T>()
+    var end by androidx.compose.runtime.mutableStateOf(false)
+    var failed by androidx.compose.runtime.mutableStateOf(false)
+}
+
+@Composable
+fun <T> rememberPaged(name: String): Paged<T> {
+    val library = LocalLibrary.current ?: LocalClient.current
+    val cache = screenCache()
+    @Suppress("UNCHECKED_CAST")
+    return remember(library, name) { cache.map.getOrPut("$name@${System.identityHashCode(library)}") { Paged<T>() } as Paged<T> }
+}
+
 /** Loads once per key (and again when the library switches between online and offline). */
 @Composable
 fun <T> rememberLoad(vararg keys: Any?, block: suspend MusicLibrary.() -> T): State<Load<T>> {
     val library = LocalLibrary.current ?: LocalClient.current
     val lost = LocalConnectionLost.current
-    return produceState<Load<T>>(Load.Loading, library, *keys) {
+    val cache = screenCache()
+    // Keyed by where in the UI this load sits too: two loads with the same (or no) keys, like
+    // the Artists and Genres tabs, must never share an entry.
+    val site = androidx.compose.runtime.currentCompositeKeyHash
+    val cacheKey = "load@${System.identityHashCode(library)}@$site:${keys.joinToString("|")}"
+    @Suppress("UNCHECKED_CAST")
+    val cached = cache.map[cacheKey] as Load.Done<T>?
+    return produceState<Load<T>>(cached ?: Load.Loading, library, *keys) {
+        if (cached != null) return@produceState
         value = if (library == null) {
             Load.Failed("Not connected")
         } else {
-            runCatching { library.block() }.fold({ Load.Done(it) }, {
+            runCatching { library.block() }.fold({ Load.Done(it).also { d -> cache.map[cacheKey] = d } }, {
                 if (library.isRemote && it !is com.tonihk00.clearplay.data.api.SubsonicException) lost()
                 Load.Failed(com.tonihk00.clearplay.ui.login.friendlyError(it))
             })

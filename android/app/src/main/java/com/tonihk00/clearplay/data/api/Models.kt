@@ -102,4 +102,7 @@ data class Lyrics(val lines: List<LyricLine>) {
     val synced get() = lines.isNotEmpty() && lines.all { it.timeMs != null }
 }
 
+/** Library scan state from getScanStatus. */
+data class ScanStatus(val scanning: Boolean, val count: Int, val lastScan: String?)
+
 class SubsonicException(val code: Int, override val message: String) : Exception(message)

@@ -4,12 +4,12 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -189,6 +190,8 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
     val sleep by player.sleep.collectAsState()
     val toast = remember { ToastState() }
     var fullOpen by remember { mutableStateOf(false) }
+    val playerVisibility = remember { androidx.compose.animation.core.MutableTransitionState(false) }
+    var revealing by remember { mutableStateOf(false) }
     var menuSong by remember { mutableStateOf<Song?>(null) }
     var addingServer by remember { mutableStateOf(false) }
     var dockHeight by remember { mutableStateOf(0.dp) }
@@ -208,6 +211,7 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
             override fun openArtist(id: String) { fullOpen = false; nav.navigate("artist/${URLEncoder.encode(id, "UTF-8")}") }
             override fun openPlaylist(id: String) = nav.navigate("playlist/${URLEncoder.encode(id, "UTF-8")}")
             override fun openGenre(name: String) = nav.navigate("genre/${URLEncoder.encode(name, "UTF-8")}")
+            override fun openDecade(start: Int) = nav.navigate("decade/$start")
             override fun play(songs: List<Song>, index: Int, shuffle: Boolean) = player.play(songs, index, shuffle)
             override fun playNext(songs: List<Song>) {
                 player.playNext(songs)
@@ -292,23 +296,32 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
             // Everything under the dock is a Haze source, so the bars can blur it.
             // While the fullscreen player covers them, the page and dock are hidden from TalkBack.
             val hidden = if (fullOpen) Modifier.clearAndSetSemantics {} else Modifier
-            Box(Modifier.fillMaxSize().hazeSource(hazeState).then(hidden)) {
-                CoverBackdrop(current?.coverArt)
-                AppNavHost(nav, dockHeight, playingId, client, onLogout, sleep) { addingServer = true }
+            // While the player fully covers the app, don't draw the page or the blurred bars at
+            // all (they redrew on every progress tick behind an opaque screen). They come back
+            // the moment the player starts moving.
+            playerVisibility.targetState = fullOpen && current != null
+            val covered = playerVisibility.currentState && playerVisibility.isIdle && playerVisibility.targetState && !revealing
+            val skipDraw = Modifier.drawWithContent { if (!covered) drawContent() }
+            val pageBackdrop = com.tonihk00.clearplay.ui.components.rememberBlurredCover(current?.coverArt)
+            Box(Modifier.fillMaxSize().then(skipDraw).hazeSource(hazeState).then(hidden)) {
+                com.tonihk00.clearplay.ui.components.BackdropLayer(pageBackdrop)
+                CompositionLocalProvider(com.tonihk00.clearplay.ui.components.LocalPageBackdrop provides pageBackdrop) {
+                    AppNavHost(nav, dockHeight, playingId, client, onLogout, sleep) { addingServer = true }
+                }
             }
             Column(
-                Modifier.align(Alignment.BottomCenter).then(hidden).onSizeChanged { dockHeight = with(density) { it.height.toDp() } },
+                Modifier.align(Alignment.BottomCenter).then(skipDraw).then(hidden).onSizeChanged { dockHeight = with(density) { it.height.toDp() } },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 ToastHost(toast, haze, Modifier.padding(bottom = 8.dp))
                 Dock(nav, state, controls, haze, onOpen = { fullOpen = true })
             }
             AnimatedVisibility(
-                fullOpen && current != null,
+                playerVisibility,
                 enter = slideInVertically(tween(if (reduce) 0 else Cp.ScreenMs, easing = Cp.EaseOutSoft)) { it } + fadeIn(tween(if (reduce) 0 else 200)),
                 exit = slideOutVertically(tween(if (reduce) 0 else Cp.ScreenMs, easing = Cp.EaseOutSoft)) { it } + fadeOut(tween(if (reduce) 0 else 250)),
             ) {
-                FullPlayer(state, controls, lyrics, onClose = { fullOpen = false }, sleep = sleep, streamCap = streamCap)
+                FullPlayer(state, controls, lyrics, onClose = { fullOpen = false }, sleep = sleep, streamCap = streamCap, onReveal = { revealing = it })
             }
             menuSong?.let { SongMenu(it) { menuSong = null } }
             if (addingServer) {
@@ -347,28 +360,59 @@ private fun AppNavHost(
     fun dec(s: String?) = URLDecoder.decode(s.orEmpty(), "UTF-8")
     NavHost(
         nav, startDestination = Tab.Library.route,
-        // Pages slide in a little from the right and fade; going back (also the predictive
-        // back swipe) shrinks the page away and reveals the one below.
-        enterTransition = { fadeIn(tween(t, easing = Cp.EaseOutSoft)) + slideInHorizontally(tween(t, easing = Cp.EaseOutSoft)) { it / 10 } },
-        exitTransition = { fadeOut(tween(t / 2)) + scaleOut(tween(t, easing = Cp.EaseOutSoft), 0.97f) },
-        popEnterTransition = { fadeIn(tween(t, easing = Cp.EaseOutSoft)) + scaleIn(tween(t, easing = Cp.EaseOutSoft), 0.97f) },
-        popExitTransition = { fadeOut(tween(t, easing = Cp.EaseOutSoft)) + scaleOut(tween(t, easing = Cp.EaseOutSoft), 0.9f) },
+        // Pages are opaque sheets (each paints the blurred cover). Opening one slides it in
+        // from the right while the page below drifts a little left; going back (also the
+        // Android back swipe, which follows the finger) slides it off to the right. Bottom-tab
+        // switches simply cross-fade. Nothing scales.
+        enterTransition = {
+            if (isTabSwitch(initialState.destination.route, targetState.destination.route)) fadeIn(tween(t * 2 / 3))
+            else slideInHorizontally(tween(t, easing = Cp.EaseOutSoft)) { it }
+        },
+        exitTransition = {
+            if (isTabSwitch(initialState.destination.route, targetState.destination.route)) fadeOut(tween(t / 2))
+            else slideOutHorizontally(tween(t, easing = Cp.EaseOutSoft)) { -it / 4 }
+        },
+        popEnterTransition = {
+            if (isTabSwitch(initialState.destination.route, targetState.destination.route)) fadeIn(tween(t * 2 / 3))
+            else slideInHorizontally(tween(t, easing = Cp.EaseOutSoft)) { -it / 4 }
+        },
+        popExitTransition = {
+            if (isTabSwitch(initialState.destination.route, targetState.destination.route)) fadeOut(tween(t / 2))
+            else slideOutHorizontally(tween(t, easing = Cp.EaseOutSoft)) { it }
+        },
+        // The Android back swipe has its own animations, which by default shrink the page.
+        // Use the same slide: the page follows the finger off to the right.
+        predictivePopEnterTransition = { slideInHorizontally(tween(t, easing = LinearEasing)) { -it / 4 } },
+        predictivePopExitTransition = { slideOutHorizontally(tween(t, easing = LinearEasing)) { it } },
     ) {
-        composable(Tab.Library.route) { LibraryScreen(bottom, playingId) }
-        composable(Tab.Search.route) { SearchScreen(bottom, playingId) }
-        composable(Tab.Stats.route) { StatsScreen(bottom) }
-        composable(Tab.Settings.route) { SettingsRoute(client, bottom, sleep, onLogout, onAddServer) }
+        composable(Tab.Library.route) { com.tonihk00.clearplay.ui.components.Page { LibraryScreen(bottom, playingId) } }
+        composable(Tab.Search.route) { com.tonihk00.clearplay.ui.components.Page { SearchScreen(bottom, playingId) } }
+        composable(Tab.Stats.route) { com.tonihk00.clearplay.ui.components.Page { StatsScreen(bottom) } }
+        composable(Tab.Settings.route) { com.tonihk00.clearplay.ui.components.Page { SettingsRoute(client, bottom, sleep, onLogout, onAddServer) } }
         composable("album/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
-            AlbumScreen(dec(it.arguments?.getString("id")), bottom, playingId) { nav.popBackStack() }
+            com.tonihk00.clearplay.ui.components.Page {
+                AlbumScreen(dec(it.arguments?.getString("id")), bottom, playingId) { nav.popBackStack() }
+            }
         }
         composable("artist/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
-            ArtistScreen(dec(it.arguments?.getString("id")), bottom) { nav.popBackStack() }
+            com.tonihk00.clearplay.ui.components.Page {
+                ArtistScreen(dec(it.arguments?.getString("id")), bottom) { nav.popBackStack() }
+            }
         }
         composable("playlist/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
-            PlaylistScreen(dec(it.arguments?.getString("id")), bottom, playingId) { nav.popBackStack() }
+            com.tonihk00.clearplay.ui.components.Page {
+                PlaylistScreen(dec(it.arguments?.getString("id")), bottom, playingId) { nav.popBackStack() }
+            }
+        }
+        composable("decade/{start}", listOf(navArgument("start") { type = NavType.IntType })) {
+            com.tonihk00.clearplay.ui.components.Page {
+                com.tonihk00.clearplay.ui.library.DecadeScreen(it.arguments?.getInt("start") ?: 2000, bottom) { nav.popBackStack() }
+            }
         }
         composable("genre/{name}", listOf(navArgument("name") { type = NavType.StringType })) {
-            GenreScreen(dec(it.arguments?.getString("name")), bottom, playingId) { nav.popBackStack() }
+            com.tonihk00.clearplay.ui.components.Page {
+                GenreScreen(dec(it.arguments?.getString("name")), bottom, playingId) { nav.popBackStack() }
+            }
         }
     }
 }
@@ -376,17 +420,23 @@ private fun AppNavHost(
 /** Mini player and tab bar, both frosted glass floating over the page. */
 @Composable
 private fun Dock(nav: NavHostController, state: PlayerState, controls: PlayerControls, haze: HazeState?, onOpen: () -> Unit, modifier: Modifier = Modifier) {
-    val entry by nav.currentBackStackEntryAsState()
-    val route = entry?.destination?.route
+    // The active tab is the last tab in the history (an album opened from Search belongs to Search).
+    val stack by nav.currentBackStack.collectAsState()
+    val selected = stack.lastOrNull { e -> Tab.entries.any { it.route == e.destination.route } }
+        ?.let { e -> Tab.entries.first { it.route == e.destination.route } }
     DockContent(
         state, controls, haze, onOpen,
-        // Album, artist, playlist and genre pages belong to the Library tab.
-        selected = Tab.entries.firstOrNull { it.route == route } ?: Tab.Library.takeIf { route != null },
+        selected = selected,
         onTab = { t ->
-            nav.navigate(t.route) {
-                popUpTo(Tab.Library.route) { saveState = true }
-                launchSingleTop = true
-                restoreState = true
+            if (t == selected) {
+                // Tapping the current tab goes back to its first page.
+                nav.popBackStack(t.route, inclusive = false)
+            } else {
+                nav.navigate(t.route) {
+                    popUpTo(Tab.Library.route) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
             }
         },
         modifier = modifier,
@@ -448,6 +498,11 @@ private fun SettingsRoute(client: SubsonicClient?, bottom: Dp, sleep: PlayerConn
     val dlBytes by app.downloads.bytes.collectAsState()
     val phoneSongs by app.phone.songs.collectAsState()
     var latency by remember { mutableStateOf<Map<String, Long?>>(emptyMap()) }
+    var scanText by remember { mutableStateOf<String?>(null) }
+    var scanning by remember { mutableStateOf(false) }
+    fun describe(st: com.tonihk00.clearplay.data.api.ScanStatus) =
+        st.lastScan?.let { "Last scan ${it.take(16).replace('T', ' ')} · ${"%,d".format(st.count).replace(',', ' ')} items" }
+    LaunchedEffect(client) { scanText = runCatching { client?.scanStatus()?.let(::describe) }.getOrNull() }
     var imageBytes by remember { mutableStateOf(0L) }
     val loader = SingletonImageLoader.get(context)
     val askPhone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -485,6 +540,28 @@ private fun SettingsRoute(client: SubsonicClient?, bottom: Dp, sleep: PlayerConn
                 imageBytes = 0L
             }
             override fun setSleep(minutes: Int?, endOfSong: Boolean) = app.player.setSleepTimer(minutes, endOfSong)
+            override fun scanLibrary() {
+                val c = client ?: return
+                scope.launch {
+                    scanning = true
+                    runCatching {
+                        var st = c.startScan()
+                        while (st.scanning) {
+                            scanText = "Scanning… ${"%,d".format(st.count).replace(',', ' ')} items found"
+                            kotlinx.coroutines.delay(1000)
+                            st = c.scanStatus()
+                        }
+                        scanText = "Scan finished · ${"%,d".format(st.count).replace(',', ' ')} items"
+                    }.onFailure { e ->
+                        scanText = if (e is com.tonihk00.clearplay.data.api.SubsonicException && e.code == 50) {
+                            "Only an admin account can start a scan"
+                        } else {
+                            com.tonihk00.clearplay.ui.login.friendlyError(e)
+                        }
+                    }
+                    scanning = false
+                }
+            }
             override fun phoneMusic(on: Boolean) {
                 if (on && !app.phone.hasPermission()) askPhone.launch(app.phone.permission)
                 else scope.launch { app.settings.update { s -> s.copy(phoneMusic = on) } }
@@ -498,7 +575,12 @@ private fun SettingsRoute(client: SubsonicClient?, bottom: Dp, sleep: PlayerConn
             sleep = sleep, version = com.tonihk00.clearplay.BuildConfigInfo.versionName,
             phoneSongs = if (app.phone.hasPermission()) phoneSongs.size else null,
             localMode = client == null,
+            scan = scanText,
+            scanning = scanning,
         ),
         actions, bottom,
     )
 }
+
+private val tabRoutes = setOf("library", "search", "stats", "settings")
+private fun isTabSwitch(from: String?, to: String?) = from in tabRoutes && to in tabRoutes

@@ -99,6 +99,8 @@ fun FullPlayer(
     sleep: com.tonihk00.clearplay.player.PlayerConnection.Sleep? = null,
     /** Bitrate cap and format in use (to show "→ OPUS 192"), or null. */
     streamCap: Pair<Int, String>? = null,
+    /** True while the player is being pulled down, so the page underneath must draw again. */
+    onReveal: (Boolean) -> Unit = {},
 ) {
     val raw = state.current ?: return
     val song = raw.edited()
@@ -106,6 +108,7 @@ fun FullPlayer(
     var sleepSheet by remember { mutableStateOf(false) }
     fun toggle(p: Panel) { panel = if (panel == p) Panel.None else p }
     val pull = rememberPullToDismiss(onClose)
+    LaunchedEffect(pull) { androidx.compose.runtime.snapshotFlow { pull.offset > 0f }.collect(onReveal) }
     // Predictive back: the player follows the back swipe down, then closes (or springs back).
     val screenPx = with(androidx.compose.ui.platform.LocalDensity.current) { androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp.toPx() }
     androidx.activity.compose.PredictiveBackHandler { progress ->
@@ -123,8 +126,6 @@ fun FullPlayer(
             .graphicsLayer {
                 translationY = pull.offset
                 val f = (pull.offset / size.height).coerceIn(0f, 1f)
-                scaleX = 1f - f * 0.08f
-                scaleY = 1f - f * 0.08f
                 shape = RoundedCornerShape((f * 160).coerceAtMost(28f).dp)
                 clip = pull.offset > 0f
             }

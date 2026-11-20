@@ -162,6 +162,9 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
     override suspend fun randomSongs(size: Int, genre: String?): List<Song> =
         call("getRandomSongs", "size" to size, "genre" to genre).list("randomSongs", "song")
 
+    override suspend fun albumsByYear(from: Int, to: Int): List<Album> =
+        call("getAlbumList2", "type" to "byYear", "fromYear" to from, "toYear" to to, "size" to 500).list("albumList2", "album")
+
     /** All songs in pages of 500, four requests at a time (same as the desktop stats). */
     override suspend fun allSongs(onProgress: (Int) -> Unit): List<Song> = kotlinx.coroutines.coroutineScope {
         val all = ArrayList<Song>()
@@ -174,6 +177,20 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
             offset += 2000
         }
         all.distinctBy { it.id }
+    }
+
+    /** Starts a library scan (Navidrome: admin accounts only). */
+    suspend fun startScan(full: Boolean = false): ScanStatus = scanStatusOf(call("startScan", "fullScan" to full.takeIf { it }))
+
+    suspend fun scanStatus(): ScanStatus = scanStatusOf(call("getScanStatus"))
+
+    private fun scanStatusOf(r: JsonObject): ScanStatus {
+        val o = r["scanStatus"]?.jsonObject
+        return ScanStatus(
+            scanning = o?.get("scanning")?.jsonPrimitive?.contentOrNull == "true",
+            count = o?.get("count")?.jsonPrimitive?.intOrNull ?: 0,
+            lastScan = o?.get("lastScan")?.jsonPrimitive?.contentOrNull,
+        )
     }
 
     suspend fun star(id: String) { call("star", "id" to id) }

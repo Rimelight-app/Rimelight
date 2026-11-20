@@ -38,6 +38,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
 import com.tonihk00.clearplay.ui.components.glassPanel
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
@@ -90,7 +96,7 @@ fun LibraryScreen(bottomPadding: Dp, playingId: String?, modifier: Modifier = Mo
         PillTabs(LibraryTabs, tab, { tab = it }, Modifier.padding(bottom = 8.dp))
         AnimatedContent(
             tab,
-            transitionSpec = { fadeIn(tween(Cp.ScreenMs, easing = Cp.EaseOutSoft)) togetherWith fadeOut(tween(120)) },
+            transitionSpec = { fadeIn(tween(200, easing = Cp.EaseOutSoft)) togetherWith fadeOut(tween(90)) },
             label = "libtab",
         ) { t ->
             val pad = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = bottomPadding + 12.dp)
@@ -158,17 +164,83 @@ class AlbumSelection(val map: MutableMap<String, Album>, val setVisible: (List<A
     fun isSelected(a: Album) = map.containsKey(a.id)
 }
 
-/** Album grid item honouring selection: tap opens (or toggles while selecting), long-press selects. */
+/**
+ * Album grid item honouring selection: tap opens (or toggles while selecting). In grids with
+ * [dragSelect] the long-press is handled by the grid, so it can continue into a drag.
+ */
 @Composable
-fun SelectableAlbum(album: Album, sel: AlbumSelection?, modifier: Modifier = Modifier) {
+fun SelectableAlbum(album: Album, sel: AlbumSelection?, modifier: Modifier = Modifier, gridHandlesLongPress: Boolean = false) {
     val actions = LocalActions.current
     AlbumCard(
         album,
         onClick = { if (sel?.active == true) sel.toggle(album) else actions.openAlbum(album.id) },
         modifier = modifier,
         selected = if (sel?.active == true) sel.isSelected(album) else null,
-        onLongClick = sel?.let { { it.toggle(album) } },
+        onLongClick = if (gridHandlesLongPress) null else sel?.let { { it.toggle(album) } },
     )
+}
+
+/**
+ * Long-press an album, then keep the finger down and slide: every album between the first
+ * and the one under the finger is selected (or deselected, if the first one was selected).
+ * Scrolls by itself near the top and bottom edges.
+ */
+@Composable
+fun Modifier.dragSelect(grid: androidx.compose.foundation.lazy.grid.LazyGridState, albums: List<Album>, sel: AlbumSelection?, keyOf: (Album) -> Any = { it.id }): Modifier {
+    if (sel == null) return this
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val latestAlbums = androidx.compose.runtime.rememberUpdatedState(albums)
+    return this.pointerInput(sel, grid) {
+        fun indexAt(pos: androidx.compose.ui.geometry.Offset): Int {
+            val item = grid.layoutInfo.visibleItemsInfo.firstOrNull { info ->
+                pos.x >= info.offset.x && pos.x < info.offset.x + info.size.width &&
+                    pos.y >= info.offset.y && pos.y < info.offset.y + info.size.height
+            } ?: return -1
+            return latestAlbums.value.indexOfFirst { keyOf(it) == item.key }
+        }
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false)
+            val long = awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
+            val list = latestAlbums.value
+            val anchor = indexAt(long.position)
+            if (anchor < 0) return@awaitEachGesture
+            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+            val before = sel.map.toMap()
+            val adding = !sel.isSelected(list[anchor])
+            var last = -1
+            fun applyRange(to: Int) {
+                if (to == last) return
+                last = to
+                val range = minOf(anchor, to)..maxOf(anchor, to)
+                sel.map.clear()
+                sel.map.putAll(before)
+                range.forEach { i -> list.getOrNull(i)?.let { a -> if (adding) sel.map[a.id] = a else sel.map.remove(a.id) } }
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+            }
+            applyRange(anchor)
+            var edgeScroll: kotlinx.coroutines.Job? = null
+            while (true) {
+                // Initial pass: the album underneath never sees this gesture as a tap.
+                val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                val ch = ev.changes.firstOrNull { it.id == down.id } ?: break
+                ch.consume()
+                if (!ch.pressed) break
+                indexAt(ch.position).takeIf { it >= 0 }?.let(::applyRange)
+                val edge = 90.dp.toPx()
+                val speed = when {
+                    ch.position.y < edge -> -18f
+                    ch.position.y > size.height - edge -> 18f
+                    else -> 0f
+                }
+                edgeScroll?.cancel()
+                if (speed != 0f) edgeScroll = scope.launch {
+                    while (true) { grid.scrollBy(speed); kotlinx.coroutines.delay(16) }
+                }
+            }
+            edgeScroll?.cancel()
+        }
+    }
 }
 
 @Composable
@@ -211,10 +283,12 @@ fun AlbumsTab(pad: PaddingValues, sel: AlbumSelection? = null, onDownloads: () -
     val lost = com.tonihk00.clearplay.ui.LocalConnectionLost.current
     val client = com.tonihk00.clearplay.ui.LocalLibrary.current ?: LocalClient.current
     val actions = LocalActions.current
-    val albums = remember(client) { mutableStateListOf<Album>() }
-    var end by remember(client) { mutableStateOf(false) }
+    // Kept while Library is in the back stack, so going back keeps the scroll position.
+    val paged = com.tonihk00.clearplay.ui.rememberPaged<Album>("albums")
+    val albums = paged.items
+    var end by paged::end
     var loading by remember(client) { mutableStateOf(false) }
-    var failed by remember(client) { mutableStateOf(false) }
+    var failed by paged::failed
     val grid = rememberLazyGridState()
     val nearEnd by remember { derivedStateOf { (grid.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= albums.size - 8 } }
     LaunchedEffect(client, nearEnd, albums.size) {
@@ -237,9 +311,9 @@ fun AlbumsTab(pad: PaddingValues, sel: AlbumSelection? = null, onDownloads: () -
         contentPadding = pad,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().dragSelect(grid, albums, sel),
     ) {
-        items(albums, key = { it.id }) { SelectableAlbum(it, sel) }
+        items(albums, key = { it.id }) { SelectableAlbum(it, sel, gridHandlesLongPress = sel != null) }
         if (loading) item(span = { GridItemSpan(maxLineSpan) }) { LoadBox<Unit>(com.tonihk00.clearplay.ui.Load.Loading) {} }
     }
 }
@@ -247,7 +321,7 @@ fun AlbumsTab(pad: PaddingValues, sel: AlbumSelection? = null, onDownloads: () -
 @Composable
 fun ArtistsTab(pad: PaddingValues) {
     val actions = LocalActions.current
-    val state by rememberLoad { artists() }
+    val state by rememberLoad("artists") { artists() }
     LoadBox(state) { list: List<Artist> ->
         if (list.isEmpty()) return@LoadBox EmptyState(R.drawable.ic_user, "No artists yet")
         LazyColumn(Modifier.fillMaxSize(), contentPadding = pad) {
@@ -260,8 +334,9 @@ fun ArtistsTab(pad: PaddingValues) {
 fun SongsTab(pad: PaddingValues, playingId: String?) {
     val client = com.tonihk00.clearplay.ui.LocalLibrary.current ?: LocalClient.current
     val actions = LocalActions.current
-    val songs = remember(client) { mutableStateListOf<Song>() }
-    var end by remember(client) { mutableStateOf(false) }
+    val paged = com.tonihk00.clearplay.ui.rememberPaged<Song>("songs")
+    val songs = paged.items
+    var end by paged::end
     var loading by remember(client) { mutableStateOf(false) }
     val list = rememberLazyListState()
     val nearEnd by remember { derivedStateOf { (list.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= songs.size - 15 } }
@@ -288,7 +363,7 @@ fun SongsTab(pad: PaddingValues, playingId: String?) {
 @Composable
 fun PlaylistsTab(pad: PaddingValues) {
     val actions = LocalActions.current
-    val state by rememberLoad { playlists() }
+    val state by rememberLoad("playlists") { playlists() }
     LoadBox(state) { list: List<Playlist> ->
         if (list.isEmpty()) return@LoadBox EmptyState(R.drawable.ic_list_music, "No playlists yet")
         LazyColumn(Modifier.fillMaxSize(), contentPadding = pad) {
@@ -302,7 +377,7 @@ fun PlaylistsTab(pad: PaddingValues) {
 @Composable
 fun FavoritesTab(pad: PaddingValues, playingId: String?) {
     val actions = LocalActions.current
-    val state by rememberLoad { starred() }
+    val state by rememberLoad("starred") { starred() }
     LoadBox(state) { s: Starred -> FavoritesContent(s, pad, playingId, actions) }
 }
 
@@ -337,7 +412,7 @@ fun FavoritesContent(s: Starred, pad: PaddingValues, playingId: String?, actions
 @Composable
 fun GenresTab(pad: PaddingValues) {
     val actions = LocalActions.current
-    val state by rememberLoad { genres() }
+    val state by rememberLoad("genres") { genres() }
     LoadBox(state) { list: List<Genre> ->
         if (list.isEmpty()) return@LoadBox EmptyState(R.drawable.ic_tag, "No genres yet")
         LazyColumn(Modifier.fillMaxSize(), contentPadding = pad) {
@@ -370,12 +445,14 @@ fun DownloadsTab(pad: PaddingValues, sel: AlbumSelection? = null) {
         }
     }
     LaunchedEffect(albums) { sel?.setVisible?.invoke(albums) }
+    val grid = rememberLazyGridState()
     LazyVerticalGrid(
         GridCells.Adaptive(150.dp),
+        state = grid,
         contentPadding = pad,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().dragSelect(grid, albums, sel) { "dl" + it.id },
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -388,6 +465,6 @@ fun DownloadsTab(pad: PaddingValues, sel: AlbumSelection? = null) {
                 com.tonihk00.clearplay.ui.components.PrimaryPill("Play", R.drawable.ic_play_filled, { actions.play(songs) })
             }
         }
-        items(albums, key = { "dl" + it.id }) { SelectableAlbum(it, sel) }
+        items(albums, key = { "dl" + it.id }) { SelectableAlbum(it, sel, gridHandlesLongPress = sel != null) }
     }
 }

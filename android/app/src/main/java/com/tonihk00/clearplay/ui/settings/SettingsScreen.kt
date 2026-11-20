@@ -76,6 +76,9 @@ data class SettingsUi(
     val phoneSongs: Int? = null,
     /** Signed in with "Use music on this phone" (no server). */
     val localMode: Boolean = false,
+    /** Library scan line ("Scanning… 1 204 items", "Last scan: …"), or null before the first check. */
+    val scan: String? = null,
+    val scanning: Boolean = false,
 )
 
 interface SettingsActions {
@@ -88,6 +91,7 @@ interface SettingsActions {
     fun clearImageCache() {}
     fun setSleep(minutes: Int?, endOfSong: Boolean) {}
     fun phoneMusic(on: Boolean) {}
+    fun scanLibrary() {}
 }
 
 private val Bitrates = listOf(0, 320, 256, 192, 128, 96)
@@ -140,6 +144,13 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
                         IconButtonCp(R.drawable.ic_x, "Remove server", { actions.removeServer(srv) }, size = 36.dp, iconSize = 16.dp, tint = Cp.TextFaint)
                     }
                 }
+                Divider()
+            }
+            if (!ui.localMode && ui.active != null) {
+                ActionRow(
+                    R.drawable.ic_refresh_cw, if (ui.scanning) "Scanning…" else "Scan library",
+                    ui.scan ?: "Find new and changed music on the server",
+                ) { if (!ui.scanning) actions.scanLibrary() }
                 Divider()
             }
             ActionRow(R.drawable.ic_plus, "Add a server", "Home, Tailscale or a friend's") { actions.addServer() }

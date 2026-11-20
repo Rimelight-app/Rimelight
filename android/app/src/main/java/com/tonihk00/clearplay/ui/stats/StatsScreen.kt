@@ -140,13 +140,18 @@ fun StatsScreen(bottomPadding: Dp, preset: LibraryStats? = null) {
     val library = LocalLibrary.current ?: LocalClient.current
     val online = LocalOnline.current
     val actions = LocalActions.current
-    var stats by remember(library) { mutableStateOf(preset) }
+    val cache = com.tonihk00.clearplay.ui.screenCache()
+    val cacheKey = "stats@${System.identityHashCode(library)}"
+    var stats by remember(library) { mutableStateOf(preset ?: cache.map[cacheKey] as LibraryStats?) }
     var loaded by remember(library) { mutableIntStateOf(0) }
     var failed by remember(library) { mutableStateOf(false) }
     LaunchedEffect(library) {
-        if (preset != null || library == null) return@LaunchedEffect
+        if (stats != null || library == null) return@LaunchedEffect
         runCatching { library.allSongs { loaded = it } }
-            .onSuccess { songs -> stats = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { computeStats(songs) } }
+            .onSuccess { songs ->
+                stats = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { computeStats(songs) }
+                cache.map[cacheKey] = stats
+            }
             .onFailure { failed = true }
     }
 
@@ -180,7 +185,7 @@ fun StatsScreen(bottomPadding: Dp, preset: LibraryStats? = null) {
                 if (s.topAlbums.isNotEmpty()) item { TopAlbums(s.topAlbums) }
                 if (s.topSongs.isNotEmpty()) item { Section("Top songs") { TopSongs(s.topSongs) } }
                 if (s.topGenres.isNotEmpty()) item { Section("Top genres") { BarList(s.topGenres) { r -> actions.openGenre(r.key) } } }
-                if (s.decades.isNotEmpty()) item { Section("Decades") { BarList(s.decades, null) } }
+                if (s.decades.isNotEmpty()) item { Section("Decades") { BarList(s.decades) { r -> r.key.removeSuffix("s").toIntOrNull()?.let(actions::openDecade) } } }
                 item { Section("Formats") { Formats(s) } }
             }
         }

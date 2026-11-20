@@ -46,16 +46,19 @@ import kotlinx.coroutines.delay
 fun SearchScreen(bottomPadding: Dp, playingId: String?, autoFocus: Boolean = true, initialQuery: String = "") {
     val client = com.tonihk00.clearplay.ui.LocalLibrary.current ?: LocalClient.current
     var query by rememberSaveable { mutableStateOf(initialQuery) }
-    var result by remember { mutableStateOf<SearchResult?>(null) }
+    val cache = com.tonihk00.clearplay.ui.screenCache()
+    fun key(q: String) = "search@${System.identityHashCode(client)}:$q"
+    var result by remember(client) { mutableStateOf(cache.map[key(query.trim())] as SearchResult?) }
     var failed by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
 
     LaunchedEffect(query, client) {
         val q = query.trim()
         if (q.isEmpty() || client == null) { result = null; return@LaunchedEffect }
+        (cache.map[key(q)] as SearchResult?)?.let { result = it; return@LaunchedEffect }
         delay(220)
         runCatching { client.search(q) }
-            .onSuccess { result = it; failed = false }
+            .onSuccess { result = it; failed = false; cache.map[key(q)] = it }
             .onFailure { failed = true }
     }
     LaunchedEffect(Unit) { if (autoFocus && query.isEmpty()) runCatching { focus.requestFocus() } }

@@ -100,5 +100,8 @@ class OfflineLibrary(private val all: List<Song>, private val lyricsOf: (String)
 
     override suspend fun lyrics(song: Song): Lyrics? = lyricsOf(song.id)
 
+    override suspend fun albumsByYear(from: Int, to: Int): List<Album> =
+        albums.filter { (it.year ?: 0) in from..to }.sortedBy { it.year }.map { it.copy(song = emptyList()) }
+
     override suspend fun allSongs(onProgress: (Int) -> Unit): List<Song> = all.also { onProgress(it.size) }
 }

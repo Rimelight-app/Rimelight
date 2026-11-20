@@ -45,19 +45,41 @@ import kotlin.math.min
  * bitmap and stretched (bilinear scaling finishes the blur for free), under a dark wash.
  * Nothing here blurs live; the only per-frame cost is drawing one small bitmap.
  */
+/** The current cover blurred once into a small bitmap (null until loaded). */
 @Composable
-fun CoverBackdrop(coverArt: String?, modifier: Modifier = Modifier, dim: Float = 0f) {
+fun rememberBlurredCover(coverArt: String?): ImageBitmap? {
     val client = LocalClient.current
     val context = LocalContext.current
     var blurred by remember { mutableStateOf<ImageBitmap?>(null) }
-
     LaunchedEffect(coverArt, client) {
         if (coverArt == null) return@LaunchedEffect
         val req = coverRequest(context, client, coverArt, 150)?.newBuilder()?.allowHardware(false)?.build() ?: return@LaunchedEffect
         val result = SingletonImageLoader.get(context).execute(req) as? SuccessResult ?: return@LaunchedEffect
         blurred = withContext(Dispatchers.Default) { blurOnce(result.image.toBitmap()).asImageBitmap() }
     }
-    BackdropLayer(blurred, modifier, dim)
+    return blurred
+}
+
+/**
+ * Window-wide backdrop, as on the desktop: the current cover blurred ONCE into a tiny
+ * bitmap and stretched (bilinear scaling finishes the blur for free), under a dark wash.
+ * Nothing here blurs live; the only per-frame cost is drawing one small bitmap.
+ */
+@Composable
+fun CoverBackdrop(coverArt: String?, modifier: Modifier = Modifier, dim: Float = 0f) {
+    BackdropLayer(rememberBlurredCover(coverArt), modifier, dim)
+}
+
+/** The blurred cover shared by every page, so each page can paint its own opaque background. */
+val LocalPageBackdrop = androidx.compose.runtime.compositionLocalOf<ImageBitmap?> { null }
+
+/** A page with its own backdrop: an opaque sheet, so pages can slide over each other cleanly. */
+@Composable
+fun Page(content: @Composable () -> Unit) {
+    Box(Modifier.fillMaxSize()) {
+        BackdropLayer(LocalPageBackdrop.current)
+        content()
+    }
 }
 
 @Composable

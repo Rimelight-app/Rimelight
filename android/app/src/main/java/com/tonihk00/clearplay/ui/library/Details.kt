@@ -244,6 +244,36 @@ fun ArtistScreen(id: String, bottomPadding: Dp, onBack: () -> Unit) {
     }
 }
 
+/** Albums from one decade (opened from Statistics → Decades). */
+@Composable
+fun DecadeScreen(start: Int, bottomPadding: Dp, onBack: () -> Unit) {
+    val state by rememberLoad(start) { albumsByYear(start, start + 9) }
+    PullDownToGoBack(onBack) {
+        LoadBox(state, Modifier.statusBarsPadding().padding(top = 80.dp)) { albums: List<Album> ->
+            LazyVerticalGrid(
+                GridCells.Adaptive(150.dp),
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = bottomPadding + 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Column(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 8.dp, top = 64.dp, bottom = 8.dp)) {
+                        SectionLabel("Decade")
+                        Text("${start}s", style = MaterialTheme.typography.displaySmall, modifier = Modifier.padding(top = 4.dp))
+                        Text(
+                            "${albums.size} album${if (albums.size == 1) "" else "s"}",
+                            style = MaterialTheme.typography.titleMedium, color = Cp.TextSoft, modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                }
+                items(albums, key = { it.id }) { SelectableAlbum(it, null) }
+            }
+        }
+        BackButton(onBack)
+    }
+}
+
 /** Download all / progress / downloaded (tap to remove) for a list of songs. */
 @Composable
 fun DownloadButton(songs: List<Song>) {
@@ -273,7 +303,7 @@ fun DownloadButton(songs: List<Song>) {
 
 /**
  * Pull the page down from its top to go back, like the full player: the page follows the
- * finger, shrinks a little and pops when let go far enough.
+ * finger and goes back when let go far enough.
  */
 @Composable
 fun PullDownToGoBack(onBack: () -> Unit, content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit) {
@@ -281,11 +311,9 @@ fun PullDownToGoBack(onBack: () -> Unit, content: @Composable androidx.compose.f
     Box(
         Modifier.fillMaxSize()
             .graphicsLayer {
+                // Follows the finger down; corners round softly. No shrinking or fading.
                 translationY = pull.offset
                 val f = (pull.offset / size.height).coerceIn(0f, 1f)
-                scaleX = 1f - f * 0.1f
-                scaleY = 1f - f * 0.1f
-                alpha = 1f - f * 0.6f
                 shape = androidx.compose.foundation.shape.RoundedCornerShape((f * 160).coerceAtMost(28f).dp)
                 clip = pull.offset > 0f
             }

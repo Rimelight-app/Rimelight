@@ -22,6 +22,9 @@ interface MusicLibrary {
     suspend fun randomSongs(size: Int = 100, genre: String? = null): List<Song>
     suspend fun lyrics(song: Song): Lyrics?
 
+    /** Albums released between [from] and [to] (inclusive), oldest first. */
+    suspend fun albumsByYear(from: Int, to: Int): List<Album>
+
     /** Every song with its play count, for Statistics. */
     suspend fun allSongs(onProgress: (Int) -> Unit = {}): List<Song>
 }

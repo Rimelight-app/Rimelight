@@ -90,10 +90,11 @@ fun LyricsView(lyrics: Lyrics, position: () -> Long, playing: Boolean, onSeek: (
 }
 
 /**
- * Synced lyrics that glide, ported from the desktop SmoothLyrics: the whole column moves
- * with one transform and eases to the current line; the current line is full size and
- * bright, the others shrink and fade with distance. Dragging lets you look around; it eases
- * back after 2.5 s. Only transform and alpha animate.
+ * Synced lyrics that glide, ported from the desktop SmoothLyrics. One animated value (the
+ * current line as a float) drives everything: the column's offset, each line's size and
+ * brightness, and the soft fade at the edges. All of it is read at draw time, so a line
+ * change never recomposes or re-measures text; no offscreen mask either. Dragging lets you
+ * look around; it eases back after 2.5 s.
  */
 @Composable
 fun SyncedLyrics(
@@ -106,25 +107,46 @@ fun SyncedLyrics(
     fixedPositionMs: Long? = null,
 ) {
     val reduce = LocalReduceMotion.current
+    val n = lines.size
     var active by remember(lines) { mutableIntStateOf(fixedPositionMs?.let { activeLine(lines, it) } ?: -1) }
     LaunchedEffect(lines, playing, songKey, fixedPositionMs) {
         if (fixedPositionMs != null) return@LaunchedEffect
         active = activeLine(lines, position())
         while (playing && isActive) {
-            delay(100) // like the desktop: 10 checks a second, re-render only on line change
+            delay(100) // like the desktop: 10 checks a second; only a line change does anything
             active = activeLine(lines, position())
         }
     }
 
-    val tops = remember(lines) { mutableStateListOf<Float>().apply { repeat(lines.size) { add(0f) } } }
-    val heights = remember(lines) { mutableStateListOf<Float>().apply { repeat(lines.size) { add(0f) } } }
-    val offset = remember(lines) { Animatable(0f) }
+    // Line geometry, filled in at placement. The version counter is what drawing observes, so
+    // the layers redraw once when measurements arrive or change (and never recompose).
+    val tops = remember(lines) { FloatArray(n) }
+    val heights = remember(lines) { FloatArray(n) }
+    var geometry by remember(lines) { mutableIntStateOf(0) }
+    val anim = remember(lines) { Animatable(active.coerceAtLeast(0).toFloat()) }
     val manual = remember(lines) { Animatable(0f) }
     val scope = rememberCoroutineScope()
     var manualJob by remember { mutableStateOf<Job?>(null) }
 
+    LaunchedEffect(active) {
+        manualJob?.cancel()
+        manual.snapTo(0f)
+        val target = active.coerceAtLeast(0).toFloat()
+        if (reduce) anim.snapTo(target) else anim.animateTo(target, tween(900, easing = Cp.EaseOutSoft))
+    }
+
+    fun centerOf(f: Float): Float {
+        if (n == 0) return 0f
+        val i = f.toInt().coerceIn(0, n - 1)
+        val j = (i + 1).coerceAtMost(n - 1)
+        val t = (f - i).coerceIn(0f, 1f)
+        val ci = tops[i] + heights[i] / 2f
+        val cj = tops[j] + heights[j] / 2f
+        return ci + (cj - ci) * t
+    }
+
     BoxWithConstraints(
-        modifier.fillMaxSize().clipToBounds().edgeFade()
+        modifier.fillMaxSize().clipToBounds()
             .draggable(
                 rememberDraggableState { d -> scope.launch { manual.snapTo(manual.value + d) } },
                 Orientation.Vertical,
@@ -132,34 +154,22 @@ fun SyncedLyrics(
                     manualJob?.cancel()
                     manualJob = scope.launch {
                         delay(2500)
-                        manual.animateTo(0f, tween(if (reduce) 0 else 260, easing = Cp.EaseOutSoft))
+                        manual.animateTo(0f, tween(if (reduce) 0 else 300, easing = Cp.EaseOutSoft))
                     }
                 },
             ),
     ) {
         val boxH = with(LocalDensity.current) { maxHeight.toPx() }
-        val idx = max(0, active)
-        val target = boxH * 0.30f - (tops.getOrElse(idx) { 0f } + heights.getOrElse(idx) { 0f } / 2f)
-        LaunchedEffect(active, boxH, heights.getOrElse(idx) { 0f }) {
-            manualJob?.cancel()
-            manual.snapTo(0f)
-            if (reduce || offset.value == 0f && active <= 0) offset.snapTo(target)
-            else offset.animateTo(target, tween(1100, easing = Cp.EaseOutSoft))
-        }
+        val anchor = boxH * 0.30f
         Column(
             // Unbounded: every line keeps its real height even far below the visible area.
             Modifier.fillMaxWidth().wrapContentHeight(Alignment.Top, unbounded = true)
-                .graphicsLayer { translationY = offset.value + manual.value },
+                .graphicsLayer {
+                    @Suppress("UNUSED_VARIABLE") val g = geometry
+                    translationY = anchor - centerOf(anim.value) + manual.value
+                },
         ) {
             lines.forEachIndexed { i, line ->
-                val distance = if (active < 0) i + 1 else abs(i - active)
-                val isActive = i == active
-                val scale by animateFloatAsState(if (isActive) 1f else 0.84f, tween(if (reduce) 0 else 700, easing = Cp.EaseOutSoft), label = "ls")
-                val alpha by animateFloatAsState(
-                    if (isActive) 1f else max(0.18f, 0.42f - distance * 0.05f),
-                    tween(if (reduce) 0 else 700, easing = Cp.EaseOutSoft),
-                    label = "la",
-                )
                 Text(
                     line.text.ifBlank { "♪" },
                     style = MaterialTheme.typography.headlineSmall.copy(
@@ -169,17 +179,33 @@ fun SyncedLyrics(
                     modifier = Modifier
                         .fillMaxWidth()
                         .onPlaced { c ->
-                            if (i < tops.size) {
-                                tops[i] = c.positionInParent().y
-                                heights[i] = c.size.height.toFloat()
+                            val y = c.positionInParent().y
+                            val h = c.size.height.toFloat()
+                            if (tops[i] != y || heights[i] != h) {
+                                tops[i] = y
+                                heights[i] = h
+                                geometry++
                             }
                         }
                         .clickable(remember { MutableInteractionSource() }, null) { line.timeMs?.let(onSeek) }
                         .padding(vertical = 12.dp)
                         .graphicsLayer {
-                            scaleX = scale; scaleY = scale
-                            this.alpha = alpha
+                            @Suppress("UNUSED_VARIABLE") val g = geometry
+                            val a = anim.value
+                            val d = abs(i - a)
+                            val near = d.coerceAtMost(1f)
+                            val s = 1f - 0.16f * near
+                            scaleX = s; scaleY = s
                             transformOrigin = TransformOrigin(0f, 0.5f)
+                            val far = max(0.18f, 0.42f - d * 0.05f)
+                            var alphaNow = 1f + (far - 1f) * near
+                            // Soft fade near the top and bottom edges (replaces the offscreen mask).
+                            val y = anchor - centerOf(a) + manual.value + tops[i] + heights[i] / 2f
+                            val top = boxH * 0.12f
+                            val bottom = boxH * 0.82f
+                            if (y < top) alphaNow *= (y / top).coerceIn(0f, 1f)
+                            if (y > bottom) alphaNow *= ((boxH - y) / (boxH - bottom)).coerceIn(0f, 1f)
+                            alpha = alphaNow
                         },
                 )
             }

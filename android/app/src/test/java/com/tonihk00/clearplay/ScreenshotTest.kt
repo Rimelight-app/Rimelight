@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.media3.common.Player
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.tonihk00.clearplay.player.PlayerState
@@ -191,6 +192,25 @@ class ScreenshotTest {
         WithDock(2) {
             com.tonihk00.clearplay.ui.stats.StatsScreen(170.dp, preset = com.tonihk00.clearplay.ui.stats.computeStats(FakeServer.songs))
         }
+    }
+
+    /** Regression: switching library tabs must never show (or crash on) another tab's cached data. */
+    @Test fun libraryTabsKeepTheirOwnData() {
+        rule.setContent {
+            ClearPlayTheme(reduceMotion = true) {
+                CompositionLocalProvider(LocalClient provides FakeServer.client, LocalFakeCovers provides FakeServer::cover) {
+                    LibraryScreen(170.dp, null, initialTab = 1)
+                }
+            }
+        }
+        fun waitFor(t: String) = rule.waitUntil(10_000) { rule.onAllNodesWithText(t).fetchSemanticsNodes().isNotEmpty() }
+        waitFor("Mira Vale")
+        rule.onAllNodesWithText("Playlists")[0].performClick()
+        waitFor("Late drive")
+        rule.onAllNodesWithText("Favorites")[0].performClick()
+        waitFor("Small Hours")
+        rule.onAllNodesWithText("Playlists")[0].performClick()
+        waitFor("Sunday")
     }
 
     @Test fun login() = shoot("09-login") {

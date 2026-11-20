@@ -201,7 +201,16 @@ class PlayerConnection(
     }
 
     fun next() { controller?.seekToNext() }
-    fun previous() { controller?.seekToPrevious() }
+
+    /**
+     * Within the first 3 s of a song: the previous song. Later: back to the start of this one.
+     * Decided here, from the real position (the controller's own seekToPrevious misjudged it
+     * right after a track change and always restarted).
+     */
+    fun previous() {
+        val c = controller ?: return
+        if (c.currentPosition <= 3_000 && c.hasPreviousMediaItem()) c.seekToPreviousMediaItem() else c.seekTo(0)
+    }
     fun seekTo(ms: Long) { controller?.seekTo(ms) }
 
     fun toggleShuffle() {

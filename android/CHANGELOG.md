@@ -1,5 +1,24 @@
 # ClearPlay for Android — changelog
 
+## [1.3.0] - 2026-11-20
+
+### Added
+- **Scan library** in Settings → Servers: starts a Navidrome scan and shows its progress ("Scanning… 1 204 items found"). Needs an admin account; others get a clear message.
+- **Drag to select albums**: long-press an album, keep the finger down and slide across others to select (or deselect) them all; scrolls by itself near the edges. Tapping single albums still works.
+- **Decades open their albums**: tap a decade in Statistics to see that decade's albums.
+
+### Changed
+- **New back animation**: pages are solid sheets that slide. Going back, the page slides off to the right (following your finger with the back swipe) and the previous page slides in beneath it. No more shrinking. Bottom tabs simply cross-fade.
+- **Lyrics scroll smoothly**: one animated value drives the whole view and nothing is re-laid out per frame; the expensive full-screen fade mask is gone. The page behind the full player is no longer redrawn while the player covers it, which also makes the cover view lighter.
+- **Going back keeps your place**: lists, search results and statistics are kept while you're on another page, so you return to the same scroll position.
+- Pull-down on pages and the player only moves the screen (no shrinking).
+
+### Fixed
+- Opening the Genres tab after Artists could crash the app.
+- Tapping the tab you're already on now goes back to its first page (it did nothing on album and decade pages). An album opened from Search keeps the Search tab highlighted.
+- Previous went back to the start of the song even in its first seconds; it now goes to the previous song within the first 3 seconds, like other players.
+- Lyrics opened in the middle of a song now start at the right line.
+
 ## [1.2.0] - 2026-11-19
 
 ### Added
