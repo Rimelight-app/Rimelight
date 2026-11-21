@@ -5,7 +5,6 @@ import { EqualizerBars } from '@/app/components/icons/equalizer-bars'
 import { ImageLoader } from '@/app/components/image-loader'
 import { ISong } from '@/types/responses/song'
 import { convertSecondsToTime } from '@/utils/convertSecondsToTime'
-import { ALBUM_ARTISTS_MAX_NUMBER } from '@/utils/multipleArtists'
 
 type QueueItemProps = ComponentPropsWithRef<'div'> & {
   song: ISong
@@ -60,7 +59,7 @@ export function QueueItem({
             )}
           </ImageLoader>
         </div>
-        <div className="flex min-w-0 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col pr-2">
           <span className="truncate font-semibold">{song.title}</span>
           <QueueArtists song={song} />
         </div>
@@ -72,23 +71,20 @@ export function QueueItem({
   )
 }
 
+/**
+ * Artist line: every artist on one line, comma-separated, cut with "…" when
+ * it doesn't fit (the full list shows on hover), like the title above it.
+ */
 function QueueArtists({ song }: { song: ISong }) {
   const { artist, artists } = song
+  const names =
+    artists && artists.length > 1
+      ? artists.map(({ name }) => name).join(', ')
+      : artist
 
-  if (artists && artists.length > 1) {
-    const data = artists.slice(0, ALBUM_ARTISTS_MAX_NUMBER)
-
-    return (
-      <div className="flex items-center gap-1 font-normal opacity-70">
-        {data.map(({ id, name }, index) => (
-          <div key={id} className="flex items-center text-sm">
-            <p>{name}</p>
-            {index < data.length - 1 && ','}
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  return <p className="font-normal text-sm opacity-70">{artist}</p>
+  return (
+    <p className="truncate font-normal text-sm opacity-70" title={names}>
+      {names}
+    </p>
+  )
 }
