@@ -2,6 +2,17 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
+## [0.4.4] - 2026-11-22
+
+### Added
+- **Rescan library** (Settings → Servers → Library): asks the server to scan for new and changed songs, waits until the scan ends, then refreshes every list and loads the lyrics again for the playing song and for new songs. A message says how many songs were added. On Navidrome this needs an admin account (the app says so if the server refuses). Works for "This computer" too.
+- **Song menu in search results**: right-click a song on the Search page for the usual song menu (Play next, Add to queue, add to playlist, rating, info and the rest).
+
+### Fixed
+- **Album header flashed a white rectangle** while it loaded. The loading placeholder used a light colour from the theme; it is now transparent and only appears if loading takes longer than a moment. The header's text shows at once, the small cover (usually already cached from the album cards) shows straight away, and the sharp cover fades in over it. Applies to album, artist, playlist and genre pages.
+- **Equalizer and Now Playing visualizer did nothing** (seen on Fedora): one failed song load (or a play request interrupted by skipping quickly) switched the app to a fallback without the audio engine, and that was saved for good, so the EQ, mono, ReplayGain and the visualizer stayed off on that computer. The fallback is now used only when the server really refuses cross-origin requests, lasts only until the app is restarted, and an interrupted play request no longer counts as an error. Computers already stuck in the fallback recover on the first start of this version.
+- **Queue side panel**: with three or more artists, names wrapped onto two lines and ran into each other and into the song length. Artists now sit on one line, separated by commas, and end with "…" when they don't fit (the full list shows on hover). Same fix in the fullscreen queue.
+
 ## [0.4.3] - 2026-11-19
 
 ### Added
