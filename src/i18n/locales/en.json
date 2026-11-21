@@ -980,6 +980,18 @@
       "discography": "Discography",
       "visualizer": "Visualizer"
     },
+    "rescan": {
+      "group": "Library",
+      "description": "Look for songs added to your library and refresh their lyrics.",
+      "label": "Rescan library",
+      "info": "Asks the server to scan its music folders for new and changed songs. When the scan ends, all lists are refreshed, and lyrics are loaded again for the playing song and for new songs. On Navidrome this needs an admin account.",
+      "button": "Rescan library",
+      "scanning": "Scanning…",
+      "done": "Library rescanned",
+      "doneNew_one": "Library rescanned: {{count}} new song",
+      "doneNew_other": "Library rescanned: {{count}} new songs",
+      "failed": "The server didn't start a scan. On Navidrome, rescanning needs an admin account."
+    },
     "servers": {
       "group": "Servers",
       "description": "Save several addresses for your music, for example your home network and Tailscale, and switch with one click.",
