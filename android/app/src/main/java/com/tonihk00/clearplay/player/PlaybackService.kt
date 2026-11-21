@@ -42,9 +42,16 @@ class PlaybackService : MediaLibraryService() {
     override fun onCreate() {
         super.onCreate()
         val http = OkHttpClient.Builder().build()
-        // Downloaded songs are read from the offline cache; everything else streams.
-        val dataSource = ClearPlayApp.instance.downloads.playbackFactory(
-            DefaultDataSource.Factory(this, OkHttpDataSource.Factory(http)),
+        // Downloaded songs are read from the offline cache or streamed, as Settings → Player →
+        // Playback source says (decided per song when it starts); everything else streams.
+        val app = ClearPlayApp.instance
+        val network = DefaultDataSource.Factory(this, OkHttpDataSource.Factory(http))
+        val dataSource = SourceRouter(
+            local = app.downloads.playbackFactory(network),
+            network = network,
+            useDownload = { key -> app.playsFromDownload(key.removePrefix("song:")) },
+            downloadedLength = app.downloads::downloadedLength,
+            mayFallBack = { app.settings.state.value.playbackSource != com.tonihk00.clearplay.data.PlaybackSource.Server },
         )
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(dataSource))

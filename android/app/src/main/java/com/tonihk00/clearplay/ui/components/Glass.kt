@@ -2,6 +2,7 @@ package com.tonihk00.clearplay.ui.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -122,6 +123,42 @@ fun PrimaryPill(text: String, @DrawableRes icon: Int?, onClick: () -> Unit, modi
     ) {
         if (icon != null) CpIcon(icon, size = 18.dp, tint = Cp.OnPrimary)
         Text(text, style = MaterialTheme.typography.titleMedium, color = Cp.OnPrimary, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+/**
+ * The album's big Play pill, which turns into Pause while that album plays. Not playing, it is
+ * exactly [PrimaryPill] ("Play" with the filled triangle); the icon and word cross-fade and the
+ * pill eases to its new width when it switches.
+ */
+@Composable
+fun PlayPausePill(playing: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val reduce = com.tonihk00.clearplay.ui.theme.LocalReduceMotion.current
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val bg by animateColorAsState(if (pressed) Color(0xFFD4D4D8) else Cp.Primary, tween(if (pressed) 60 else 260), label = "pill")
+    val ms = if (reduce) 0 else Cp.ControlMs
+    Row(
+        modifier
+            .pressScale(source, 0.94f)
+            .clip(CircleShape)
+            .background(bg)
+            .clickable(source, null, role = Role.Button) {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                onClick()
+            }
+            .animateContentSize(tween(ms, easing = Cp.EaseOutSoft))
+            .padding(horizontal = 22.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        androidx.compose.animation.Crossfade(playing, animationSpec = tween(ms), label = "pillIcon") { p ->
+            CpIcon(if (p) com.tonihk00.clearplay.R.drawable.ic_pause_filled else com.tonihk00.clearplay.R.drawable.ic_play_filled, size = 18.dp, tint = Cp.OnPrimary)
+        }
+        androidx.compose.animation.Crossfade(playing, animationSpec = tween(ms), label = "pillText") { p ->
+            Text(if (p) "Pause" else "Play", style = MaterialTheme.typography.titleMedium, color = Cp.OnPrimary, fontWeight = FontWeight.SemiBold)
+        }
     }
 }
 

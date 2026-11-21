@@ -191,6 +191,13 @@ class PlayerConnection(
         controller?.removeMediaItem(index)
     }
 
+    /** Moves a queue entry (dragged in the queue); the playing song keeps playing. */
+    fun move(from: Int, to: Int) {
+        val c = controller ?: return
+        if (from == to || from !in 0 until c.mediaItemCount || to !in 0 until c.mediaItemCount) return
+        c.moveMediaItem(from, to)
+    }
+
     fun togglePlay() {
         val c = controller ?: return
         if (c.isPlaying) c.pause() else {

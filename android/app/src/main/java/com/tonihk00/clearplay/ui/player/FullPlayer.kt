@@ -73,6 +73,7 @@ interface PlayerControls {
     fun cycleRepeat() {}
     fun skipTo(index: Int) {}
     fun removeAt(index: Int) {}
+    fun move(from: Int, to: Int) {}
     fun clearQueue() {}
     fun position(): Long = 0
     fun setSleep(minutes: Int?, endOfSong: Boolean = false) {}
@@ -307,7 +308,12 @@ fun QualityLine(song: Song, streamCap: Pair<Int, String>?, modifier: Modifier = 
     )
     if (parts.isEmpty()) return
     val hiRes = (song.bitDepth ?: 0) >= 24 && (song.samplingRate ?: 0) >= 48_000
-    val downloaded = com.tonihk00.clearplay.ui.LocalDownloadStates.current[song.id]?.done == true
+    // Playing from the download (Settings → Player → Playback source) means no conversion.
+    val downloaded = com.tonihk00.clearplay.ui.LocalPlaybackSource.current.useDownload(
+        downloaded = com.tonihk00.clearplay.ui.LocalDownloadStates.current[song.id]?.done == true,
+        online = com.tonihk00.clearplay.ui.LocalOnline.current,
+        hasServer = com.tonihk00.clearplay.ui.components.LocalClient.current != null,
+    )
     val converted = streamCap?.takeIf { (cap, _) -> !song.isLocal && !downloaded && cap > 0 && (song.bitRate ?: 0) > cap }
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(parts.joinToString(" · "), style = MaterialTheme.typography.labelMedium, color = Cp.TextFaint, maxLines = 1)
@@ -347,53 +353,5 @@ fun TransportRow(state: PlayerState, controls: PlayerControls, modifier: Modifie
         val one = state.repeat == Player.REPEAT_MODE_ONE
         val on = state.repeat != Player.REPEAT_MODE_OFF
         IconButtonCp(if (one) R.drawable.ic_repeat_1 else R.drawable.ic_repeat, "Repeat", controls::cycleRepeat, active = on, tint = if (on) Cp.TextStrong else Cp.TextFaint)
-    }
-}
-
-@Composable
-fun QueueList(state: PlayerState, controls: PlayerControls, modifier: Modifier = Modifier) {
-    val list = rememberLazyListState(initialFirstVisibleItemIndex = (state.index).coerceAtLeast(0))
-    LaunchedEffect(state.index) { if (state.index >= 0) list.animateScrollToItem(state.index) }
-    Column(modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 16.dp, top = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                if (state.endless) "Queue · shuffling the library" else "Queue · ${state.queue.size} song${if (state.queue.size == 1) "" else "s"}",
-                style = MaterialTheme.typography.titleSmall,
-                color = Cp.TextSoft,
-                modifier = Modifier.weight(1f),
-            )
-            Row(
-                Modifier.glassPanel(CircleShape, strong = true).clickable(onClick = controls::clearQueue).padding(horizontal = 14.dp, vertical = 7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                com.tonihk00.clearplay.ui.components.CpIcon(R.drawable.ic_list_x, size = 16.dp, tint = Cp.TextSoft)
-                Spacer(Modifier.width(6.dp))
-                Text("Clear", style = MaterialTheme.typography.labelLarge, color = Cp.TextSoft)
-            }
-        }
-        LazyColumn(Modifier.fillMaxSize().edgeFade(0.04f, 0.08f), state = list, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
-            itemsIndexed(state.queue, key = { i, s -> "${s.id}-$i" }) { i, s ->
-                QueueRow(s.edited(), i == state.index, i < state.index, { controls.skipTo(i) }, { controls.removeAt(i) })
-            }
-        }
-    }
-}
-
-@Composable
-private fun QueueRow(song: Song, current: Boolean, past: Boolean, onClick: () -> Unit, onRemove: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth()
-            .then(if (current) Modifier.glassPanel(RoundedCornerShape(12.dp), strong = true) else Modifier)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Cover(song.coverArt, Modifier.size(44.dp), RoundedCornerShape(10.dp), 120)
-        Column(Modifier.weight(1f).padding(start = 12.dp)) {
-            val c = when { current -> Cp.TextStrong; past -> Cp.TextFaint; else -> Cp.TextStrong.copy(alpha = 0.88f) }
-            Text(song.title, style = MaterialTheme.typography.titleMedium, color = c, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(song.artist.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = Cp.TextFaint, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        if (!current) IconButtonCp(R.drawable.ic_x, "Remove", onRemove, size = 34.dp, iconSize = 16.dp, tint = Cp.TextFaint)
     }
 }

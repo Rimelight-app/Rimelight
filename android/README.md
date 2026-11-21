@@ -4,7 +4,7 @@ The ClearPlay frosted-glass player for Navidrome / OpenSubsonic, as a native And
 Kotlin, Jetpack Compose, Media3 (ExoPlayer + MediaLibraryService), Coil, Haze, Ktor.
 Same design tokens as the desktop `.glass` theme (`src/themes.css`).
 
-Status: **1.3** — see `CHANGELOG.md`.
+Status: **1.4** — see `CHANGELOG.md`.
 
 ## Build
 
@@ -17,6 +17,7 @@ echo "sdk.dir=$HOME/android-sdk" > local.properties   # once
 ./gradlew testDebugUnitTest        # logic tests + screenshot tests
 ./gradlew recordRoborazziDebug     # writes screenshots to app/build/screens/
 ./gradlew --stop                   # free the memory afterwards
+./gradlew assembleRelease -PcpReleaseSuffix=.rtest   # release-speed test build next to the real app
 ```
 
 `gradle.properties` keeps Gradle small (2 GB heap, 2 workers).
@@ -32,6 +33,8 @@ app/src/main/java/com/tonihk00/clearplay/
   player/PlaybackService   Media3 MediaLibraryService: notification, lock screen, Bluetooth
   player/PlayerConnection  MediaController wrapper: queue ops, shuffle library
   player/Scrobbler         now playing + submission after half the song or 4 min
+  data/ScrobbleQueue       listens waiting for the server (offline plays), kept in a file
+  player/SourceRouter      playback source per song: download or server
   ui/theme/Theme.kt        design tokens (Cp.*), Inter, motion
   ui/components/           glass panels, covers, play/pause morph, stars, backdrop
   ui/library|search|player|login|settings/

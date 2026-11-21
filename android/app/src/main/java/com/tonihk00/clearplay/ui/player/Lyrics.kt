@@ -50,6 +50,10 @@ import androidx.compose.ui.unit.sp
 import com.tonihk00.clearplay.data.api.LyricLine
 import com.tonihk00.clearplay.data.api.Lyrics
 import com.tonihk00.clearplay.data.api.activeLine
+import com.tonihk00.clearplay.data.api.msUntilNextLine
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.FrameRateCategory
+import androidx.compose.ui.preferredFrameRate
 import com.tonihk00.clearplay.ui.theme.Cp
 import com.tonihk00.clearplay.ui.theme.LocalReduceMotion
 import kotlinx.coroutines.Job
@@ -109,13 +113,19 @@ fun SyncedLyrics(
     val reduce = LocalReduceMotion.current
     val n = lines.size
     var active by remember(lines) { mutableIntStateOf(fixedPositionMs?.let { activeLine(lines, it) } ?: -1) }
+    // True shortly before a line change: frames start flowing early (see below).
+    var warm by remember(lines) { mutableStateOf(false) }
     LaunchedEffect(lines, playing, songKey, fixedPositionMs) {
+        warm = false
         if (fixedPositionMs != null) return@LaunchedEffect
         active = activeLine(lines, position())
         while (playing && isActive) {
             delay(100) // like the desktop: 10 checks a second; only a line change does anything
-            active = activeLine(lines, position())
+            val pos = position()
+            active = activeLine(lines, pos)
+            warm = !reduce && (msUntilNextLine(lines, pos) ?: Long.MAX_VALUE) in 0..WARM_UP_MS
         }
+        warm = false
     }
 
     // Line geometry, filled in at placement. The version counter is what drawing observes, so
@@ -127,6 +137,22 @@ fun SyncedLyrics(
     val manual = remember(lines) { Animatable(0f) }
     val scope = rememberCoroutineScope()
     var manualJob by remember { mutableStateOf<Job?>(null) }
+
+    // Smoothness on phones with adaptive refresh rate (Samsung LTPO and others): while the
+    // lyrics sit still, the only thing drawing is the seek bar, 4 times a second, so the screen
+    // drops to a low refresh rate, and a glide that starts there stutters until it speeds up
+    // again. A screen recording pins the rate, which is why it never showed in recordings.
+    // So while synced lyrics are on screen and playing, the window asks for the screen's top
+    // refresh rate (released when you leave the lyrics or pause).
+    HighRefreshRate(playing && fixedPositionMs == null)
+    // Second safeguard, for phones that don't honour that request: ~[WARM_UP_MS] before each
+    // line change the lyrics draw every frame (the text moves by 0.02 px, invisible), so the
+    // system's own "content is moving" detection has already sped the screen up when the glide
+    // starts. preferredFrameRate below also votes for the high rate wherever that is supported.
+    val tick = remember { mutableIntStateOf(0) }
+    LaunchedEffect(warm) {
+        if (warm) while (isActive) withFrameNanos { tick.intValue++ }
+    }
 
     LaunchedEffect(active) {
         manualJob?.cancel()
@@ -147,6 +173,7 @@ fun SyncedLyrics(
 
     BoxWithConstraints(
         modifier.fillMaxSize().clipToBounds()
+            .preferredFrameRate(FrameRateCategory.High)
             .draggable(
                 rememberDraggableState { d -> scope.launch { manual.snapTo(manual.value + d) } },
                 Orientation.Vertical,
@@ -166,7 +193,8 @@ fun SyncedLyrics(
             Modifier.fillMaxWidth().wrapContentHeight(Alignment.Top, unbounded = true)
                 .graphicsLayer {
                     @Suppress("UNUSED_VARIABLE") val g = geometry
-                    translationY = anchor - centerOf(anim.value) + manual.value
+                    val nudge = if (tick.intValue % 2 == 0) 0f else 0.02f
+                    translationY = anchor - centerOf(anim.value) + manual.value + nudge
                 },
         ) {
             lines.forEachIndexed { i, line ->
@@ -213,6 +241,45 @@ fun SyncedLyrics(
         }
     }
 }
+
+/**
+ * While [on], asks for the display's highest-refresh-rate mode (same resolution) and, on
+ * Android 15+, tells the system not to lower the rate to save power for this window.
+ */
+@Composable
+fun HighRefreshRate(on: Boolean) {
+    val view = androidx.compose.ui.platform.LocalView.current
+    androidx.compose.runtime.DisposableEffect(on, view) {
+        val window = view.context.findActivity()?.window
+        val display = view.display
+        if (!on || window == null || display == null) return@DisposableEffect onDispose {}
+        val now = display.mode
+        val top = display.supportedModes
+            .filter { it.physicalWidth == now.physicalWidth && it.physicalHeight == now.physicalHeight }
+            .maxByOrNull { it.refreshRate } ?: return@DisposableEffect onDispose {}
+        window.attributes = window.attributes.apply {
+            preferredDisplayModeId = top.modeId
+            preferredRefreshRate = top.refreshRate
+            if (android.os.Build.VERSION.SDK_INT >= 35) setFrameRatePowerSavingsBalanced(false)
+        }
+        onDispose {
+            window.attributes = window.attributes.apply {
+                preferredDisplayModeId = 0
+                preferredRefreshRate = 0f
+                if (android.os.Build.VERSION.SDK_INT >= 35) setFrameRatePowerSavingsBalanced(true)
+            }
+        }
+    }
+}
+
+private tailrec fun android.content.Context.findActivity(): android.app.Activity? = when (this) {
+    is android.app.Activity -> this
+    is android.content.ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+/** How long before a line change the lyrics start drawing every frame (see SyncedLyrics). */
+private const val WARM_UP_MS = 350L
 
 @Composable
 fun NoLyrics(modifier: Modifier = Modifier, loading: Boolean) {

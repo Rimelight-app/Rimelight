@@ -42,6 +42,8 @@ interface UiActions {
     fun openPlaylist(id: String) {}
     fun openGenre(name: String) {}
     fun play(songs: List<Song>, index: Int = 0, shuffle: Boolean = false) {}
+    /** Pause, or resume what is loaded. */
+    fun togglePlay() {}
     fun playNext(songs: List<Song>) {}
     fun addToQueue(songs: List<Song>) {}
     fun shuffleLibrary() {}
@@ -73,6 +75,14 @@ val LocalDownloadStates = compositionLocalOf<Map<String, DownloadState>> { empty
 
 /** Completed downloads, newest first. */
 val LocalDownloadedSongs = compositionLocalOf<List<Song>> { emptyList() }
+
+/** What is playing, for screens that react to it (the album's Play/Pause pill). */
+data class NowPlaying(val albumId: String? = null, val playing: Boolean = false)
+
+val LocalNowPlaying = compositionLocalOf { NowPlaying() }
+
+/** Settings → Player → Playback source (tests: downloads, the behaviour before it existed). */
+val LocalPlaybackSource = compositionLocalOf { com.tonihk00.clearplay.data.PlaybackSource.Downloads }
 
 /** Background strength from Settings → Appearance. */
 val LocalBackdropMode = compositionLocalOf { Backdrop.Balanced }

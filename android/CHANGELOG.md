@@ -1,5 +1,17 @@
 # ClearPlay for Android — changelog
 
+## [1.4.0] - 2026-11-21
+
+### Added
+- **Offline listens are scrobbled later.** Songs you listen to without a connection are kept (also if the app is closed) and sent to Navidrome as soon as the server answers again, with the time you played them, so they reach ListenBrainz / Last.fm too. Works across your saved addresses for the same server (home, Tailscale…).
+- **Playback source** in Settings → Player: *Auto* (server when connected, downloads when offline; the new default), *Always server*, or *Always downloads*. Decided per song when it starts, so a song never switches files halfway.
+- **Pause on the album page**: while a song from the album is playing, the big Play button turns into Pause; tap again to resume. Not playing, it looks and works as before.
+- **Reorder the queue**: hold a song and drag it to a new place; the list makes room and scrolls by itself near the edges. Holding a song still and letting go opens its menu (Play next, Go to album…).
+
+### Fixed
+- **Back gesture right after opening a page** no longer glitches (the page jumped left and snapped away). Going back while a page is still sliding in now lets it settle and then slides it off to the right, whether you swipe, tap the back arrow or pull the page down.
+- **Lyrics scroll smoothly every time on phones with adaptive refresh rate** (e.g. Samsung Galaxy S24): while lyrics are on screen and playing, the app asks the screen to stay at its top refresh rate, and it starts drawing a moment before each line change, so the glide no longer starts at a low refresh rate. Released when you pause or leave the lyrics.
+
 ## [1.3.0] - 2026-11-20
 
 ### Added

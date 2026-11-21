@@ -35,3 +35,10 @@ fun activeLine(lines: List<LyricLine>, positionMs: Long): Int {
     }
     return idx
 }
+
+/** Milliseconds of playback until [activeLine] next changes, or null after the last line. */
+fun msUntilNextLine(lines: List<LyricLine>, positionMs: Long): Long? {
+    val next = activeLine(lines, positionMs) + 1
+    val at = lines.getOrNull(next)?.timeMs ?: return null
+    return (at - 150) - positionMs
+}

@@ -200,6 +200,13 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
 
         // Player ----------------------------------------------------------------
         Group("Player", null) {
+            if (!ui.localMode) {
+                ChoiceRow(
+                    R.drawable.ic_server, "Playback source", com.tonihk00.clearplay.data.PlaybackSource.entries, s.playbackSource, { it.label },
+                    note = s.playbackSource.detail,
+                ) { v -> actions.update { it.copy(playbackSource = v) } }
+                Divider()
+            }
             ActionRow(R.drawable.ic_moon, "Sleep timer", sleepLabel(ui.sleep) ?: "Off") { sleepSheet = true }
             Divider()
             SwitchRow(R.drawable.ic_activity, "Scrobble plays", "Send plays to Navidrome (and on to Last.fm or ListenBrainz)", s.scrobble) { v -> actions.update { it.copy(scrobble = v) } }
@@ -317,7 +324,7 @@ fun GlassSwitch(checked: Boolean) {
 /** Title with a row of pill choices underneath (selected = white pill). */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun <T> ChoiceRow(icon: Int, title: String, options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit) {
+private fun <T> ChoiceRow(icon: Int, title: String, options: List<T>, selected: T, label: (T) -> String, note: String? = null, onSelect: (T) -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             CpIcon(icon, size = 20.dp, tint = Cp.TextSoft)
@@ -338,6 +345,9 @@ private fun <T> ChoiceRow(icon: Int, title: String, options: List<T>, selected: 
                     fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
                 )
             }
+        }
+        if (note != null) {
+            Text(note, style = MaterialTheme.typography.bodySmall, color = Cp.TextFaint, modifier = Modifier.padding(start = 34.dp, top = 8.dp))
         }
     }
 }

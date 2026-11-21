@@ -94,6 +94,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import java.net.URLDecoder
 import java.net.URLEncoder
 
@@ -155,6 +156,7 @@ private class PlayerControlsImpl(private val p: PlayerConnection) : PlayerContro
     override fun cycleRepeat() = p.cycleRepeat()
     override fun skipTo(index: Int) = p.skipTo(index)
     override fun removeAt(index: Int) = p.removeAt(index)
+    override fun move(from: Int, to: Int) = p.move(from, to)
     override fun clearQueue() = p.clearQueue()
     override fun position(): Long = p.positionMs
     override fun setSleep(minutes: Int?, endOfSong: Boolean) = p.setSleepTimer(minutes, endOfSong)
@@ -213,6 +215,7 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
             override fun openGenre(name: String) = nav.navigate("genre/${URLEncoder.encode(name, "UTF-8")}")
             override fun openDecade(start: Int) = nav.navigate("decade/$start")
             override fun play(songs: List<Song>, index: Int, shuffle: Boolean) = player.play(songs, index, shuffle)
+            override fun togglePlay() = player.togglePlay()
             override fun playNext(songs: List<Song>) {
                 player.playNext(songs)
                 toast.show(if (songs.size == 1) "Playing next: ${songs[0].title}" else "${plural(songs.size, "song")} play next")
@@ -286,6 +289,8 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
     CompositionLocalProvider(
         LocalActions provides actions,
         LocalDownloadStates provides dlStates,
+        LocalPlaybackSource provides settings.playbackSource,
+        LocalNowPlaying provides NowPlaying(current?.albumId, state.isPlaying),
         LocalDownloadedSongs provides dlSongs,
         LocalLibrary provides library,
         LocalOnline provides (client == null || online),
@@ -358,6 +363,7 @@ private fun AppNavHost(
     val reduce = LocalReduceMotion.current
     val t = if (reduce) 0 else Cp.ScreenMs
     fun dec(s: String?) = URLDecoder.decode(s.orEmpty(), "UTF-8")
+    val safe = rememberSafeBack(nav)
     NavHost(
         nav, startDestination = Tab.Library.route,
         // Pages are opaque sheets (each paints the blurred cover). Opening one slides it in
@@ -391,30 +397,96 @@ private fun AppNavHost(
         composable(Tab.Settings.route) { com.tonihk00.clearplay.ui.components.Page { SettingsRoute(client, bottom, sleep, onLogout, onAddServer) } }
         composable("album/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
             com.tonihk00.clearplay.ui.components.Page {
-                AlbumScreen(dec(it.arguments?.getString("id")), bottom, playingId) { nav.popBackStack() }
+                AlbumScreen(dec(it.arguments?.getString("id")), bottom, playingId) { safe.back() }
             }
         }
         composable("artist/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
             com.tonihk00.clearplay.ui.components.Page {
-                ArtistScreen(dec(it.arguments?.getString("id")), bottom) { nav.popBackStack() }
+                ArtistScreen(dec(it.arguments?.getString("id")), bottom) { safe.back() }
             }
         }
         composable("playlist/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
             com.tonihk00.clearplay.ui.components.Page {
-                PlaylistScreen(dec(it.arguments?.getString("id")), bottom, playingId) { nav.popBackStack() }
+                PlaylistScreen(dec(it.arguments?.getString("id")), bottom, playingId) { safe.back() }
             }
         }
         composable("decade/{start}", listOf(navArgument("start") { type = NavType.IntType })) {
             com.tonihk00.clearplay.ui.components.Page {
-                com.tonihk00.clearplay.ui.library.DecadeScreen(it.arguments?.getInt("start") ?: 2000, bottom) { nav.popBackStack() }
+                com.tonihk00.clearplay.ui.library.DecadeScreen(it.arguments?.getInt("start") ?: 2000, bottom) { safe.back() }
             }
         }
         composable("genre/{name}", listOf(navArgument("name") { type = NavType.StringType })) {
             com.tonihk00.clearplay.ui.components.Page {
-                GenreScreen(dec(it.arguments?.getString("name")), bottom, playingId) { nav.popBackStack() }
+                GenreScreen(dec(it.arguments?.getString("name")), bottom, playingId) { safe.back() }
             }
         }
     }
+    BackDuringTransition(nav, safe)
+}
+
+/**
+ * Going back while a page is still sliding in is where NavHost goes wrong: its back swipe
+ * *seeks* the half-finished transition (the page jumps left, ignores the finger and snaps away
+ * on release), and even a plain pop at that moment reverses it badly (the page vanishes and the
+ * screen flashes empty). So every "back" from a page waits until the page has settled (a few
+ * hundred ms at most) and then pops normally: the page slides off to the right. While a page is
+ * settling, the back swipe is taken by [TransitionBackHandler] (overlay priority, so it is asked
+ * before NavHost); once settled, NavHost's own finger-following swipe is used.
+ */
+private class SafeBack(private val nav: NavHostController, private val scope: kotlinx.coroutines.CoroutineScope) {
+    private var pending: kotlinx.coroutines.Job? = null
+
+    fun back() {
+        if (pending?.isActive == true) return
+        val top = nav.currentBackStackEntry ?: return
+        if (settled(top)) { nav.popBackStack(); return }
+        pending = scope.launch {
+            kotlinx.coroutines.withTimeoutOrNull(700) { top.lifecycle.currentStateFlow.first { it.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) } }
+            // Pop only if that page is still on top (the user may have navigated meanwhile).
+            if (nav.currentBackStackEntry == top) nav.popBackStack()
+        }
+    }
+
+    companion object {
+        /** A NavHost entry is RESUMED only once its enter transition has finished. */
+        fun settled(e: androidx.navigation.NavBackStackEntry) = e.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
+    }
+}
+
+@Composable
+private fun rememberSafeBack(nav: NavHostController): SafeBack {
+    val scope = rememberCoroutineScope()
+    return remember(nav) { SafeBack(nav, scope) }
+}
+
+@Composable
+private fun BackDuringTransition(nav: NavHostController, safe: SafeBack) {
+    val stack by nav.currentBackStack.collectAsState()
+    val top = stack.lastOrNull()
+    val canPop = stack.count { it.destination !is androidx.navigation.NavGraph } > 1
+    var settled by remember { mutableStateOf(true) }
+    LaunchedEffect(top) {
+        if (top == null) { settled = true; return@LaunchedEffect }
+        top.lifecycle.currentStateFlow.collect { settled = it.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) }
+    }
+    val handler = remember(safe) { TransitionBackHandler(safe::back) }
+    handler.isBackEnabled = canPop && (!settled || handler.swiping)
+    val dispatcher = androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner.current?.navigationEventDispatcher
+    androidx.compose.runtime.DisposableEffect(dispatcher, handler) {
+        dispatcher?.addHandler(handler, androidx.navigationevent.NavigationEventDispatcher.PRIORITY_OVERLAY)
+        onDispose { handler.remove() }
+    }
+}
+
+/** Takes the back swipe while a page is settling; goes back (via [SafeBack]) when it completes. */
+private class TransitionBackHandler(private val back: () -> Unit) :
+    androidx.navigationevent.NavigationEventHandler<androidx.navigationevent.NavigationEventInfo>(
+        androidx.navigationevent.NavigationEventInfo.None, false,
+    ) {
+    var swiping by mutableStateOf(false)
+    override fun onBackStarted(event: androidx.navigationevent.NavigationEvent) { swiping = true }
+    override fun onBackCompleted() { swiping = false; back() }
+    override fun onBackCancelled() { swiping = false }
 }
 
 /** Mini player and tab bar, both frosted glass floating over the page. */

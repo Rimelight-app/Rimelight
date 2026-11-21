@@ -51,6 +51,7 @@ import com.tonihk00.clearplay.ui.components.Cover
 import com.tonihk00.clearplay.ui.components.IconButtonCp
 import com.tonihk00.clearplay.ui.components.MetaChip
 import com.tonihk00.clearplay.ui.components.PrimaryPill
+import com.tonihk00.clearplay.ui.components.PlayPausePill
 import com.tonihk00.clearplay.ui.components.SectionLabel
 import com.tonihk00.clearplay.ui.components.SongRow
 import com.tonihk00.clearplay.ui.components.formatLongDuration
@@ -80,6 +81,8 @@ fun DetailHeader(
     subtitle: String? = null,
     onSubtitle: (() -> Unit)? = null,
     roundCover: Boolean = false,
+    /** For an album page: its id, so Play becomes Pause while this album plays. */
+    albumId: String? = null,
 ) {
     val actions = LocalActions.current
     Column(
@@ -120,7 +123,15 @@ fun DetailHeader(
         if (songs.isNotEmpty()) {
             Spacer(Modifier.height(20.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                PrimaryPill("Play", R.drawable.ic_play_filled, { actions.play(songs) })
+                if (albumId != null) {
+                    // Like the desktop: while a song from this album is loaded, the pill pauses and
+                    // resumes it; otherwise it plays the album from the start.
+                    val now = com.tonihk00.clearplay.ui.LocalNowPlaying.current
+                    val active = now.albumId == albumId
+                    PlayPausePill(active && now.playing, { if (active) actions.togglePlay() else actions.play(songs) })
+                } else {
+                    PrimaryPill("Play", R.drawable.ic_play_filled, { actions.play(songs) })
+                }
                 IconButtonCp(R.drawable.ic_shuffle, "Shuffle", { actions.play(songs, shuffle = true) }, size = 46.dp, outlined = true)
                 IconButtonCp(R.drawable.ic_list_start, "Play next", { actions.playNext(songs) }, size = 46.dp, outlined = true)
                 IconButtonCp(R.drawable.ic_list_plus, "Add to queue", { actions.addToQueue(songs) }, size = 46.dp, outlined = true)
@@ -171,6 +182,7 @@ fun AlbumContent(a: Album, bottomPadding: Dp, playingId: String?) {
                 "Album", a.name, a.coverArt,
                 listOfNotNull(a.year?.toString(), a.genre, "${a.songCount} songs", formatLongDuration(a.duration)),
                 a.song, a.artist, a.artistId?.let { { actions.openArtist(it) } },
+                albumId = a.id,
             )
         }
         songCard(a.song, playingId, actions, numbered = true)

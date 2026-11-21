@@ -12,6 +12,7 @@ import com.tonihk00.clearplay.data.AppSettings
 import com.tonihk00.clearplay.data.ConnectionMonitor
 import com.tonihk00.clearplay.data.PhoneMusic
 import com.tonihk00.clearplay.data.Downloads
+import com.tonihk00.clearplay.data.flushTo
 import com.tonihk00.clearplay.data.ServerStore
 import com.tonihk00.clearplay.data.SongEdits
 import com.tonihk00.clearplay.data.api.SubsonicClient
@@ -68,6 +69,23 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
     lateinit var settings: AppSettings
         private set
 
+    /** Saved server addresses, kept in memory (the player service reads them synchronously). */
+    val savedServers: StateFlow<List<com.tonihk00.clearplay.data.api.ServerConfig>> by lazy {
+        servers.servers.stateIn(appScope, SharingStarted.Eagerly, emptyList())
+    }
+
+    /** Listens not yet sent to the server (offline plays wait here). */
+    val scrobbles: com.tonihk00.clearplay.data.ScrobbleQueue by lazy {
+        com.tonihk00.clearplay.data.ScrobbleQueue(filesDir.resolve("scrobbles.json"))
+    }
+
+    /** Sends queued listens now, if the server answers. */
+    fun flushScrobbles() {
+        val c = client ?: return
+        if (!connection.online.value) return
+        appScope.launch { runCatching { scrobbles.flushTo(c) } }
+    }
+
     /** Offline downloads; created on first use (the cache folder is locked to one instance). */
     @get:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     val downloads: Downloads by lazy {
@@ -86,6 +104,15 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
         val base = song.server ?: lastServerUrl.value ?: client?.server?.baseUrl ?: return song
         return song.copy(coverArt = "srv:$base|$art")
     }
+
+    /** Whether this song plays from its download now (Settings → Player → Playback source). */
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+    fun playsFromDownload(songId: String): Boolean =
+        settings.state.value.playbackSource.useDownload(
+            downloaded = downloads.states.value[songId]?.done == true,
+            online = connection.online.value,
+            hasServer = client != null,
+        )
 
     /** Stream bitrate cap for the current network (Wi-Fi vs mobile data). */
     fun streamBitrate(): Int {
@@ -119,6 +146,12 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
             }
         }
         player = PlayerConnection(this, appScope) { client }
+        savedServers
+        // Listens made offline go out as soon as the server answers again.
+        appScope.launch {
+            combine(session, connection.online) { s, online -> (s as? Session.Active)?.client?.takeIf { online } }
+                .collect { c -> if (c != null) runCatching { scrobbles.flushTo(c) } }
+        }
     }
 
     override fun newImageLoader(context: PlatformContext): ImageLoader =

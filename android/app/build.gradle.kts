@@ -40,6 +40,9 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // Local testing only: -PcpReleaseSuffix=.rtest installs a release-speed build next to
+            // the real app (animations can't be judged in the slow debug build). Unset in CI.
+            (project.findProperty("cpReleaseSuffix") as String?)?.let { applicationIdSuffix = it }
         }
     }
 

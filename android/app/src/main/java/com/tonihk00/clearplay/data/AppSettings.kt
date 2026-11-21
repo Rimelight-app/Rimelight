@@ -20,6 +20,25 @@ enum class Backdrop(val label: String) { Vivid("Vivid"), Balanced("Balanced"), D
 /** Formats Navidrome can transcode to when a bitrate cap applies (same as the desktop). */
 enum class StreamFormat(val label: String, val param: String) { Opus("Opus", "opus"), Mp3("MP3", "mp3"), Aac("AAC", "aac") }
 
+/** Where a downloaded song plays from (Settings → Player). Songs that aren't downloaded always stream. */
+enum class PlaybackSource(val label: String, val detail: String) {
+    Auto("Auto", "Server when connected, downloads when offline"),
+    Server("Always server", "Downloads are never used for playing, even offline"),
+    Downloads("Always downloads", "Downloaded songs always play from this phone");
+
+    /**
+     * Whether a song plays from its download. [downloaded]: fully downloaded; [online]: the
+     * server answers; [hasServer]: signed in to one (with "music on this phone" there is none).
+     */
+    fun useDownload(downloaded: Boolean, online: Boolean, hasServer: Boolean): Boolean = when {
+        !downloaded -> false
+        !hasServer -> true
+        this == Downloads -> true
+        this == Server -> false
+        else -> !online
+    }
+}
+
 data class Settings(
     /** 0 = original quality. */
     val wifiBitrate: Int = 0,
@@ -32,6 +51,7 @@ data class Settings(
     val liveBlur: Boolean = true,
     /** Include the phone's own music when offline or without a server. */
     val phoneMusic: Boolean = true,
+    val playbackSource: PlaybackSource = PlaybackSource.Auto,
 )
 
 /** User settings in DataStore, exposed as a StateFlow so the player service can read them synchronously. */
@@ -46,6 +66,7 @@ class AppSettings(private val context: Context, scope: CoroutineScope) {
         val backdrop = stringPreferencesKey("backdrop")
         val liveBlur = booleanPreferencesKey("live_blur")
         val phoneMusic = booleanPreferencesKey("phone_music")
+        val playbackSource = stringPreferencesKey("playback_source")
     }
 
     private fun read(p: Preferences) = Settings(
@@ -58,6 +79,7 @@ class AppSettings(private val context: Context, scope: CoroutineScope) {
         backdrop = p[K.backdrop]?.let { runCatching { Backdrop.valueOf(it) }.getOrNull() } ?: Backdrop.Balanced,
         liveBlur = p[K.liveBlur] ?: true,
         phoneMusic = p[K.phoneMusic] ?: true,
+        playbackSource = p[K.playbackSource]?.let { runCatching { PlaybackSource.valueOf(it) }.getOrNull() } ?: PlaybackSource.Auto,
     )
 
     val state: StateFlow<Settings> = context.settingsStore.data.map(::read).stateIn(scope, SharingStarted.Eagerly, Settings())
@@ -74,6 +96,7 @@ class AppSettings(private val context: Context, scope: CoroutineScope) {
             p[K.backdrop] = s.backdrop.name
             p[K.liveBlur] = s.liveBlur
             p[K.phoneMusic] = s.phoneMusic
+            p[K.playbackSource] = s.playbackSource.name
         }
     }
 }

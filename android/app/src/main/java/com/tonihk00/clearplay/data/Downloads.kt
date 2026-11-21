@@ -86,6 +86,14 @@ class Downloads(private val context: Context, private val scope: CoroutineScope)
             .setCacheWriteDataSinkFactory(null)
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
+    /** Size of a completed download (by cache key), or null if it isn't fully downloaded. */
+    fun downloadedLength(key: String): Long? {
+        val id = key.removePrefix("song:")
+        if (_states.value[id]?.done != true) return null
+        val len = androidx.media3.datasource.cache.ContentMetadata.getContentLength(cache.getContentMetadata(key))
+        return len.takeIf { it > 0 }
+    }
+
     fun download(client: SubsonicClient, songs: List<Song>, maxBitRate: Int, format: String?) {
         val todo = songs.filter { !it.isLocal && _states.value[it.id]?.let { st -> st.done || st.active } != true }
         for (s in todo) {
