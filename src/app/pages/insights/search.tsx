@@ -6,6 +6,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
 import { getSimpleCoverArtUrl } from '@/api/httpClient'
 import { EqualizerBars } from '@/app/components/icons/equalizer-bars'
+import { SongMenuOptions } from '@/app/components/song/menu-options'
+import { ContextMenuProvider } from '@/app/components/table/context-menu'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/routes/routesList'
 import { search } from '@/service/search'
@@ -33,52 +35,59 @@ function SongRow({
   const current = usePlayerCurrentSong()
   const isPlaying = usePlayerIsPlaying()
   const active = current?.id === song.id
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
-    <button
-      type="button"
-      onDoubleClick={onPlay}
-      onKeyDown={(e) => e.key === 'Enter' && onPlay()}
-      className={cn(
-        'group flex w-full items-center gap-3 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-white/[0.06]',
-        active && 'bg-white/[0.08]',
-      )}
+    <ContextMenuProvider
+      onOpenChange={setMenuOpen}
+      options={<SongMenuOptions variant="context" song={song} index={index} />}
     >
-      <span className="relative size-10 shrink-0 overflow-hidden rounded-[10px] bg-white/5">
-        <img
-          src={getSimpleCoverArtUrl(song.coverArt, 'song', '100')}
-          alt=""
-          loading="lazy"
-          className="size-full object-cover"
-        />
-        <span
-          onClick={(e) => {
-            e.stopPropagation()
-            onPlay()
-          }}
-          className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100"
-        >
-          <Play className="size-4 fill-white text-white" />
-        </span>
-        {active && isPlaying && (
-          <span className="absolute inset-0 flex items-center justify-center bg-black/45 group-hover:opacity-0">
-            <EqualizerBars size={16} className="text-white" />
-          </span>
+      <button
+        type="button"
+        onDoubleClick={onPlay}
+        onKeyDown={(e) => e.key === 'Enter' && onPlay()}
+        className={cn(
+          'group flex w-full items-center gap-3 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-white/[0.06]',
+          active && 'bg-white/[0.08]',
+          menuOpen && 'bg-white/[0.06]',
         )}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-medium">
-          {song.title}
+      >
+        <span className="relative size-10 shrink-0 overflow-hidden rounded-[10px] bg-white/5">
+          <img
+            src={getSimpleCoverArtUrl(song.coverArt, 'song', '100')}
+            alt=""
+            loading="lazy"
+            className="size-full object-cover"
+          />
+          <span
+            onClick={(e) => {
+              e.stopPropagation()
+              onPlay()
+            }}
+            className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100"
+          >
+            <Play className="size-4 fill-white text-white" />
+          </span>
+          {active && isPlaying && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/45 group-hover:opacity-0">
+              <EqualizerBars size={16} className="text-white" />
+            </span>
+          )}
         </span>
-        <span className="block truncate text-[12px] text-white/50">
-          {song.artist} · {song.album}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-medium">
+            {song.title}
+          </span>
+          <span className="block truncate text-[12px] text-white/50">
+            {song.artist} · {song.album}
+          </span>
         </span>
-      </span>
-      <span className="text-[12px] tabular-nums text-white/45">
-        {convertSecondsToTime(song.duration)}
-      </span>
-      <span className="sr-only">{index}</span>
-    </button>
+        <span className="text-[12px] tabular-nums text-white/45">
+          {convertSecondsToTime(song.duration)}
+        </span>
+        <span className="sr-only">{index}</span>
+      </button>
+    </ContextMenuProvider>
   )
 }
 
