@@ -18,6 +18,10 @@ import {
   useReplayGainActions,
   useReplayGainState,
 } from '@/store/player.store'
+import {
+  serverAllowsCors,
+  setAudioGraphFallback,
+} from '@/utils/audio-graph-fallback'
 import { logger } from '@/utils/logger'
 import { calculateReplayGain, ReplayGainParams } from '@/utils/replayGain'
 
@@ -36,7 +40,7 @@ export function AudioPlayer({
   const { replayGainEnabled, replayGainError } = useReplayGainState()
   const { isSong, isRadio, isPodcast } = usePlayerMediaType()
   const { setPlayingState } = usePlayerActions()
-  const { setReplayGainEnabled, setReplayGainError } = useReplayGainActions()
+  const { setReplayGainError } = useReplayGainActions()
   const { volume } = usePlayerVolume()
   const isPlaying = usePlayerIsPlaying()
 
@@ -64,7 +68,7 @@ export function AudioPlayer({
     setPreviousGain(gainValue)
   }, [audioRef, ignoreGain, gainValue, previousGain, replayGain, setupGain])
 
-  const handleSongError = useCallback(() => {
+  const handleSongError = useCallback(async () => {
     const audio = audioRef.current
     if (!audio) return
 
@@ -77,19 +81,17 @@ export function AudioPlayer({
 
     toast.error(t('warnings.songError'))
 
-    if (replayGainEnabled || !replayGainError) {
-      setReplayGainEnabled(false)
-      setReplayGainError(true)
-      window.location.reload()
-    }
-  }, [
-    audioRef,
-    replayGainEnabled,
-    replayGainError,
-    setReplayGainEnabled,
-    setReplayGainError,
-    t,
-  ])
+    if (replayGainError) return
+
+    // Only drop the audio graph (EQ, visualizer) when the server really
+    // refuses cross-origin requests; a single bad file or a dropped
+    // connection must not turn them off. The fallback lasts this session.
+    if (await serverAllowsCors(audio.src)) return
+
+    setAudioGraphFallback(true)
+    setReplayGainError(true)
+    window.location.reload()
+  }, [audioRef, replayGainError, setReplayGainError, t])
 
   const handleRadioError = useCallback(() => {
     const audio = audioRef.current
@@ -112,6 +114,8 @@ export function AudioPlayer({
           audio.pause()
         }
       } catch (error) {
+        // play() is interrupted when the song changes quickly; not an error.
+        if ((error as DOMException)?.name === 'AbortError') return
         logger.error('Audio playback failed', error)
         handleSongError()
       }

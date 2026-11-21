@@ -23,6 +23,7 @@ import {
 import { Switch } from '@/app/components/ui/switch'
 import { useReplayGainActions, useReplayGainState } from '@/store/player.store'
 import { ReplayGainType } from '@/types/playerContext'
+import { setAudioGraphFallback } from '@/utils/audio-graph-fallback'
 
 const replayGainModes: ReplayGainType[] = ['track', 'album']
 
@@ -44,6 +45,7 @@ export function ReplayGainConfig() {
   } = useReplayGainActions()
 
   const handleResetError = () => {
+    setAudioGraphFallback(false)
     setReplayGainError(false)
     setReplayGainEnabled(true)
     window.location.reload()

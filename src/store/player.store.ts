@@ -15,6 +15,7 @@ import {
   PlaybackSourceType,
 } from '@/types/playerContext'
 import { ISong } from '@/types/responses/song'
+import { isAudioGraphFallbackActive } from '@/utils/audio-graph-fallback'
 import { areSongListsEqual } from '@/utils/compareSongLists'
 import { isDesktop } from '@/utils/desktop'
 import { discordRpc } from '@/utils/discordRpc'
@@ -1057,6 +1058,8 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
           merged.fullscreen.isFullscreen = false
           // Resumed track: announce it to the server again ("now playing").
           merged.playerState.hasSyncedTheCurrentTrack = false
+          // The no-CORS fallback (EQ/visualizer off) is per session only.
+          merged.settings.replayGain.values.error = isAudioGraphFallbackActive()
 
           idbStorage.getItem<ISongList>(miniStores.songlist, (value) => {
             if (!value) return
