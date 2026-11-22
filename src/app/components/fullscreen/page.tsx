@@ -165,24 +165,26 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
             </ImageLoader>
           </div>
 
-          <div className="flex items-start justify-between gap-4">
-            <div className="cp-fs-title min-w-0 flex-1">
-              <h2 className="truncate text-3xl font-bold tracking-tight 2xl:text-4xl">
+          <div>
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="min-w-0 flex-1 truncate text-3xl font-bold tracking-tight 2xl:text-4xl">
                 {song.title}
               </h2>
-              <div className="mt-1.5 flex min-w-0 items-center gap-3">
-                <p className="min-w-0 truncate text-[17px] text-white/65">
-                  {song.artist}
-                  {song.album ? ` · ${song.album}` : ''}
-                </p>
-                <SongRating
-                  song={song}
-                  size="md"
-                  className="cp-fs-stars ml-auto"
-                />
-              </div>
+              {!hideFavorites && <LikeButton />}
             </div>
-            {!hideFavorites && <LikeButton />}
+            {/* Full width under the title and heart: the stars end at the
+                cover's right edge and leave the rest to artist and album. */}
+            <div className="cp-fs-title mt-1.5 flex min-w-0 items-center gap-3">
+              <p className="min-w-0 truncate text-[17px] text-white/65">
+                {song.artist}
+                {song.album ? ` · ${song.album}` : ''}
+              </p>
+              <SongRating
+                song={song}
+                size="md"
+                className="cp-fs-stars ml-auto shrink-0"
+              />
+            </div>
           </div>
 
           <FullscreenProgress />

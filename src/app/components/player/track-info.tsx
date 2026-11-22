@@ -8,18 +8,17 @@ import { Link } from 'react-router-dom'
 import { AnimatedCoverVideo } from '@/app/components/album/animated-cover-video'
 import { MarqueeTitle } from '@/app/components/fullscreen/marquee-title'
 import { ImageLoader } from '@/app/components/image-loader'
+import { ArtistLine } from '@/app/components/player/artist-line'
 import { SongRating } from '@/app/components/rating/song-rating'
-import { useOutputLine } from '@/app/hooks/use-output-line'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/routes/routesList'
-import { useBitPerfect, useIsMpvSession } from '@/store/bitperfect.store'
+import { useIsMpvSession } from '@/store/bitperfect.store'
 import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { usePlayerFullscreen, useSongColor } from '@/store/player.store'
 import { ISong } from '@/types/responses/song'
 import { getAudioQuality } from '@/utils/audioQuality'
 import { getAverageColor } from '@/utils/getAverageColor'
 import { logger } from '@/utils/logger'
-import { ALBUM_ARTISTS_MAX_NUMBER } from '@/utils/multipleArtists'
 
 export function TrackInfo({ song }: { song: ISong | undefined }) {
   const { t } = useTranslation()
@@ -125,9 +124,10 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
             </span>
           </Link>
         </MarqueeTitle>
-        <TrackInfoArtistsLinks song={song} />
+        {/* Artist, then the output info when it fits (see ArtistLine). */}
+        <ArtistLine song={song} />
         {/* The stars hide when the bar is too narrow (see .cp-track-meta). */}
-        <div className="cp-track-meta mt-1 flex min-w-0 items-center gap-2">
+        <div className="cp-track-meta mt-1 flex min-w-0 items-center gap-1">
           <TrackQuality song={song} />
           <SongRating
             song={song}
@@ -140,29 +140,15 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
   )
 }
 
+/** The song's own format and quality, next to the stars. */
 function TrackQuality({ song }: { song: ISong }) {
   const { format, details, lossless, hiRes } = getAudioQuality(song)
   const { showQuality, maxBitRate, streamFormat } = useClearPlaySettings()
   const mpv = useIsMpvSession()
-  const showOutput = useBitPerfect((s) => s.placement === 'player') && mpv
-  const line = useOutputLine()
-  if (!showQuality && !showOutput) return null
+  if (!showQuality) return null
   const limit = Number(maxBitRate)
   // The mpv engine always streams the original file.
   const converted = !mpv && limit > 0 && (song.bitRate ?? 0) > limit
-  const outputText = showOutput && line.short ? line.short : ''
-
-  if (!showQuality) {
-    return outputText ? (
-      <div
-        className="min-w-0 truncate text-[11px] leading-none text-white/50"
-        data-testid="track-quality"
-        title={line.text}
-      >
-        <span data-testid="output-line">{outputText}</span>
-      </div>
-    ) : null
-  }
 
   return (
     <div
@@ -181,76 +167,21 @@ function TrackQuality({ song }: { song: ISong }) {
       >
         {hiRes ? `${format} · HI-RES` : format}
       </span>
-      <span className="min-w-0 truncate tabular-nums">
-        {details.join(' · ')}
+      {/* Values that don't fit wrap onto a hidden second line, so the last
+          one (the bitrate) drops out whole instead of being cut ("1411 k…"). */}
+      <span className="flex h-[11px] min-w-0 flex-wrap gap-x-1 overflow-hidden tabular-nums">
+        {details.map((value, index) => (
+          <span key={value} className="whitespace-nowrap">
+            {index > 0 && '· '}
+            {value}
+          </span>
+        ))}
         {converted && (
-          <span className="text-white/70">
-            {' '}
+          <span className="whitespace-nowrap text-white/70">
             → {streamFormat.toUpperCase()} {limit} kbps
           </span>
         )}
       </span>
-      {/* The song's own details give way first; the output line stays. */}
-      {outputText && (
-        <span className="-ml-1 shrink-0 tabular-nums" title={line.text}>
-          {details.length > 0 && '· '}
-          <span
-            data-testid="output-line"
-            className={cn(line.bitPerfect ? 'text-white/75' : 'text-white/60')}
-          >
-            {outputText}
-          </span>
-        </span>
-      )}
     </div>
-  )
-}
-
-type TrackInfoArtistsLinksProps = {
-  song: ISong
-}
-
-function TrackInfoArtistsLinks({ song }: TrackInfoArtistsLinksProps) {
-  const { artists, artistId, artist } = song
-
-  if (artists && artists.length > 1) {
-    const reducedArtists = artists.slice(0, ALBUM_ARTISTS_MAX_NUMBER)
-
-    return (
-      <div className="flex items-center gap-1 text-xs text-muted-foreground w-full maskImage-marquee-fade-finished">
-        {reducedArtists.map(({ id, name }, index) => (
-          <div key={id} className="flex items-center">
-            <ArtistLink id={id} name={name} />
-            {index < reducedArtists.length - 1 && ','}
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  return <ArtistLink id={artistId} name={artist} />
-}
-
-type ArtistLinkProps = {
-  id?: string
-  name: string
-}
-
-function ArtistLink({ id, name }: ArtistLinkProps) {
-  return (
-    <Link
-      to={ROUTES.ARTIST.PAGE(id ?? '')}
-      className={cn('w-fit inline-flex', !id && 'pointer-events-none')}
-      data-testid="track-artist-url"
-    >
-      <span
-        className={cn(
-          'text-xs text-muted-foreground text-nowrap',
-          id && 'hover:underline hover:text-foreground',
-        )}
-      >
-        {name}
-      </span>
-    </Link>
   )
 }

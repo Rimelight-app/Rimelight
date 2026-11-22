@@ -134,7 +134,7 @@ const outFor = (track) =>
     return s.title === track && s.out?.output ? s : null
   }, 10000)
 const lineText = () =>
-  win.evaluate(() => document.querySelector('[data-testid=output-line]')?.textContent ?? null)
+  win.evaluate(() => document.querySelector('[data-testid=output-line]')?.dataset.output || null)
 
 
 // ======================= checks =======================
@@ -237,7 +237,7 @@ await test('placement drop-down puts the output line in the player bar', async (
   await until(async () => (await lineText()) === 'Bit-perfect')
   eq(await lineText(), 'Bit-perfect', 'player bar line')
   const q = await win.evaluate(() => document.querySelector('[data-testid=track-quality]').innerText)
-  expect(/24-bit · 96 kHz · .* · Bit-perfect/.test(q.replace(/\s+/g, ' ')), `quality line: ${q}`)
+  expect(/24-bit · 96 kHz/.test(q.replace(/\s+/g, ' ')), `quality line: ${q}`)
   await win.locator('footer').screenshot({ path: '/tmp/mpv-player-bar.png' })
 })
 

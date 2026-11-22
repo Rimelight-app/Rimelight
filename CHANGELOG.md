@@ -2,6 +2,13 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
+## [Unreleased] - 0.5.1
+
+### Changed
+- **Player bar: output info moved next to the artist** ("Don Toliver · Not bit-perfect: system mixer"). The song's format, bit depth and rate stay on the line below with the stars, as before, and no longer get squeezed to "1…" by the status. When the artist line is short the output info gets shorter, never the artist name: the long status becomes a short word ("Mixed", "Bit-perfect", "Re-encoded", "Converted"), then an icon, then it hides. Hover it (or the artist line when it's hidden) for the full status and the output device, in a frosted tooltip. The room is worked out from the line's real width, so it follows window size and display scaling. The "Show output info" setting still switches it on and off right away.
+- **Player bar: stars sit closer to the song's quality**, and a value that doesn't fit drops out whole (usually the bitrate) instead of being cut ("1411 k…").
+- **Now Playing (fullscreen): stars moved to the right**, under the heart, ending at the cover's right edge. Artist and album get the room they took, so "Travis Scott · ASTROWORLD" fits on a 14" laptop.
+
 ## [0.5.0] - 2026-11-22
 
 ### Added
