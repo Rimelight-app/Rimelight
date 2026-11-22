@@ -635,6 +635,49 @@ await test('output device: found again by name when its id changed', async () =>
   eq(r.kept, 'USB DAC', 'choice kept while unplugged')
 })
 
+const pill = () => win.evaluate(() => document.querySelector('[data-testid=queue-pill]')?.textContent ?? null)
+
+await test('pill: Play next from a song menu says "Playing next"', async () => {
+  await playAlbumTrack('Neon Tides', 'Opening')
+  await go('/library/albums')
+  await win.getByText('Paper Lanterns', { exact: true }).first().click()
+  await sleep(1200)
+  await win.locator('[role=row]:not(aside [role=row])').filter({ hasText: 'Signal' }).first().click({ button: 'right' })
+  await sleep(400)
+  await win.getByRole('menuitem', { name: /play next/i }).first().click()
+  const text = await until(pill, 1500)
+  eq(text, 'Playing next', 'pill text')
+  await win.screenshot({ path: '/tmp/e2e-pill.png' })
+  await sleep(2400)
+  eq(await pill(), null, 'pill did not go away by itself')
+})
+
+await test('pill: Add to queue from the Search right-click menu', async () => {
+  await go('/search')
+  await win.locator('input').first().fill('Ember')
+  await sleep(1400)
+  await win.getByText('Ember', { exact: true }).first().click({ button: 'right' })
+  await sleep(400)
+  await win.getByRole('menuitem', { name: /add last/i }).first().click()
+  eq(await until(pill, 1500), 'Added to queue', 'pill text')
+  await sleep(2400)
+})
+
+await test('pill: album menu Play next counts the songs', async () => {
+  await go('/library/albums')
+  await win.getByText('Cold Harbour', { exact: true }).first().click()
+  await sleep(1200)
+  const n = (await allSongs()).filter((x) => x.album === 'Cold Harbour').length
+  await win.locator('main button:has(svg.lucide-ellipsis)').first().click()
+  await sleep(400)
+  await win.getByRole('menuitem', { name: /play next/i }).first().click()
+  eq(await until(pill, 1500), `${n} songs play next`, 'pill text')
+  await sleep(2400)
+  await win.getByRole('button', { name: /^(Play all|Pause)$/ }).first().locator('xpath=following::button[2]').click()
+  eq(await until(pill, 1500), `${n} songs added to queue`, 'album add-to-queue button')
+  await sleep(2400)
+})
+
 await test('no page errors during the run', async () => {
   eq(errors, [], 'page errors')
 })

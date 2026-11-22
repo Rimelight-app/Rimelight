@@ -44,10 +44,11 @@ You host your own music. Your player should feel as good as the streaming apps, 
 **Listening**
 - Albums, artists, songs, playlists, favourites, genres; queue, shuffle, repeat; likes and 1–5 star ratings
 - Shuffle the whole library; clearing the queue keeps the song that's playing
-- Drag songs in the queue to change their order; Play next / Add to the end
+- Drag songs in the queue to change their order; Play next / Add to the end, confirmed by a small pill above the player bar
 - Time-synced lyrics from your server (`.lrc` files or embedded); LRCLIB lookup is optional
 - Audio quality in the player bar: format, bit depth, sample rate, bitrate, plus a Hi-Res badge
 - 10-band equalizer with presets and preamp, output device selection, mono, playback speed
+- Optional bit-perfect engine (mpv): each song goes to your DAC unchanged, at its own sample rate and bit depth, with exclusive access to the device. ClearPlay reads what the device supports, converts only what it can't play, uses its hardware volume, starts quiet on a new device, and shows the song's path ("Bit-perfect · 96 kHz · 24-bit") in Settings and, if you like, the player bar. Linux needs mpv installed (`sudo dnf install mpv`); the Windows installer includes it
 - Sleep timer (minutes or end of song), ReplayGain
 - Keep playing similar music when the queue runs out (uses Navidrome's Last.fm data, or the same genre)
 - Optional spectrum visualizer on the Now Playing page (Settings → Appearance)

@@ -1,3 +1,5 @@
+import { isDesktop } from '@/utils/desktop'
+import { AudioEngineSettings } from '../clearplay/audio-engine'
 import { QueueSettings } from '../clearplay/queue'
 import { ScrobblingSettings } from '../clearplay/scrobbling'
 import { SoundSettings } from '../clearplay/sound'
@@ -8,6 +10,7 @@ import { ReplayGainConfig } from './replay-gain'
 export function Audio() {
   return (
     <div className="space-y-4">
+      {isDesktop() && <AudioEngineSettings />}
       <SoundSettings />
       <QueueSettings />
       <StreamingSettings />

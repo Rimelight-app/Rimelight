@@ -14,16 +14,25 @@ import '@/i18n'
 import App from '@/App'
 
 import { queryClient } from '@/lib/queryClient'
+import { initMpvEngine } from '@/service/mpv-player'
 import { blockFeatures } from '@/utils/browser'
 import { installTestHook } from '@/utils/test-hook'
 
 blockFeatures()
 installTestHook()
 
-createRoot(document.getElementById('root') as HTMLElement).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </StrictMode>,
-)
+// The audio engine (built-in or mpv) must be known before the player renders.
+const engineReady = Promise.race([
+  initMpvEngine(),
+  new Promise((resolve) => setTimeout(resolve, 3000)),
+])
+
+engineReady.finally(() => {
+  createRoot(document.getElementById('root') as HTMLElement).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </StrictMode>,
+  )
+})

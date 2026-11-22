@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/app/components/ui/select'
 import { Switch } from '@/app/components/ui/switch'
+import { useIsMpvSession } from '@/store/bitperfect.store'
 import { useReplayGainActions, useReplayGainState } from '@/store/player.store'
 import { ReplayGainType } from '@/types/playerContext'
 import { setAudioGraphFallback } from '@/utils/audio-graph-fallback'
@@ -43,6 +44,8 @@ export function ReplayGainConfig() {
     setReplayGainDefaultGain,
     setReplayGainError,
   } = useReplayGainActions()
+
+  const mpv = useIsMpvSession()
 
   const handleResetError = () => {
     setAudioGraphFallback(false)
@@ -67,12 +70,18 @@ export function ReplayGainConfig() {
           </ContentItemTitle>
           <ContentItemForm>
             <Switch
-              checked={replayGainEnabled}
+              checked={replayGainEnabled && !mpv}
               onCheckedChange={(checked) => setReplayGainEnabled(checked)}
-              disabled={replayGainError}
+              disabled={replayGainError || mpv}
             />
           </ContentItemForm>
         </ContentItem>
+
+        {mpv && (
+          <p className="px-1 text-[12px] text-white/45">
+            {t('clearplay.sound.replayGainOff')}
+          </p>
+        )}
 
         {replayGainError && (
           <ContentItem>
@@ -92,7 +101,7 @@ export function ReplayGainConfig() {
           </ContentItem>
         )}
 
-        {replayGainEnabled && (
+        {replayGainEnabled && !mpv && (
           <ContentItem>
             <ContentItemTitle>
               {t('settings.audio.replayGain.mode.label')}
@@ -129,7 +138,7 @@ export function ReplayGainConfig() {
           </ContentItem>
         )}
 
-        {replayGainEnabled && (
+        {replayGainEnabled && !mpv && (
           <ContentItem>
             <ContentItemTitle>
               {t('settings.audio.replayGain.preAmp')}
@@ -145,7 +154,7 @@ export function ReplayGainConfig() {
           </ContentItem>
         )}
 
-        {replayGainEnabled && (
+        {replayGainEnabled && !mpv && (
           <ContentItem>
             <ContentItemTitle
               info={t('settings.audio.replayGain.defaultGain.info')}

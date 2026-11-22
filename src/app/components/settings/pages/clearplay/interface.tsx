@@ -11,6 +11,7 @@ import {
   Root,
 } from '@/app/components/settings/section'
 import { Switch } from '@/app/components/ui/switch'
+import { useIsMpvSession } from '@/store/bitperfect.store'
 import {
   BackdropMode,
   LyricsSize,
@@ -21,6 +22,7 @@ import { SettingSelect } from './controls'
 
 export function InterfaceSettings() {
   const { t } = useTranslation()
+  const mpv = useIsMpvSession()
   const { showQuality, lyricsSize, backdrop, startPage, visualizer, set } =
     useClearPlaySettings()
   const k = 'clearplay.settings.interface'
@@ -98,12 +100,18 @@ export function InterfaceSettings() {
           </ContentItemTitle>
           <ContentItemForm>
             <Switch
-              checked={visualizer}
+              checked={visualizer && !mpv}
+              disabled={mpv}
               onCheckedChange={(v) => set({ visualizer: v })}
               data-testid="setting-visualizer"
             />
           </ContentItemForm>
         </ContentItem>
+        {mpv && (
+          <p className="px-1 text-[12px] text-white/45">
+            {t('clearplay.sound.visualizerOff')}
+          </p>
+        )}
       </Content>
       <ContentSeparator />
     </Root>

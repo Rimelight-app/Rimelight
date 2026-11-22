@@ -2,6 +2,23 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
+## [0.5.0] - 2026-11-22
+
+### Added
+- **Bit-perfect playback (optional mpv engine)**: Settings → Player & Audio → Audio engine → "mpv (bit-perfect)" (takes effect after a restart; "Built-in" stays the default and works as before). Each song is streamed as the original file and sent to the chosen output unchanged, at its own sample rate and bit depth. ClearPlay takes the device for itself while it plays: on Linux the ALSA device directly, past PipeWire (if PipeWire is only holding an idle device, ClearPlay asks it to let go); on Windows WASAPI exclusive mode. ClearPlay talks to mpv through mpv's own IPC with its own code. Linux uses the mpv you install (`sudo dnf install mpv`; Settings says so if it's missing); the Windows installer includes mpv 0.41.0 (licence in `licenses/mpv/`).
+  - Works with any output: ClearPlay reads which sample rates and bit depths the device supports (Linux: from the kernel; Windows: by opening it briefly with silence) and remembers them per device. Rates the device doesn't take are converted to the closest one it does, staying in the same family (88.2/176.4 kHz → a 44.1 kHz multiple, 96/192 kHz → a 48 kHz multiple), and the app says so. Rates can be switched off per device for outputs that claim more than they play.
+  - If the device is busy or refuses exclusive mode, playback continues through the system mixer and says "Not bit-perfect: device busy" (or "exclusive mode refused").
+  - Volume: with a hardware volume control the slider moves the device's own volume; without one, choose fixed volume (bit-perfect, set the loudness on the device or amp) or the app's volume (marked not bit-perfect). A device used bit-perfect for the first time starts quiet (about −40 dB); after that it keeps its own level.
+  - Bluetooth plays but is always marked "Bluetooth · re-encoded".
+  - The equalizer, visualizer, mono, ReplayGain and playback speed are off with this engine, and Settings says why.
+  - Queue, progress bar, player bar, fullscreen, Now Playing, MPRIS (Linux), Windows media controls, scrobbling and repeat-one counting, sleep timer, queue sync, AutoDJ, radio and podcasts all work with it. ALAC `.m4a` files play with this engine.
+  - After a minute of pause the device is given back to other apps; playback picks up where it stopped.
+- **Output (DAC) info** under the engine setting, like the Android app's USB DAC details: device, supported rates and depths, hardware volume, exclusive or shared, and the song's path ("Bit-perfect · 96 kHz · 24-bit", "Converted to 48 kHz for this device", "Not bit-perfect: device busy", "Bluetooth · re-encoded"), with a Copy button. A drop-down chooses where it shows: "Only in Settings" or "In Settings and the player bar" (next to the song's format and rate, in the same quiet style).
+- **Confirmation pill for Play next / Add to queue**: a small glass pill above the player bar ("Playing next", "Added to queue", "7 songs play next", "16 songs added to queue") from song menus (also the Search right-click menu), album, playlist and artist menus, selected songs, the album/playlist add-to-queue buttons and podcast episodes. It replaces the old "Added to queue" toast.
+
+### Notes
+- Not done in this version: gapless playback with the mpv engine (there is a short gap between songs while the next one opens).
+
 ## [0.4.4] - 2026-11-22
 
 ### Added

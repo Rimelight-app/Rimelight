@@ -6,6 +6,7 @@ import { RadioInfo } from '@/app/components/player/radio-info'
 import { TrackInfo } from '@/app/components/player/track-info'
 import { podcasts } from '@/service/podcasts'
 import { useAppMediaCache, useAppStore } from '@/store/app.store'
+import { useIsMpvSession } from '@/store/bitperfect.store'
 import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import {
   getVolume,
@@ -29,6 +30,7 @@ import { PlayerControls } from './controls'
 import { PlayerExpandButton } from './expand-button'
 import { PlayerLikeButton } from './like-button'
 import { PlayerLyricsButton } from './lyrics-button'
+import { MediaSessionKeeper, MpvAudio } from './mpv-audio'
 import { PodcastInfo } from './podcast-info'
 import { PodcastPlaybackRate } from './podcast-playback-rate'
 import { PlayerProgress } from './progress'
@@ -87,6 +89,8 @@ export function Player() {
 
   const maxBitRate = useClearPlaySettings((s) => s.maxBitRate)
   const streamFormat = useClearPlaySettings((s) => s.streamFormat)
+  // mpv engine: always the original file (bit-perfect needs it untouched).
+  const mpv = useIsMpvSession()
 
   const songBitRate = song?.bitRate ?? 0
   const songSuffix = song?.suffix ?? ''
@@ -95,6 +99,7 @@ export function Player() {
   // its object in the queue, and a new URL here would restart the track.
   const songStreamUrl = useMemo(() => {
     if (!songId) return ''
+    if (mpv) return getSongStreamUrl(songId, '0', 'raw')
 
     const cacheBustToken = mediaCacheEnabled ? undefined : Date.now().toString()
     // Only ask the server to convert when the file is above the cap.
@@ -114,6 +119,7 @@ export function Player() {
     mediaCacheEnabled,
     maxBitRate,
     streamFormat,
+    mpv,
   ])
 
   const getAudioRef = useCallback(() => {
@@ -287,7 +293,54 @@ export function Player() {
         </div>
       </div>
 
-      {isSong && song && (
+      {mpv && <MediaSessionKeeper />}
+
+      {mpv && isSong && song && (
+        <MpvAudio
+          src={songStreamUrl}
+          song={song}
+          audioRef={audioRef}
+          loop={loopState === LoopState.One}
+          getStart={getCurrentProgress}
+          onPlay={() => setPlayingState(true)}
+          onPause={() => setPlayingState(false)}
+          onLoadedMetadata={setupDuration}
+          onTimeUpdate={setupProgress}
+          onEnded={handleSongEnded}
+          data-testid="player-song-audio"
+        />
+      )}
+
+      {mpv && isRadio && radio && (
+        <MpvAudio
+          src={radio.streamUrl}
+          audioRef={radioRef}
+          live
+          onPlay={() => setPlayingState(true)}
+          onPause={() => setPlayingState(false)}
+          data-testid="player-radio-audio"
+        />
+      )}
+
+      {mpv && isPodcast && podcast && (
+        <MpvAudio
+          src={podcast.audio_url}
+          audioRef={podcastRef}
+          playbackRate={currentPlaybackRate}
+          getStart={getCurrentPodcastProgress}
+          onPlay={() => setPlayingState(true)}
+          onPause={() => setPlayingState(false)}
+          onLoadedMetadata={setupDuration}
+          onTimeUpdate={setupProgress}
+          onEnded={() => {
+            sendFinishProgress()
+            handleSongEnded()
+          }}
+          data-testid="player-podcast-audio"
+        />
+      )}
+
+      {!mpv && isSong && song && (
         <AudioPlayer
           replayGain={trackReplayGain}
           src={songStreamUrl}
@@ -304,7 +357,7 @@ export function Player() {
         />
       )}
 
-      {isRadio && radio && (
+      {!mpv && isRadio && radio && (
         <AudioPlayer
           src={radio.streamUrl}
           autoPlay={isPlaying}
@@ -316,7 +369,7 @@ export function Player() {
         />
       )}
 
-      {isPodcast && podcast && (
+      {!mpv && isPodcast && podcast && (
         <AudioPlayer
           src={getProxyURL(podcast.audio_url)}
           autoPlay={isPlaying}

@@ -18,6 +18,7 @@ import { useGetArtistInfo } from '@/app/hooks/use-artist'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/routes/routesList'
 import { stats } from '@/service/stats'
+import { useIsMpvSession } from '@/store/bitperfect.store'
 import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import {
   useLyricsState,
@@ -518,7 +519,10 @@ export default function NowPlayingPage() {
   const { t } = useTranslation()
   const song = usePlayerCurrentSong()
   const hasSong = Boolean(song?.id)
-  const visualizer = useClearPlaySettings((s) => s.visualizer)
+  // The mpv engine plays outside Chromium: nothing to draw.
+  const visualizerOn = useClearPlaySettings((s) => s.visualizer)
+  const mpv = useIsMpvSession()
+  const visualizer = visualizerOn && !mpv
 
   return (
     <div className="w-full space-y-4 px-8 pb-8 pt-6">

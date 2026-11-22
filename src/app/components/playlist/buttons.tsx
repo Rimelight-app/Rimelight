@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
-import { toast } from 'react-toastify'
 import { Actions } from '@/app/components/actions'
+import { showQueuePill } from '@/app/components/player/queue-pill'
 import {
   useIsPlaylistPlaying,
   usePlayerActions,
@@ -90,7 +90,7 @@ export function PlaylistButtons({
         onClick={() => {
           if (!playlist.entry) return
           setLastOnQueue(playlist.entry)
-          toast.success(t('clearplay.addedToQueue'))
+          showQueuePill('last', playlist.entry.length)
         }}
       >
         <Actions.QueueIcon />

@@ -9,8 +9,10 @@ import { AnimatedCoverVideo } from '@/app/components/album/animated-cover-video'
 import { MarqueeTitle } from '@/app/components/fullscreen/marquee-title'
 import { ImageLoader } from '@/app/components/image-loader'
 import { SongRating } from '@/app/components/rating/song-rating'
+import { useOutputLine } from '@/app/hooks/use-output-line'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/routes/routesList'
+import { useBitPerfect, useIsMpvSession } from '@/store/bitperfect.store'
 import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { usePlayerFullscreen, useSongColor } from '@/store/player.store'
 import { ISong } from '@/types/responses/song'
@@ -141,9 +143,26 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
 function TrackQuality({ song }: { song: ISong }) {
   const { format, details, lossless, hiRes } = getAudioQuality(song)
   const { showQuality, maxBitRate, streamFormat } = useClearPlaySettings()
-  if (!showQuality) return null
+  const mpv = useIsMpvSession()
+  const showOutput = useBitPerfect((s) => s.placement === 'player') && mpv
+  const line = useOutputLine()
+  if (!showQuality && !showOutput) return null
   const limit = Number(maxBitRate)
-  const converted = limit > 0 && (song.bitRate ?? 0) > limit
+  // The mpv engine always streams the original file.
+  const converted = !mpv && limit > 0 && (song.bitRate ?? 0) > limit
+  const outputText = showOutput && line.short ? line.short : ''
+
+  if (!showQuality) {
+    return outputText ? (
+      <div
+        className="min-w-0 truncate text-[11px] leading-none text-white/50"
+        data-testid="track-quality"
+        title={line.text}
+      >
+        <span data-testid="output-line">{outputText}</span>
+      </div>
+    ) : null
+  }
 
   return (
     <div
@@ -162,7 +181,7 @@ function TrackQuality({ song }: { song: ISong }) {
       >
         {hiRes ? `${format} · HI-RES` : format}
       </span>
-      <span className="truncate tabular-nums">
+      <span className="min-w-0 truncate tabular-nums">
         {details.join(' · ')}
         {converted && (
           <span className="text-white/70">
@@ -171,6 +190,18 @@ function TrackQuality({ song }: { song: ISong }) {
           </span>
         )}
       </span>
+      {/* The song's own details give way first; the output line stays. */}
+      {outputText && (
+        <span className="-ml-1 shrink-0 tabular-nums" title={line.text}>
+          {details.length > 0 && '· '}
+          <span
+            data-testid="output-line"
+            className={cn(line.bitPerfect ? 'text-white/75' : 'text-white/60')}
+          >
+            {outputText}
+          </span>
+        </span>
+      )}
     </div>
   )
 }

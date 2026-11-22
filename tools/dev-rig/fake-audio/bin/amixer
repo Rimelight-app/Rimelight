@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+# Fake amixer for the test rig: one "Speaker" control per card, raw 0-100,
+# dB = raw - 100 (so -40 dB = 60). State in $FAKE_AUDIO_STATE (default /tmp).
+import os, sys, re
+args = sys.argv[1:]
+card = None
+quiet = '-q' in args
+args = [a for a in args if a not in ('-q', '-M')]
+if '-c' in args:
+    i = args.index('-c'); card = args[i + 1]; del args[i:i + 2]
+if card not in ('2', 'SIMGOT'):
+    print("amixer: Invalid card number '%s'" % card, file=sys.stderr); sys.exit(1)
+state = os.path.join(os.environ.get('FAKE_AUDIO_STATE', '/tmp'), 'fake-amixer-card2')
+raw = int(open(state).read()) if os.path.exists(state) else 100
+def block():
+    return ("Simple mixer control 'Speaker',0\n"
+            "  Capabilities: pvolume pswitch pswitch-joined\n"
+            "  Playback channels: Front Left - Front Right\n"
+            "  Limits: Playback 0 - 100\n  Mono:\n"
+            "  Front Left: Playback %d [%d%%] [%.2fdB] [on]\n"
+            "  Front Right: Playback %d [%d%%] [%.2fdB] [on]\n") % (raw, raw, raw - 100, raw, raw, raw - 100)
+cmd = args[0] if args else 'scontents'
+if cmd in ('scontents', 'sget'):
+    print(block(), end=''); sys.exit(0)
+if cmd == 'sset':
+    val = args[2]
+    m = re.match(r'(-?[\d.]+)dB$', val)
+    if m: raw = int(round(float(m.group(1)) + 100))
+    else: raw = int(val.rstrip('%'))
+    raw = max(0, min(100, raw))
+    open(state, 'w').write(str(raw))
+    if not quiet: print(block(), end='')
+    sys.exit(0)
+sys.exit(1)

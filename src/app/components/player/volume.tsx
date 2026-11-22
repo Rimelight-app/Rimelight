@@ -13,6 +13,7 @@ import { SimpleTooltip } from '@/app/components/ui/simple-tooltip'
 import { Slider } from '@/app/components/ui/slider'
 import { usePlayerHotkeys } from '@/app/hooks/use-audio-hotkeys'
 import { cn } from '@/lib/utils'
+import { useVolumeFixed } from '@/store/bitperfect.store'
 import { usePlayerVolume, useVolumeSettings } from '@/store/player.store'
 import { PopoverVolume } from './popover-volume'
 
@@ -21,13 +22,18 @@ interface PlayerVolumeProps {
   audioRef: RefObject<HTMLAudioElement>
 }
 
-export function PlayerVolume({ disabled, audioRef }: PlayerVolumeProps) {
+export function PlayerVolume({
+  disabled: noMedia,
+  audioRef,
+}: PlayerVolumeProps) {
   const { t } = useTranslation()
   const { volume, handleVolumeWheel } = usePlayerVolume()
   const { useAudioHotkeys } = usePlayerHotkeys()
+  const fixed = useVolumeFixed()
+  const disabled = noMedia || fixed
 
-  useAudioHotkeys('mod+up', () => handleVolumeWheel(false))
-  useAudioHotkeys('mod+down', () => handleVolumeWheel(true))
+  useAudioHotkeys('mod+up', () => !fixed && handleVolumeWheel(false))
+  useAudioHotkeys('mod+down', () => !fixed && handleVolumeWheel(true))
 
   useEffect(() => {
     if (!audioRef.current) return
@@ -35,8 +41,9 @@ export function PlayerVolume({ disabled, audioRef }: PlayerVolumeProps) {
     audioRef.current.volume = volume / 100
   }, [audioRef, volume])
 
-  const tooltipText =
-    volume === 0
+  const tooltipText = fixed
+    ? t('clearplay.bitperfect.fixedVolume')
+    : volume === 0
       ? t('player.tooltips.volume.unmute')
       : t('player.tooltips.volume.mute')
 
@@ -49,7 +56,7 @@ export function PlayerVolume({ disabled, audioRef }: PlayerVolumeProps) {
       </div>
 
       <div className="hidden 2xl:flex gap-2 pr-2 items-center">
-        <SimpleTooltip text={tooltipText} disabled={disabled}>
+        <SimpleTooltip text={tooltipText} disabled={noMedia}>
           <div className="h-10 flex items-center">
             <MuteButton disabled={disabled}>
               <div className="text-secondary-foreground">
@@ -66,14 +73,15 @@ export function PlayerVolume({ disabled, audioRef }: PlayerVolumeProps) {
 
 type MuteButtonProps = ComponentPropsWithoutRef<typeof Button>
 
-export function MuteButton({ className, ...props }: MuteButtonProps) {
+export function MuteButton({ className, disabled, ...props }: MuteButtonProps) {
   const { volume, setVolume, handleVolumeWheel } = usePlayerVolume()
   const lastVolumeRef = useRef<number>(0)
+  const fixed = useVolumeFixed()
 
   const isMute = volume === 0
 
   function handleMuteClick() {
-    if (!lastVolumeRef) return
+    if (!lastVolumeRef || fixed) return
 
     const lastVolume = lastVolumeRef.current
     const volumeSafety = lastVolume >= 1 ? lastVolume : 100
@@ -84,6 +92,7 @@ export function MuteButton({ className, ...props }: MuteButtonProps) {
   }
 
   function handleWheel(e: WheelEvent) {
+    if (fixed) return
     const isScrollingDown = e.deltaY > 0
     handleVolumeWheel(isScrollingDown)
   }
@@ -91,6 +100,7 @@ export function MuteButton({ className, ...props }: MuteButtonProps) {
   return (
     <Button
       {...props}
+      disabled={disabled || fixed}
       variant="ghost"
       size="icon"
       className={cn('p-1 w-7 h-7 hover:bg-transparent', className)}
@@ -103,14 +113,17 @@ export function MuteButton({ className, ...props }: MuteButtonProps) {
 type VolumeSliderProps = ComponentPropsWithoutRef<typeof Slider>
 
 export function VolumeSlider({
-  disabled,
+  disabled: disabledProp,
   className,
   ...props
 }: VolumeSliderProps) {
   const { volume, setVolume, handleVolumeWheel } = usePlayerVolume()
   const { min, max, step } = useVolumeSettings()
+  const fixed = useVolumeFixed()
+  const disabled = disabledProp || fixed
 
   function handleWheel(e: WheelEvent) {
+    if (fixed) return
     const isScrollingDown = e.deltaY > 0
     handleVolumeWheel(isScrollingDown)
   }

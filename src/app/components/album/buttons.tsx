@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'react-toastify'
 import { Actions } from '@/app/components/actions'
+import { showQueuePill } from '@/app/components/player/queue-pill'
 import { subsonic } from '@/service/subsonic'
 import { useAppPages, useAppStore } from '@/store/app.store'
 import {
@@ -117,7 +117,7 @@ export function AlbumButtons({
         tooltip={t('clearplay.addToQueue')}
         onClick={() => {
           setLastOnQueue(album.song)
-          toast.success(t('clearplay.addedToQueue'))
+          showQueuePill('last', album.song.length)
         }}
       >
         <Actions.QueueIcon />

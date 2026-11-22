@@ -1,5 +1,5 @@
 import { is, platform } from '@electron-toolkit/utils'
-import { BrowserWindow, ipcMain, nativeTheme, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeTheme, shell } from 'electron'
 import {
   IpcChannels,
   OverlayColors,
@@ -7,8 +7,8 @@ import {
 } from '../../preload/types'
 import { isQuitting } from '../index'
 import { tray, updateTray } from '../tray'
-import { updateDockMenu } from './dockMenu'
 import { colorsState } from './colors'
+import { updateDockMenu } from './dockMenu'
 import { playerState } from './playerState'
 import { getAppSetting, ISettingPayload, saveAppSettings } from './settings'
 import { setTaskbarButtons } from './taskbar'
@@ -88,6 +88,7 @@ function resetIpcEvents() {
     IpcChannels.UpdateNativeTheme,
     IpcChannels.UpdatePlayerState,
     IpcChannels.SaveAppSettings,
+    IpcChannels.MpvRelaunch,
   ]
 
   eventsToReset.forEach((event) => ipcMain.removeAllListeners(event))
@@ -163,5 +164,11 @@ export function setupIpcEvents(window: BrowserWindow | null) {
 
   ipcMain.on(IpcChannels.SaveAppSettings, (_, payload: ISettingPayload) => {
     saveAppSettings(payload)
+  })
+
+  // Switching the audio engine needs a fresh start (see core/mpv/config.ts).
+  ipcMain.on(IpcChannels.MpvRelaunch, () => {
+    app.relaunch()
+    app.quit()
   })
 }

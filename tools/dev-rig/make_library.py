@@ -54,4 +54,24 @@ for album, artist, year, cols, genre in albums:
             lines.append("[%02d:%05.2f]%s" % (t // 60, t % 60, random.choice(words)))
             t += random.uniform(3.5, 6)
         open(f[:-4] + ".lrc", "w").write("\n".join(lines) + "\n")
+
+# Lossless files at different rates and depths for the bit-perfect (mpv) tests.
+from mutagen.flac import FLAC
+folder = os.path.join(root, "Test Signals", "Rates and Depths")
+os.makedirs(folder, exist_ok=True)
+cover(os.path.join(folder, "cover.jpg"), (230, 230, 240), (60, 60, 80))
+formats = [(44100, 16), (48000, 24), (88200, 24), (96000, 24), (192000, 24)]
+for i, (rate, bits) in enumerate(formats):
+    title = f"{rate / 1000:g} kHz {bits}-bit"
+    f = os.path.join(folder, f"{i+1:02d} - {title}.flac")
+    fmt = "s16" if bits == 16 else "s32"
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i",
+                    f"sine=frequency={330 + 110 * i}:sample_rate={rate}:duration=25",
+                    "-af", "volume=0.15", "-c:a", "flac", "-sample_fmt", fmt,
+                    "-bits_per_raw_sample", str(bits), "-ar", str(rate), f], check=True)
+    tags = FLAC(f)
+    tags.update({"title": title, "artist": "Test Signals", "albumartist": "Test Signals",
+                 "album": "Rates and Depths", "date": "2026", "tracknumber": f"{i+1}/{len(formats)}",
+                 "genre": "Test"})
+    tags.save()
 print("done")

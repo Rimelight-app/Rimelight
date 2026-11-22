@@ -1048,8 +1048,11 @@
         "label": "Output",
         "rate": "mixing at {{khz}} kHz",
         "idle": "starts when you play something",
-        "note": "ClearPlay plays through Chromium's audio engine, which mixes at the system rate. Exclusive or bit-perfect output (playing each file at its own sample rate) isn't possible in this app; the file's own quality is shown in the player bar."
-      }
+        "note": "The built-in engine plays through Chromium, which mixes at the system rate. For bit-perfect output (each song at its own rate, straight to your DAC), choose the mpv engine above."
+      },
+      "fxOff": "Equalizer, mono and playback speed are off with the mpv engine: bit-perfect playback sends each song to the device unchanged.",
+      "visualizerOff": "Off with the mpv engine: ClearPlay doesn't see the sound on its way to the device.",
+      "replayGainOff": "Off with the mpv engine: changing the level would change the song's bits."
     },
     "sleep": {
       "title": "Sleep timer",
@@ -1108,6 +1111,68 @@
       "inUse": "In use",
       "failed": "Couldn't start the local library",
       "scanDone": "Local library updated"
+    },
+    "queuePill": {
+      "next_one": "Playing next",
+      "next_other": "{{count}} songs play next",
+      "last_one": "Added to queue",
+      "last_other": "{{count}} songs added to queue"
+    },
+    "bitperfect": {
+      "group": "Audio engine",
+      "description": "Built-in has the equalizer and visualizer. mpv sends each song to your DAC or speakers unchanged, at its own sample rate and bit depth.",
+      "engine": {
+        "label": "Audio engine",
+        "info": "mpv plays the original file and takes over the output device while it plays (other apps go silent on that device).",
+        "builtin": "Built-in",
+        "mpv": "mpv (bit-perfect)",
+        "restart": "Restart ClearPlay to switch to {{engine}}.",
+        "restartNow": "Restart now",
+        "missing": "mpv can't be used: {{problem}}",
+        "running": "Using mpv {{version}}."
+      },
+      "info": {
+        "title": "Output",
+        "device": "Device",
+        "supports": "Supports",
+        "supportsUnknown": "Not checked yet",
+        "checking": "Checking…",
+        "fromKernel": "reported by the device",
+        "fromProbe": "found by playing silence",
+        "hwVolume": "Hardware volume",
+        "hwYes": "Yes",
+        "hwNo": "No",
+        "hwUnknown": "Not known until it plays",
+        "access": "Access",
+        "exclusive": "Exclusive: ClearPlay has the device to itself",
+        "shared": "Shared with other apps",
+        "now": "Now",
+        "song": "Song",
+        "copy": "Copy",
+        "copied": "Output details copied",
+        "builtinNote": "Output details are shown with the mpv engine."
+      },
+      "placement": {
+        "label": "Show output info",
+        "settings": "Only in Settings",
+        "player": "In Settings and the player bar"
+      },
+      "device": {
+        "rates": "Sample rates",
+        "ratesInfo": "Switch off rates this device claims but doesn't really play (e.g. silence at 44.1 kHz). Songs at a switched-off rate are converted to the closest rate that's left.",
+        "check": "Check again",
+        "volume": "Volume",
+        "volumeInfo": "Hardware: the slider moves the device's own volume (bit-perfect). Fixed: set the loudness on the device or amp (bit-perfect). App: ClearPlay lowers the level itself (not bit-perfect).",
+        "hardware": "Hardware ({{control}})",
+        "hardwarePlain": "Hardware",
+        "fixed": "Fixed (bit-perfect)",
+        "app": "App volume (not bit-perfect)",
+        "chooseVolume": "This device has no hardware volume. Choose fixed volume (set the loudness on the device or amp) or the app's volume.",
+        "quiet": "The first time a device plays bit-perfect it starts quiet; after that it keeps its own level.",
+        "bluetooth": "Bluetooth re-encodes the sound, so it is never bit-perfect.",
+        "system": "The system default goes through the system mixer. Choose your DAC or speakers by name for bit-perfect playback."
+      },
+      "fixedVolume": "Fixed volume: set the loudness on the device or amp"
     }
   }
 }

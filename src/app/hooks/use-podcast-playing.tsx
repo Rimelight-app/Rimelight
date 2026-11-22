@@ -1,4 +1,5 @@
 import { MouseEvent, useCallback, useMemo } from 'react'
+import { showQueuePill } from '@/app/components/player/queue-pill'
 import { podcasts } from '@/service/podcasts'
 import {
   usePlayerActions,
@@ -97,6 +98,7 @@ export function useEpisodeQueue({ id }: IEpisodeProps) {
     const { episode, progress } = await getAndFormatEpisode(id)
     if (episode) {
       setNextPodcast(episode, progress)
+      showQueuePill('next', 1)
     }
   }, [id, setNextPodcast])
 
@@ -104,6 +106,7 @@ export function useEpisodeQueue({ id }: IEpisodeProps) {
     const { episode, progress } = await getAndFormatEpisode(id)
     if (episode) {
       setLastPodcast(episode, progress)
+      showQueuePill('last', 1)
     }
   }, [id, setLastPodcast])
 

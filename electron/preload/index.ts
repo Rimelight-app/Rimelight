@@ -1,6 +1,11 @@
 import { electronAPI } from '@electron-toolkit/preload'
 import { contextBridge, ipcRenderer } from 'electron'
-import { IClearPlayAPI, IpcChannels, PlayerStateListenerActions } from './types'
+import {
+  IClearPlayAPI,
+  IpcChannels,
+  MpvEventPayload,
+  PlayerStateListenerActions,
+} from './types'
 
 // Custom APIs for renderer
 const api: IClearPlayAPI = {
@@ -85,6 +90,30 @@ const api: IClearPlayAPI = {
       ipcRenderer.invoke(IpcChannels.LocalLibraryRemoveFolder, folder),
     rescan: () => ipcRenderer.invoke(IpcChannels.LocalLibraryRescan),
     connect: () => ipcRenderer.invoke(IpcChannels.LocalLibraryConnect),
+  },
+  mpv: {
+    status: () => ipcRenderer.invoke(IpcChannels.MpvStatus),
+    setEngine: (engine) => ipcRenderer.invoke(IpcChannels.MpvSetEngine, engine),
+    relaunch: () => ipcRenderer.send(IpcChannels.MpvRelaunch),
+    devices: () => ipcRenderer.invoke(IpcChannels.MpvDevices),
+    caps: (key, force) => ipcRenderer.invoke(IpcChannels.MpvCaps, key, force),
+    load: (request) => ipcRenderer.invoke(IpcChannels.MpvLoad, request),
+    setPause: (paused) => ipcRenderer.invoke(IpcChannels.MpvSetPause, paused),
+    seek: (seconds) => ipcRenderer.invoke(IpcChannels.MpvSeek, seconds),
+    stop: () => ipcRenderer.invoke(IpcChannels.MpvStop),
+    setSoftVolume: (volume) =>
+      ipcRenderer.invoke(IpcChannels.MpvSetSoftVolume, volume),
+    setHwVolume: (key, percent) =>
+      ipcRenderer.invoke(IpcChannels.MpvSetHwVolume, key, percent),
+    setLoop: (loop) => ipcRenderer.invoke(IpcChannels.MpvSetLoop, loop),
+    setSpeed: (speed) => ipcRenderer.invoke(IpcChannels.MpvSetSpeed, speed),
+    onEvent: (func) => {
+      const listener = (_: unknown, event: MpvEventPayload) => func(event)
+      ipcRenderer.on(IpcChannels.MpvEvent, listener)
+      return () => {
+        ipcRenderer.removeListener(IpcChannels.MpvEvent, listener)
+      }
+    },
   },
 }
 

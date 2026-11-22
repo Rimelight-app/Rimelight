@@ -5,6 +5,7 @@ import { AppBackdrop } from '@/app/components/glass/app-backdrop'
 import { NavRail } from '@/app/components/glass/nav-rail'
 import { SidePanel } from '@/app/components/glass/side-panel'
 import { Player } from '@/app/components/player/player'
+import { QueuePill } from '@/app/components/player/queue-pill'
 import { CreatePlaylistDialog } from '@/app/components/playlist/form-dialog'
 import { RemovePlaylistDialog } from '@/app/components/playlist/remove-dialog'
 import { SongInfoDialog } from '@/app/components/song/info-dialog'
@@ -74,6 +75,7 @@ export default function BaseLayout() {
         </MainSidebarInset>
         <SidePanel />
         <MemoPlayer />
+        <QueuePill />
       </MainSidebarProvider>
       <MemoSongInfoDialog />
       <MemoRemovePlaylistDialog />

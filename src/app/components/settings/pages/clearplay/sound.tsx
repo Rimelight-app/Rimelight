@@ -14,13 +14,21 @@ import {
 import { Switch } from '@/app/components/ui/switch'
 import { audioEngine } from '@/app/hooks/use-audio-context'
 import { cn } from '@/lib/utils'
+import { refreshDevices, selectDevice } from '@/service/mpv-player'
 import { EQ_BANDS, EQ_PRESETS, useAudioFx } from '@/store/audio-fx.store'
+import {
+  useBitPerfect,
+  useIsMpvSession,
+  useMpvRuntime,
+} from '@/store/bitperfect.store'
 import { listOutputDevices, resolveOutputDevice } from '@/utils/output-device'
+import { currentDevice, MpvDeviceOptions } from './audio-engine'
 import { SettingSelect } from './controls'
 
-function useOutputDevices() {
+function useOutputDevices(enabled: boolean) {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   useEffect(() => {
+    if (!enabled) return
     const load = () =>
       listOutputDevices().then((list) => {
         setDevices(list)
@@ -31,8 +39,49 @@ function useOutputDevices() {
     navigator.mediaDevices?.addEventListener('devicechange', load)
     return () =>
       navigator.mediaDevices?.removeEventListener('devicechange', load)
-  }, [])
+  }, [enabled])
   return devices
+}
+
+/** mpv engine: devices as mpv and the system see them (refreshed on open). */
+function MpvDeviceSelect() {
+  const { t } = useTranslation()
+  const k = 'clearplay.sound'
+  const list = useMpvRuntime((s) => s.deviceList)
+  const deviceKey = useBitPerfect((s) => s.device)
+  const active = currentDevice(list, deviceKey)
+
+  useEffect(() => {
+    refreshDevices()
+    const id = window.setInterval(refreshDevices, 5000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  return (
+    <>
+      <ContentItem>
+        <ContentItemTitle info={t(`${k}.device.info`)}>
+          {t(`${k}.device.label`)}
+        </ContentItemTitle>
+        <ContentItemForm className="w-auto max-w-[300px]">
+          <SettingSelect
+            value={active?.key ?? 'system'}
+            onChange={(v) =>
+              selectDevice(v, list.find((d) => d.key === v)?.name ?? '')
+            }
+            options={list.map((d) => ({
+              value: d.key,
+              label:
+                d.key === 'system'
+                  ? t(`${k}.device.system`)
+                  : `${d.name}${d.detail ? ` · ${d.detail}` : ''}`,
+            }))}
+          />
+        </ContentItemForm>
+      </ContentItem>
+      {active && <MpvDeviceOptions deviceKey={active.key} />}
+    </>
+  )
 }
 
 const fmtHz = (f: number) => (f >= 1000 ? `${f / 1000}k` : `${f}`)
@@ -97,11 +146,20 @@ function Equalizer() {
   )
 }
 
+function FxOffNote({ text }: { text: string }) {
+  return (
+    <p className="px-1 text-[12px] text-white/45" data-testid="fx-off-note">
+      {text}
+    </p>
+  )
+}
+
 export function SoundSettings() {
   const { t } = useTranslation()
   const { eqEnabled, eqPreset, mono, speed, outputDevice, set, applyPreset } =
     useAudioFx()
-  const devices = useOutputDevices()
+  const mpv = useIsMpvSession()
+  const devices = useOutputDevices(!mpv)
   const [rate, setRate] = useState<number | null>(null)
   const k = 'clearplay.sound'
 
@@ -131,42 +189,48 @@ export function SoundSettings() {
         <HeaderDescription>{t(`${k}.description`)}</HeaderDescription>
       </Header>
       <Content>
-        <ContentItem>
-          <ContentItemTitle info={t(`${k}.device.info`)}>
-            {t(`${k}.device.label`)}
-          </ContentItemTitle>
-          <ContentItemForm>
-            <SettingSelect
-              value={
-                devices.some((d) => d.deviceId === outputDevice)
-                  ? outputDevice
-                  : 'default'
-              }
-              onChange={(v) =>
-                set({
-                  outputDevice: v,
-                  outputDeviceLabel:
-                    devices.find((d) => d.deviceId === v)?.label ?? '',
-                })
-              }
-              options={[
-                { value: 'default', label: t(`${k}.device.system`) },
-                ...devices
-                  .filter((d) => d.deviceId && d.deviceId !== 'default')
-                  .map((d, i) => ({
-                    value: d.deviceId,
-                    label: d.label || `${t(`${k}.device.output`)} ${i + 1}`,
-                  })),
-              ]}
-            />
-          </ContentItemForm>
-        </ContentItem>
+        {mpv ? (
+          <MpvDeviceSelect />
+        ) : (
+          <ContentItem>
+            <ContentItemTitle info={t(`${k}.device.info`)}>
+              {t(`${k}.device.label`)}
+            </ContentItemTitle>
+            <ContentItemForm>
+              <SettingSelect
+                value={
+                  devices.some((d) => d.deviceId === outputDevice)
+                    ? outputDevice
+                    : 'default'
+                }
+                onChange={(v) =>
+                  set({
+                    outputDevice: v,
+                    outputDeviceLabel:
+                      devices.find((d) => d.deviceId === v)?.label ?? '',
+                  })
+                }
+                options={[
+                  { value: 'default', label: t(`${k}.device.system`) },
+                  ...devices
+                    .filter((d) => d.deviceId && d.deviceId !== 'default')
+                    .map((d, i) => ({
+                      value: d.deviceId,
+                      label: d.label || `${t(`${k}.device.output`)} ${i + 1}`,
+                    })),
+                ]}
+              />
+            </ContentItemForm>
+          </ContentItem>
+        )}
+
+        {mpv && <FxOffNote text={t(`${k}.fxOff`)} />}
 
         <ContentItem>
           <ContentItemTitle>{t(`${k}.eq`)}</ContentItemTitle>
           <ContentItemForm>
             <div className="flex items-center gap-3">
-              {eqEnabled && (
+              {eqEnabled && !mpv && (
                 <SettingSelect
                   value={eqPreset}
                   onChange={applyPreset}
@@ -174,20 +238,25 @@ export function SoundSettings() {
                 />
               )}
               <Switch
-                checked={eqEnabled}
+                checked={eqEnabled && !mpv}
+                disabled={mpv}
                 onCheckedChange={(v) => set({ eqEnabled: v })}
               />
             </div>
           </ContentItemForm>
         </ContentItem>
-        {eqEnabled && <Equalizer />}
+        {eqEnabled && !mpv && <Equalizer />}
 
         <ContentItem>
           <ContentItemTitle info={t(`${k}.mono.info`)}>
             {t(`${k}.mono.label`)}
           </ContentItemTitle>
           <ContentItemForm>
-            <Switch checked={mono} onCheckedChange={(v) => set({ mono: v })} />
+            <Switch
+              checked={mono && !mpv}
+              disabled={mpv}
+              onCheckedChange={(v) => set({ mono: v })}
+            />
           </ContentItemForm>
         </ContentItem>
 
@@ -195,9 +264,11 @@ export function SoundSettings() {
           <ContentItemTitle info={t(`${k}.speed.info`)}>
             {t(`${k}.speed.label`)}
           </ContentItemTitle>
-          <ContentItemForm>
+          <ContentItemForm
+            className={cn(mpv && 'pointer-events-none opacity-50')}
+          >
             <SettingSelect
-              value={String(speed)}
+              value={mpv ? '1' : String(speed)}
               onChange={(v) => set({ speed: Number(v) })}
               options={['0.75', '0.9', '1', '1.1', '1.25', '1.5'].map((v) => ({
                 value: v,
@@ -210,6 +281,7 @@ export function SoundSettings() {
         <div
           className={cn(
             'rounded-2xl bg-white/[0.04] px-4 py-3 text-[12px] text-white/55',
+            mpv && 'hidden',
           )}
         >
           <p>

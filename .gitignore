@@ -34,3 +34,8 @@ env-config.js
 out
 
 .pnpm-store/*
+
+# mpv for the Windows installer (tools/fetch-mpv-windows.ps1)
+resources/mpv/
+*.tsbuildinfo
+tsconfig.check.json

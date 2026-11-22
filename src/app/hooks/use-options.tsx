@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useMatches } from 'react-router-dom'
 import { getDownloadUrl } from '@/api/httpClient'
+import { showQueuePill } from '@/app/components/player/queue-pill'
 import { subsonic } from '@/service/subsonic'
 import { usePlayerActions } from '@/store/player.store'
 import { usePlaylistRemoveSong } from '@/store/playlists.store'
@@ -32,10 +33,12 @@ export function useOptions() {
 
   function playNext(list: ISong[]) {
     setNextOnQueue(list)
+    showQueuePill('next', list.length)
   }
 
   function playLast(list: ISong[]) {
     setLastOnQueue(list)
+    showQueuePill('last', list.length)
   }
 
   function startDownload(id: string) {
