@@ -1,7 +1,8 @@
 # Downloads the official mpv build for Windows into resources/mpv, where the
 # installer picks it up (electron-builder copies resources/ into the app).
 # Used by .github/workflows/build.yml; run it by hand before `pnpm build:win`
-# on a Windows machine. Pinned version + checksum: change both together.
+# on a Windows machine. Pinned version + checksum: change both together, and
+# update the sources in tools/fetch-mpv-source.sh (GPL source archive).
 $ErrorActionPreference = 'Stop'
 $version = 'v0.41.0'
 $name = "mpv-$version-x86_64-w64-mingw32.zip"

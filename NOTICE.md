@@ -30,9 +30,12 @@ Dependencies are installed from npm and keep their own licences; see
 - **mpv** (Windows installer only), GPL 2 or later, run as a separate program
   for bit-perfect playback. The official v0.41.0 build from the mpv project is
   bundled unchanged; ClearPlay talks to it over mpv's JSON IPC and uses no mpv
-  code (nor Feishin's). Licence texts, source location and the list of
-  libraries in that build are in `licenses/mpv/` (also installed next to
-  mpv.exe). On Linux ClearPlay uses the mpv installed on the system.
+  code (nor Feishin's). Licence texts and the list of libraries in that build
+  are in `licenses/mpv/` (also installed next to mpv.exe). The exact source of
+  the build (mpv, FFmpeg, FriBidi, libiconv, libplacebo) is attached to every
+  GitHub release as `ClearPlay-vX.Y.Z-mpv-source.tar.gz`
+  (https://github.com/tonihk00/ClearPlay/releases). On Linux ClearPlay uses
+  the mpv installed on the system.
 
 The ClearPlay logo (`build/icon.svg`, `src/app/components/glass/logo.tsx`) was supplied by the project owner.
 

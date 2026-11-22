@@ -112,6 +112,15 @@ jobs:
           path: release
           merge-multiple: true
 
+      # GPL: every release that ships the Windows installer (with mpv) also
+      # carries the exact source of that mpv build. The script checks the
+      # shipped DLLs against its pinned sources and fails if they differ.
+      - name: mpv source archive
+        if: steps.tag.outputs.publish == 'true'
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: bash tools/fetch-mpv-source.sh "release/ClearPlay-${TAG}-mpv-source.tar.gz"
+
       # The release text is this version's CHANGELOG section. The app's
       # update dialog shows it when it offers the update.
       - name: Release notes from CHANGELOG

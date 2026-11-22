@@ -18,9 +18,32 @@ mpv is licensed under the GNU General Public License, version 2 or later
 (from the mpv source) for details. This build is GPL as a whole: its FFmpeg is
 configured with `--enable-gpl`.
 
-Source code: https://github.com/mpv-player/mpv/tree/v0.41.0 . The build
-script that produced the binaries is `ci/build-mingw64.sh` in that tree; it
-fetches the libraries below from their projects' repositories.
+## Source code
+
+Every ClearPlay release on GitHub has an archive
+`ClearPlay-vX.Y.Z-mpv-source.tar.gz` next to the installer, at
+https://github.com/tonihk00/ClearPlay/releases . It holds the exact source of
+this build: mpv, FFmpeg and the LGPL libraries (FriBidi, libiconv,
+libplacebo), plus `SOURCES.txt` with where each part came from. The archive
+is made by `tools/fetch-mpv-source.sh`, which also checks that the shipped
+DLLs carry these versions.
+
+The binaries were made by mpv's own CI with `ci/build-mingw64.sh` (in the
+mpv source) on 2025-12-21. That script fetched FFmpeg and libplacebo from git
+without pinning a commit, so the commits below were read from the DLLs'
+version strings and the projects' history:
+
+| Part | Version in the binaries | Exact source |
+|---|---|---|
+| mpv | v0.41.0-dev-g41f6a6450 | tag v0.41.0, commit `41f6a645068483470267271e1d09966ca3b9f413` |
+| FFmpeg | git-2025-12-21-1fcb201 | commit `1fcb201ab10cbc98d931e340da6ace292e82b1e1` |
+| libplacebo | v7.358.0 | commit `47587a2d47299f7261a01b77e989b74f80a99769` (the last one before the build) |
+| GNU FriBidi | 1.0.16 | `fribidi-1.0.16.tar.xz` (release tarball) |
+| GNU libiconv | 1.18 (pinned by the build script) | `libiconv-1.18.tar.gz` (release tarball) |
+
+The libraries under permissive licences (table below) need no source offer
+and are not in the archive. Their projects are linked from mpv's build
+script.
 
 ## Libraries in the build (DLLs next to mpv.exe)
 
