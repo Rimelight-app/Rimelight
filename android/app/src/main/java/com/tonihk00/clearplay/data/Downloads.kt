@@ -30,8 +30,11 @@ import okhttp3.OkHttpClient
 import java.io.File
 import java.util.concurrent.Executors
 
-/** One song's download state for the UI. */
-data class DownloadState(val state: Int, val percent: Float) {
+/**
+ * One song's download state for the UI. [transcode] is (kbps, format) when the file was saved
+ * converted (Settings → Downloads quality), null when it is the original file.
+ */
+data class DownloadState(val state: Int, val percent: Float, val transcode: Pair<Int, String?>? = null) {
     val done get() = state == Download.STATE_COMPLETED
     val active get() = state == Download.STATE_QUEUED || state == Download.STATE_DOWNLOADING || state == Download.STATE_RESTARTING
     val failed get() = state == Download.STATE_FAILED
@@ -150,7 +153,9 @@ class Downloads(private val context: Context, private val scope: CoroutineScope)
         scope.launch(Dispatchers.IO) {
             val all = ArrayList<Download>()
             manager.downloadIndex.getDownloads().use { c -> while (c.moveToNext()) all += c.download }
-            _states.value = all.associate { it.request.id to DownloadState(it.state, it.percentDownloaded.coerceAtLeast(0f)) }
+            _states.value = all.associate {
+                it.request.id to DownloadState(it.state, it.percentDownloaded.coerceAtLeast(0f), transcodeOf(it.request.uri.toString()))
+            }
             _songs.value = all.filter { it.state == Download.STATE_COMPLETED }
                 .sortedByDescending { it.updateTimeMs }
                 .mapNotNull { d ->
@@ -167,7 +172,9 @@ class Downloads(private val context: Context, private val scope: CoroutineScope)
                     while (isActive && manager.currentDownloads.isNotEmpty()) {
                         delay(1000)
                         _states.value = _states.value.toMutableMap().apply {
-                            manager.currentDownloads.forEach { put(it.request.id, DownloadState(it.state, it.percentDownloaded.coerceAtLeast(0f))) }
+                            manager.currentDownloads.forEach {
+                                put(it.request.id, DownloadState(it.state, it.percentDownloaded.coerceAtLeast(0f), transcodeOf(it.request.uri.toString())))
+                            }
                         }
                     }
                 }
@@ -177,5 +184,16 @@ class Downloads(private val context: Context, private val scope: CoroutineScope)
 
     companion object {
         fun cacheKey(songId: String) = "song:$songId"
+
+        /**
+         * (kbps, format) when a download URL asked the server to convert, null for the original file
+         * (no cap, cap 0, or format=raw; downloads from before 1.5 had no format at all).
+         */
+        fun transcodeOf(url: String): Pair<Int, String?>? {
+            val q = url.substringAfter('?', "").split('&').associate { it.substringBefore('=') to it.substringAfter('=', "") }
+            val cap = q["maxBitRate"]?.toIntOrNull() ?: 0
+            val format = q["format"]?.takeIf { it.isNotBlank() }
+            return if (cap <= 0 || format == "raw") null else cap to format
+        }
     }
 }

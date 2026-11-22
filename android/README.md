@@ -4,7 +4,7 @@ The ClearPlay frosted-glass player for Navidrome / OpenSubsonic, as a native And
 Kotlin, Jetpack Compose, Media3 (ExoPlayer + MediaLibraryService), Coil, Haze, Ktor.
 Same design tokens as the desktop `.glass` theme (`src/themes.css`).
 
-Status: **1.5** — see `CHANGELOG.md`.
+Status: **1.5.1** — see `CHANGELOG.md`.
 
 ## Build
 
@@ -36,6 +36,8 @@ app/src/main/java/com/tonihk00/clearplay/
   data/ScrobbleQueue       listens waiting for the server (offline plays), kept in a file
   player/SourceRouter      playback source per song: download or server
   player/BitPerfect        USB DAC bit-perfect output (Android 14 mixer attributes) + output path shown in the player
+  player/HiResAudioRenderer  float decoding only for songs above 16 bits
+  player/PcmTap           debug-only capture of the PCM sent to the output (sample checks)
   ui/theme/Theme.kt        design tokens (Cp.*), Inter, motion
   ui/components/           glass panels, covers, play/pause morph, stars, backdrop
   ui/library|search|player|login|settings/
@@ -73,14 +75,27 @@ losing it means the next APK can't update the installed app). Repository secrets
 
 ## Bit-perfect output
 
-`PlaybackService` uses a `DefaultAudioSink` with float output (24-bit FLAC stays exact; the platform
-FLAC decoder gives `sample / 2^(bits-1)`), wrapped by `BitPerfectOutputProvider`. With the setting on
+`PlaybackService` uses a `DefaultAudioSink` with float output, and `HiResAudioRenderer` asks the decoder
+for float only for songs above 16 bits (24-bit FLAC stays exact: the platform decoder gives
+`sample / 2^(bits-1)`). 16-bit songs decode to 16-bit integers: float output for them played as noise
+on a Galaxy S24 (1.5.0). The sink output is wrapped by `BitPerfectOutputProvider`. With the setting on
 and a USB DAC attached (API 34+), it picks the DAC's `MIXER_BEHAVIOR_BIT_PERFECT` format with the song's
-rate and channels (32-bit, then 24-bit packed; 16-bit only for 16-bit songs), sets it with
-`AudioManager.setPreferredMixerAttributes` before the AudioTrack opens, and converts the float samples
-back to those integers (exact, tested in `BitPerfectTest`). Volume stays at full scale.
+rate and channels (32-bit, then 24-bit packed, then float; 16-bit only for 16-bit songs), sets it with
+`AudioManager.setPreferredMixerAttributes` before the AudioTrack opens, and converts the samples
+to that format (exact, tested in `BitPerfectTest`). Volume stays at full scale.
 **Anything that changes samples (ReplayGain, EQ, crossfade, speed) must be off while it is on**:
 list it in `Settings.alteringSamples()`.
+
+Media3 fades in the first 20 ms after a start, seek or output change (against clicks); it can't be
+turned off. Everything after that is exact, including gapless song changes at the same rate.
+
+Settings → Player → USB DAC details shows what Android reports for the DAC (also logged under the
+`ClearPlayBitPerfect` tag when bit-perfect can't be used).
+
+**Checking the samples** (debug builds): `adb shell run-as com.tonihk00.clearplay.debug mkdir -p files/pcmtap`,
+then `touch files/pcmtap/on` the same way and restart the app. `PcmTapProvider` then saves what the player
+sends to the audio output in `files/pcmtap/<n>-<encoding>-<rate>.raw` (2 = 16-bit, 4 = float). Compare with
+`ffmpeg -i song.flac -f s16le` (or `s32le` for 24-bit).
 
 Check on a phone with a DAC: `adb shell dumpsys media.audio_flinger`. The USB output thread should
 show the song's sample rate, and the track should be marked `BitPerfect true`.

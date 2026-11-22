@@ -4,6 +4,11 @@ import android.media.AudioFormat
 import com.tonihk00.clearplay.player.MixerOption
 import com.tonihk00.clearplay.player.OutputPath
 import com.tonihk00.clearplay.player.convertPcm
+import com.tonihk00.clearplay.player.needsFloatDecode
+import com.tonihk00.clearplay.player.noMixerReason
+import com.tonihk00.clearplay.data.Downloads
+import androidx.media3.common.C
+import androidx.media3.common.Format
 import com.tonihk00.clearplay.player.pickMixer
 import com.tonihk00.clearplay.ui.player.outputText
 import org.junit.Assert.assertEquals
@@ -99,11 +104,59 @@ class BitPerfectTest {
     }
 
     @Test fun outputTextTellsTheTruth() {
+        val bp = OutputPath.Kind.BitPerfect; val mix = OutputPath.Kind.Mixer
         assertNull(outputText(96_000, 24, OutputPath()))
-        assertEquals("Bit-perfect · FiiO KA3 · 96 kHz · 32-bit", outputText(96_000, 24, OutputPath(OutputPath.Kind.BitPerfect, "FiiO KA3", 96_000, 32)))
-        assertEquals("Cut to 16-bit · Old DAC · 44.1 kHz", outputText(44_100, 24, OutputPath(OutputPath.Kind.BitPerfect, "Old DAC", 44_100, 16)))
-        assertEquals("Speaker · resampled to 48 kHz", outputText(44_100, 16, OutputPath(OutputPath.Kind.Mixer, "Speaker", 48_000)))
-        assertEquals("Speaker · mixed at 48 kHz", outputText(48_000, 24, OutputPath(OutputPath.Kind.Mixer, "Speaker", 48_000)))
-        assertEquals("Bluetooth · WH-1000XM5 · re-encoded", outputText(44_100, 16, OutputPath(OutputPath.Kind.Bluetooth, "WH-1000XM5", 48_000)))
+        assertEquals("Bit-perfect · 96 kHz · 24-bit", outputText(96_000, 24, OutputPath(bp, "FiiO KA3", 96_000, 32)))
+        assertEquals("Bit-perfect · 44.1 kHz · 16-bit", outputText(44_100, 16, OutputPath(bp, "EW200", 44_100, 32)))
+        assertEquals("Cut to 16-bit · 44.1 kHz", outputText(44_100, 24, OutputPath(bp, "Old DAC", 44_100, 16)))
+        assertEquals("Resampled to 48 kHz", outputText(44_100, 16, OutputPath(mix, "Speaker", 48_000)))
+        assertEquals("Mixed at 48 kHz", outputText(48_000, 24, OutputPath(mix, "Speaker", 48_000)))
+        assertEquals("Bluetooth · re-encoded", outputText(44_100, 16, OutputPath(OutputPath.Kind.Bluetooth, "WH-1000XM5", 48_000)))
+        // USB through the mixer: Android doesn't say the rate, so no "resampled" claim (bug 2).
+        assertEquals("Android mixer", outputText(48_000, 24, OutputPath(mix, "EW200", 0, reason = "DAC has no bit-perfect 48 kHz")))
+        // The decoded rate wins over the server's: an Opus download decodes at 48 kHz.
+        assertEquals("Mixed at 48 kHz", outputText(44_100, 16, OutputPath(mix, "Speaker", 48_000, inputRate = 48_000)))
+        // No device names any more (feature 2).
+        listOf(OutputPath(bp, "FiiO KA3", 96_000, 32), OutputPath(mix, "Speaker", 48_000)).forEach {
+            assertTrue(outputText(96_000, 24, it)!!.let { t -> "FiiO" !in t && "Speaker" !in t })
+        }
+    }
+
+    @Test fun floatOnlyForSongsAbove16Bits() {
+        // Bug 1: 16-bit FLACs decode to 16-bit integers; 24-bit to float. Lossy (no bit depth) stays 16-bit.
+        assertTrue(!needsFloatDecode(C.ENCODING_PCM_16BIT))
+        assertTrue(!needsFloatDecode(Format.NO_VALUE))
+        assertTrue(needsFloatDecode(C.ENCODING_PCM_24BIT))
+        assertTrue(needsFloatDecode(C.ENCODING_PCM_32BIT))
+    }
+
+    @Test fun floatDacModeIsUsedWhenNoIntegerMode() {
+        val floatOnly = listOf(MixerOption(48_000, f32, stereo, true))
+        assertEquals(floatOnly[0], pickMixer(floatOnly, 48_000, stereo, 24))
+        val src = floats(0.5f, -0.25f, 1f / 8_388_608)
+        val out = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN)
+        convertPcm(src, f32, out, f32); out.flip()
+        assertEquals(0.5f, out.float); assertEquals(-0.25f, out.float); assertEquals(1f / 8_388_608, out.float)
+        val s16 = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).apply { putShort(-32768); putShort(1); flip() }
+        val o16 = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN)
+        convertPcm(s16, i16, o16, f32); o16.flip()
+        assertEquals(-1f, o16.float); assertEquals(1f / 32_768, o16.float)
+    }
+
+    @Test fun reasonSaysWhyThereIsNoBitPerfect() {
+        assertEquals("phone offers no bit-perfect mode for this DAC", noMixerReason(dac.filter { !it.bitPerfect }, 48_000, stereo))
+        assertEquals("DAC has no bit-perfect 176.4 kHz", noMixerReason(dac, 176_400, stereo))
+        assertEquals("DAC is 16-bit only", noMixerReason(listOf(MixerOption(44_100, i16, stereo, true)), 44_100, stereo))
+    }
+
+    @Test fun downloadQualityIsReadFromItsUrl() {
+        val base = "https://nd/rest/stream?u=a&id=1"
+        assertNull(Downloads.transcodeOf("$base&format=raw"))
+        assertNull(Downloads.transcodeOf(base)) // downloads from before 1.5
+        assertNull(Downloads.transcodeOf("$base&maxBitRate=0"))
+        assertEquals(192 to "opus", Downloads.transcodeOf("$base&maxBitRate=192&format=opus"))
+        assertEquals(320 to null, Downloads.transcodeOf("$base&maxBitRate=320"))
+        assertEquals(192 to "opus", Downloads.transcodeOf(FakeServer.client.streamUrl("x", 192, "opus")))
+        assertNull(Downloads.transcodeOf(FakeServer.client.streamUrl("x")))
     }
 }

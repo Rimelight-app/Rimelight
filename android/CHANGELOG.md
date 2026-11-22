@@ -1,5 +1,19 @@
 # ClearPlay for Android — changelog
 
+## [1.5.1] - 2026-11-22
+
+### Fixed
+- **16-bit albums played as loud noise** (e.g. *Love Sick*, *$OME $EXY $ONGS 4 U*) on every output, bit-perfect on or off. 1.5.0 asked the phone's FLAC decoder for float output on every song, and on the Galaxy S24 that broke 16-bit files. Now only songs above 16 bits decode to float; 16-bit songs decode as they did in 1.4. Checked sample by sample against a reference decode: 16- and 24-bit songs come out exact, streamed and downloaded.
+- **"Resampled" with a USB DAC that wasn't resampling**: the rate came from the phone speaker, not the DAC. With USB through the Android mixer the line now just says "Android mixer", and it only says "Resampled" when Android really reports a different rate. The reason bit-perfect isn't on (e.g. "phone offers no bit-perfect mode for this DAC") now gets its own line instead of being cut off.
+
+### Added
+- **USB DAC details** in Settings → Player (shown while bit-perfect is on): the rates, formats and bit-perfect modes Android reports for the connected DAC, with a Copy button.
+- **Bit-perfect for downloads**: songs downloaded at Original play bit-perfect like streams. Songs downloaded at a lower quality now show their real format in the player ("→ OPUS 192") instead of looking like the original.
+- Bit-perfect also works with DACs whose only bit-perfect format is float.
+
+### Changed
+- **Shorter output line** on Now Playing, without the device name: "Bit-perfect · 96 kHz · 24-bit", "Resampled to 48 kHz", "Bluetooth · re-encoded".
+
 ## [1.5.0] - 2026-11-22
 
 ### Added

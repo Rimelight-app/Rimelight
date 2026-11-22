@@ -3,6 +3,7 @@ package com.tonihk00.clearplay.player
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -13,6 +14,10 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.Renderer
+import androidx.media3.exoplayer.audio.AudioRendererEventListener
+import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
+import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider
 import androidx.media3.exoplayer.audio.DefaultAudioSink
@@ -74,10 +79,24 @@ class PlaybackService : MediaLibraryService() {
         )
         bitPerfect = output
         val renderers = object : DefaultRenderersFactory(this) {
+            // Float decoding only for songs above 16 bits (see HiResAudioRenderer).
+            override fun buildAudioRenderers(
+                context: Context, extensionRendererMode: Int, mediaCodecSelector: MediaCodecSelector, enableDecoderFallback: Boolean,
+                audioSink: AudioSink, eventHandler: Handler, eventListener: AudioRendererEventListener, out: ArrayList<Renderer>,
+            ) {
+                val built = ArrayList<Renderer>()
+                super.buildAudioRenderers(context, extensionRendererMode, mediaCodecSelector, enableDecoderFallback, audioSink, eventHandler, eventListener, built)
+                built.mapTo(out) {
+                    if (it.javaClass == MediaCodecAudioRenderer::class.java) {
+                        HiResAudioRenderer(context, codecAdapterFactory, mediaCodecSelector, enableDecoderFallback, eventHandler, eventListener, audioSink)
+                    } else it
+                }
+            }
+
             override fun buildAudioSink(context: Context, enableFloatOutput: Boolean, enableAudioOutputPlaybackParams: Boolean): AudioSink =
                 DefaultAudioSink.Builder(context)
                     .setEnableFloatOutput(true)
-                    .setAudioOutputProvider(output)
+                    .setAudioOutputProvider(PcmTapProvider.wrap(context, output))
                     .build()
         }
         val player = ExoPlayer.Builder(this, renderers)

@@ -110,6 +110,8 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
     var confirmRemoveAll by remember { mutableStateOf(false) }
     var confirmSignOut by remember { mutableStateOf(false) }
     var sleepSheet by remember { mutableStateOf(false) }
+    var dacReport by remember { mutableStateOf<String?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
     val s = ui.settings
 
     Column(
@@ -212,13 +214,20 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
                 !com.tonihk00.clearplay.player.AudioPath.supported -> "Needs Android 14 or newer"
                 else -> "For USB DACs: sends each song's exact samples at its own rate, past the Android mixer. " +
                     "Set the volume on the DAC; other apps' sounds are muted on it while music plays." +
-                    if (s.wifiBitrate > 0 || s.mobileBitrate > 0) " Bitrate caps are skipped while a DAC is plugged in." else ""
+                    (if (s.wifiBitrate > 0 || s.mobileBitrate > 0) " Bitrate caps are skipped while a DAC is plugged in." else "") +
+                    (if (s.downloadBitrate > 0) " Downloads are saved converted (Download quality), so they play bit-perfect only at Original." else "")
             }
             SwitchRow(
                 R.drawable.ic_audio_lines, "Bit-perfect USB output", bitPerfectNote, s.bitPerfect,
                 enabled = com.tonihk00.clearplay.player.AudioPath.supported || s.bitPerfect,
             ) { v -> actions.update { it.copy(bitPerfect = v) } }
             Divider()
+            if (s.bitPerfect) {
+                ActionRow(R.drawable.ic_info, "USB DAC details", "The formats Android reports for your DAC") {
+                    dacReport = com.tonihk00.clearplay.player.usbAudioReport(context)
+                }
+                Divider()
+            }
             ActionRow(R.drawable.ic_moon, "Sleep timer", sleepLabel(ui.sleep) ?: "Off") { sleepSheet = true }
             Divider()
             SwitchRow(R.drawable.ic_activity, "Scrobble plays", "Send plays to Navidrome (and on to Last.fm or ListenBrainz)", s.scrobble) { v -> actions.update { it.copy(scrobble = v) } }
@@ -261,6 +270,7 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
             confirmRemoveAll = false
         }
     }
+    dacReport?.let { DacReport(it) { dacReport = null } }
     if (confirmSignOut) {
         Confirm("Sign out?", "This server is removed from the app and the queue stops. Downloads stay.", "Sign out") {
             if (it) actions.signOut()
@@ -373,6 +383,31 @@ private fun SmallButton(text: String, onClick: () -> Unit) {
             .clickable(role = Role.Button, onClick = onClick).padding(horizontal = 14.dp, vertical = 7.dp),
         style = MaterialTheme.typography.labelLarge,
         color = Cp.TextSoft,
+    )
+}
+
+/** What Android reports for the USB DAC, with a Copy button for bug reports. */
+@Composable
+private fun DacReport(text: String, onClose: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    AlertDialog(
+        onDismissRequest = onClose,
+        containerColor = Color(0xFF16161C),
+        title = { Text("USB DAC details", style = MaterialTheme.typography.titleLarge) },
+        text = {
+            Text(
+                text, Modifier.verticalScroll(rememberScrollState()),
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+                color = Cp.TextSoft,
+            )
+        },
+        confirmButton = { TextButton(onClose) { Text("Close", color = Cp.TextSoft) } },
+        dismissButton = {
+            TextButton({
+                context.getSystemService(android.content.ClipboardManager::class.java)
+                    ?.setPrimaryClip(android.content.ClipData.newPlainText("USB DAC details", text))
+            }) { Text("Copy", color = Cp.TextSoft) }
+        },
     )
 }
 

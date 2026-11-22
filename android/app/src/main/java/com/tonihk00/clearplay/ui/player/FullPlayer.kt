@@ -310,13 +310,15 @@ fun QualityLine(song: Song, streamCap: Pair<Int, String>?, modifier: Modifier = 
     )
     if (parts.isEmpty()) return
     val hiRes = (song.bitDepth ?: 0) >= 24 && (song.samplingRate ?: 0) >= 48_000
-    // Playing from the download (Settings → Player → Playback source) means no conversion.
+    val download = com.tonihk00.clearplay.ui.LocalDownloadStates.current[song.id]
     val downloaded = com.tonihk00.clearplay.ui.LocalPlaybackSource.current.useDownload(
-        downloaded = com.tonihk00.clearplay.ui.LocalDownloadStates.current[song.id]?.done == true,
+        downloaded = download?.done == true,
         online = com.tonihk00.clearplay.ui.LocalOnline.current,
         hasServer = com.tonihk00.clearplay.ui.components.LocalClient.current != null,
     )
-    val converted = streamCap?.takeIf { (cap, _) -> !song.isLocal && !downloaded && cap > 0 && (song.bitRate ?: 0) > cap }
+    // A download plays as it was saved: the original file, or converted at the download quality.
+    val converted = if (downloaded) download?.transcode
+    else streamCap?.takeIf { (cap, _) -> !song.isLocal && cap > 0 && (song.bitRate ?: 0) > cap }?.let { (cap, fmt) -> cap to fmt as String? }
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(parts.joinToString(" · "), style = MaterialTheme.typography.labelMedium, color = Cp.TextFaint, maxLines = 1)
         if (hiRes && converted == null) {
@@ -327,41 +329,46 @@ fun QualityLine(song: Song, streamCap: Pair<Int, String>?, modifier: Modifier = 
             )
         }
         if (converted != null) {
-            Text("  →  ${converted.second.uppercase()} ${converted.first}", style = MaterialTheme.typography.labelMedium, color = Cp.TextSoft, maxLines = 1)
+            Text("  →  " + (converted.second?.let { "${it.uppercase()} ${converted.first}" } ?: "${converted.first} kbps"), style = MaterialTheme.typography.labelMedium, color = Cp.TextSoft, maxLines = 1)
+        }
+    }
+}
+
+/** Where the sound really goes, under the quality line. Hidden until a song has played. */
+@Composable
+fun OutputLine(song: Song, path: com.tonihk00.clearplay.player.OutputPath, modifier: Modifier = Modifier) {
+    val text = outputText(song.samplingRate, song.bitDepth, path) ?: return
+    val exact = path.kind == com.tonihk00.clearplay.player.OutputPath.Kind.BitPerfect
+    Column(modifier) {
+        Text(text, style = MaterialTheme.typography.labelMedium, color = if (exact) Cp.TextStrong else Cp.TextFaint, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // Why bit-perfect isn't on although Settings asks for it (own line, so it is never cut off).
+        path.reason?.let {
+            Text(it.replaceFirstChar(Char::uppercase), style = MaterialTheme.typography.bodySmall, color = Cp.TextFaint, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
 }
 
 /**
- * Where the sound really goes: "Bit-perfect · FiiO KA3 · 96 kHz · 32-bit", or the Android mixer
- * ("Speaker · mixed at 48 kHz") or Bluetooth (always re-encoded). Hidden until a song has played.
+ * Short status of the output: "Bit-perfect · 96 kHz · 24-bit", "Resampled to 48 kHz",
+ * "Mixed at 48 kHz", "Android mixer" (rate not reported) or "Bluetooth · re-encoded".
+ * The decoded rate ([OutputPath.inputRate]) wins over the server's [songRate], so a converted
+ * download is judged by what really plays.
  */
-@Composable
-fun OutputLine(song: Song, path: com.tonihk00.clearplay.player.OutputPath, modifier: Modifier = Modifier) {
-    val text = outputText(song.samplingRate, song.bitDepth, path) ?: return
-    val exact = path.kind == com.tonihk00.clearplay.player.OutputPath.Kind.BitPerfect
-    Text(
-        text, modifier, style = MaterialTheme.typography.labelMedium,
-        color = if (exact) Cp.TextStrong else Cp.TextFaint, maxLines = 1, overflow = TextOverflow.Ellipsis,
-    )
-}
-
 fun outputText(songRate: Int?, songBits: Int?, path: com.tonihk00.clearplay.player.OutputPath): String? {
-    fun khz(r: Int) = if (r % 1000 == 0) "${r / 1000} kHz" else "%.1f kHz".format(r / 1000.0)
-    val dev = path.device?.takeIf { it.isNotBlank() }
+    fun khz(r: Int) = com.tonihk00.clearplay.player.khzText(r)
+    val input = path.inputRate.takeIf { it > 0 } ?: songRate?.takeIf { it > 0 }
     return when (path.kind) {
         com.tonihk00.clearplay.player.OutputPath.Kind.Unknown -> null
-        com.tonihk00.clearplay.player.OutputPath.Kind.BitPerfect ->
-            if ((songBits ?: 0) > path.bits) listOfNotNull("Cut to ${path.bits}-bit", dev, khz(path.sampleRate)).joinToString(" · ")
-            else listOfNotNull("Bit-perfect", dev, khz(path.sampleRate), "${path.bits}-bit").joinToString(" · ")
-        com.tonihk00.clearplay.player.OutputPath.Kind.Bluetooth -> listOfNotNull("Bluetooth", dev, "re-encoded").joinToString(" · ")
-        com.tonihk00.clearplay.player.OutputPath.Kind.Mixer -> {
-            val how = when {
-                path.sampleRate <= 0 -> "Android mixer"
-                songRate != null && songRate > 0 && songRate != path.sampleRate -> "resampled to ${khz(path.sampleRate)}"
-                else -> "mixed at ${khz(path.sampleRate)}"
-            }
-            listOfNotNull(dev, how, path.reason).joinToString(" · ")
+        com.tonihk00.clearplay.player.OutputPath.Kind.BitPerfect -> {
+            val bits = songBits?.takeIf { it > 0 }
+            if (bits != null && bits > path.bits) "Cut to ${path.bits}-bit · ${khz(path.sampleRate)}"
+            else "Bit-perfect · ${khz(path.sampleRate)} · ${bits ?: path.bits}-bit"
+        }
+        com.tonihk00.clearplay.player.OutputPath.Kind.Bluetooth -> "Bluetooth · re-encoded"
+        com.tonihk00.clearplay.player.OutputPath.Kind.Mixer -> when {
+            path.sampleRate <= 0 -> "Android mixer"
+            input != null && input != path.sampleRate -> "Resampled to ${khz(path.sampleRate)}"
+            else -> "Mixed at ${khz(path.sampleRate)}"
         }
     }
 }
