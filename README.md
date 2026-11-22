@@ -30,14 +30,19 @@ You host your own music. Your player should feel as good as the streaming apps, 
 
 | | |
 |---|---|
-| <img src="docs/screenshots/fullscreen.jpg" alt="Fullscreen player with synced lyrics"> | <img src="docs/screenshots/side-lyrics.jpg" alt="Lyrics side panel"> |
-| **Fullscreen player.** Moving cover blur, synced lyrics | **Side panel.** Lyrics or queue on any page |
-| <img src="docs/screenshots/now-playing.jpg" alt="Now playing details"> | <img src="docs/screenshots/stats.jpg" alt="Listening statistics"> |
-| **Now Playing.** Track, album, artist, discography | **Statistics.** Hours, plays, top artists and genres |
-| <img src="docs/screenshots/search.jpg" alt="Search"> | <img src="docs/screenshots/settings-audio.jpg" alt="Equalizer settings"> |
-| **Search.** As you type, songs, albums and artists | **Sound.** 10-band EQ, output device, speed |
+| <img src="docs/screenshots/home.jpg" alt="Home page"> | <img src="docs/screenshots/fullscreen.jpg" alt="Fullscreen player with synced lyrics"> |
+| **Home.** Featured, recently and most played | **Fullscreen player.** Cover, controls and synced lyrics |
+| <img src="docs/screenshots/side-lyrics.jpg" alt="Artist page with the lyrics side panel"> | <img src="docs/screenshots/stats.jpg" alt="Listening statistics with the queue panel"> |
+| **Artist page.** Biography, with lyrics in the side panel | **Statistics.** Hours, plays, top artists and genres, with the queue |
 
-<sub>Screenshots use a generated demo library.</sub>
+### ClearPlay for Android
+
+| | | | | |
+|---|---|---|---|---|
+| <img src="docs/screenshots/android-album.jpg" alt="Android album page" width="170"> | <img src="docs/screenshots/android-now-playing.jpg" alt="Android now playing" width="170"> | <img src="docs/screenshots/android-lyrics.jpg" alt="Android synced lyrics" width="170"> | <img src="docs/screenshots/android-stats.jpg" alt="Android statistics" width="170"> | <img src="docs/screenshots/android-settings.jpg" alt="Android settings" width="170"> |
+| **Album** | **Now playing** | **Lyrics** | **Statistics** | **Settings** |
+
+<sub>Screenshots from a real Navidrome library. Album art and lyrics belong to their artists and labels.</sub>
 
 ## Features
 
