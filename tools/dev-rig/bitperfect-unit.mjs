@@ -9,7 +9,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const load = (f) => import(pathToFileURL(path.join(root, f)).href)
 const bp = await load('src/utils/bitperfect.ts')
 const lp = await load('electron/main/core/mpv/linux-parse.ts')
-const fake = (f) => fs.readFileSync(path.join(root, 'tools/dev-rig/fake-audio/asound', f), 'utf8')
+// Git on Windows may check the fixtures out with CRLF; /proc never has it.
+const fake = (f) =>
+  fs.readFileSync(path.join(root, 'tools/dev-rig/fake-audio/asound', f), 'utf8').replace(/\r\n/g, '\n')
 
 let n = 0
 const t = (name, fn) => {
