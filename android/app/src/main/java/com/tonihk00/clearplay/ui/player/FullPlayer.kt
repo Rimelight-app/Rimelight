@@ -37,6 +37,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -290,6 +291,7 @@ private fun TitleBlock(song: Song, streamCap: Pair<Int, String>?) {
                 modifier = Modifier.clickable { song.albumId?.let(actions::openAlbum) },
             )
             QualityLine(song, streamCap, Modifier.padding(top = 6.dp))
+            OutputLine(song, com.tonihk00.clearplay.player.AudioPath.state.collectAsState().value, Modifier.padding(top = 2.dp))
             Spacer(Modifier.height(4.dp))
             if (!song.isLocal) StarRating(song.userRating, { actions.rate(song, it) }, Modifier.padding(start = 0.dp), starSize = 17.dp)
         }
@@ -326,6 +328,40 @@ fun QualityLine(song: Song, streamCap: Pair<Int, String>?, modifier: Modifier = 
         }
         if (converted != null) {
             Text("  →  ${converted.second.uppercase()} ${converted.first}", style = MaterialTheme.typography.labelMedium, color = Cp.TextSoft, maxLines = 1)
+        }
+    }
+}
+
+/**
+ * Where the sound really goes: "Bit-perfect · FiiO KA3 · 96 kHz · 32-bit", or the Android mixer
+ * ("Speaker · mixed at 48 kHz") or Bluetooth (always re-encoded). Hidden until a song has played.
+ */
+@Composable
+fun OutputLine(song: Song, path: com.tonihk00.clearplay.player.OutputPath, modifier: Modifier = Modifier) {
+    val text = outputText(song.samplingRate, song.bitDepth, path) ?: return
+    val exact = path.kind == com.tonihk00.clearplay.player.OutputPath.Kind.BitPerfect
+    Text(
+        text, modifier, style = MaterialTheme.typography.labelMedium,
+        color = if (exact) Cp.TextStrong else Cp.TextFaint, maxLines = 1, overflow = TextOverflow.Ellipsis,
+    )
+}
+
+fun outputText(songRate: Int?, songBits: Int?, path: com.tonihk00.clearplay.player.OutputPath): String? {
+    fun khz(r: Int) = if (r % 1000 == 0) "${r / 1000} kHz" else "%.1f kHz".format(r / 1000.0)
+    val dev = path.device?.takeIf { it.isNotBlank() }
+    return when (path.kind) {
+        com.tonihk00.clearplay.player.OutputPath.Kind.Unknown -> null
+        com.tonihk00.clearplay.player.OutputPath.Kind.BitPerfect ->
+            if ((songBits ?: 0) > path.bits) listOfNotNull("Cut to ${path.bits}-bit", dev, khz(path.sampleRate)).joinToString(" · ")
+            else listOfNotNull("Bit-perfect", dev, khz(path.sampleRate), "${path.bits}-bit").joinToString(" · ")
+        com.tonihk00.clearplay.player.OutputPath.Kind.Bluetooth -> listOfNotNull("Bluetooth", dev, "re-encoded").joinToString(" · ")
+        com.tonihk00.clearplay.player.OutputPath.Kind.Mixer -> {
+            val how = when {
+                path.sampleRate <= 0 -> "Android mixer"
+                songRate != null && songRate > 0 && songRate != path.sampleRate -> "resampled to ${khz(path.sampleRate)}"
+                else -> "mixed at ${khz(path.sampleRate)}"
+            }
+            listOfNotNull(dev, how, path.reason).joinToString(" · ")
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.tonihk00.clearplay.player
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -10,7 +11,11 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.LibraryResult
@@ -27,6 +32,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 
 /**
@@ -38,6 +47,8 @@ class PlaybackService : MediaLibraryService() {
     private var session: MediaLibrarySession? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var scrobbler: Scrobbler
+    private var bitPerfect: BitPerfectOutputProvider? = null
+    @Volatile private var nextBits: Int? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -53,7 +64,23 @@ class PlaybackService : MediaLibraryService() {
             downloadedLength = app.downloads::downloadedLength,
             mayFallBack = { app.settings.state.value.playbackSource != com.tonihk00.clearplay.data.PlaybackSource.Server },
         )
-        val player = ExoPlayer.Builder(this)
+        // Float output keeps 24-bit songs at full resolution (the default cuts them to 16 bits), and
+        // BitPerfectOutputProvider sends a USB DAC the exact samples when Settings → Player asks for it.
+        val output = BitPerfectOutputProvider(
+            this,
+            AudioTrackAudioOutputProvider.Builder(this).build(),
+            enabled = { app.settings.state.value.bitPerfect },
+            sourceBits = { nextBits },
+        )
+        bitPerfect = output
+        val renderers = object : DefaultRenderersFactory(this) {
+            override fun buildAudioSink(context: Context, enableFloatOutput: Boolean, enableAudioOutputPlaybackParams: Boolean): AudioSink =
+                DefaultAudioSink.Builder(context)
+                    .setEnableFloatOutput(true)
+                    .setAudioOutputProvider(output)
+                    .build()
+        }
+        val player = ExoPlayer.Builder(this, renderers)
             .setMediaSourceFactory(DefaultMediaSourceFactory(dataSource))
             .setAudioAttributes(
                 AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(),
@@ -65,6 +92,22 @@ class PlaybackService : MediaLibraryService() {
 
         scrobbler = Scrobbler(player, scope) { ClearPlayApp.instance.client }
         player.addListener(scrobbler)
+        player.addListener(object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) { noteBits(player) }
+            override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) { noteBits(player) }
+        })
+        // Turning bit-perfect on or off, or plugging a USB DAC in, takes effect at once: re-seeking
+        // makes the player open a new output for the playing song. (Media3 skips a seek to the exact
+        // current millisecond, so it moves 1 ms.)
+        fun reopenOutput() {
+            if (player.mediaItemCount == 0 || player.playbackState == Player.STATE_IDLE) return
+            val pos = player.currentPosition
+            player.seekTo(if (pos > 0) pos - 1 else 1)
+        }
+        output.onUsbChanged = { scope.launch { if (app.settings.state.value.bitPerfect) reopenOutput() } }
+        scope.launch {
+            app.settings.state.map { it.bitPerfect }.distinctUntilChanged().drop(1).collect { reopenOutput() }
+        }
 
         val open = PendingIntent.getActivity(
             this, 0,
@@ -88,7 +131,15 @@ class PlaybackService : MediaLibraryService() {
         if (player == null || !player.playWhenReady || player.mediaItemCount == 0) stopSelf()
     }
 
+    /** Bit depth of the playing song and the next one (a 16-bit-only DAC may only take 16-bit songs). */
+    private fun noteBits(player: Player) {
+        val next = player.nextMediaItemIndex.takeIf { it != C.INDEX_UNSET }?.let(player::getMediaItemAt)
+        val bits = listOfNotNull(player.currentMediaItem, next).map { it.toSong().bitDepth ?: 24 }
+        nextBits = bits.maxOrNull()
+    }
+
     override fun onDestroy() {
+        bitPerfect?.clear()
         scrobbler.release()
         scope.cancel()
         session?.run {

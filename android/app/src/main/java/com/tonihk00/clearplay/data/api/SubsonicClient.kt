@@ -71,9 +71,14 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
         return "${server.baseUrl}/rest/$endpoint?${authQuery()}$extra"
     }
 
-    /** [format] only applies with a bitrate cap: Navidrome transcodes songs above the cap. */
+    /**
+     * [format] only applies with a bitrate cap: Navidrome transcodes songs above the cap.
+     * Without a cap it asks for `format=raw`, so the server always sends the original file
+     * (a per-player transcoding rule in Navidrome can't sneak in a conversion).
+     */
     fun streamUrl(songId: String, maxBitRate: Int = 0, format: String? = null): String =
-        url("stream", "id" to songId, "maxBitRate" to maxBitRate.takeIf { it > 0 }, "format" to format.takeIf { maxBitRate > 0 })
+        if (maxBitRate > 0) url("stream", "id" to songId, "maxBitRate" to maxBitRate, "format" to format)
+        else url("stream", "id" to songId, "format" to "raw")
 
     fun coverUrl(coverArt: String?, size: Int = 300): String? =
         coverArt?.let { url("getCoverArt", "id" to it, "size" to size) }

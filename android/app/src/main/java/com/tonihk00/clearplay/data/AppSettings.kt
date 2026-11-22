@@ -52,7 +52,16 @@ data class Settings(
     /** Include the phone's own music when offline or without a server. */
     val phoneMusic: Boolean = true,
     val playbackSource: PlaybackSource = PlaybackSource.Auto,
-)
+    /** Send the file's exact samples to a USB DAC (Android 14+), bypassing the Android mixer. */
+    val bitPerfect: Boolean = false,
+) {
+    /**
+     * Whether something in the app would change the samples. Bit-perfect output is only honest
+     * when this is false: every future sound feature (ReplayGain, EQ, crossfade, speed) must
+     * be added here and stay off while bit-perfect is on.
+     */
+    fun alteringSamples(): Boolean = false
+}
 
 /** User settings in DataStore, exposed as a StateFlow so the player service can read them synchronously. */
 class AppSettings(private val context: Context, scope: CoroutineScope) {
@@ -67,6 +76,7 @@ class AppSettings(private val context: Context, scope: CoroutineScope) {
         val liveBlur = booleanPreferencesKey("live_blur")
         val phoneMusic = booleanPreferencesKey("phone_music")
         val playbackSource = stringPreferencesKey("playback_source")
+        val bitPerfect = booleanPreferencesKey("bit_perfect")
     }
 
     private fun read(p: Preferences) = Settings(
@@ -80,6 +90,7 @@ class AppSettings(private val context: Context, scope: CoroutineScope) {
         liveBlur = p[K.liveBlur] ?: true,
         phoneMusic = p[K.phoneMusic] ?: true,
         playbackSource = p[K.playbackSource]?.let { runCatching { PlaybackSource.valueOf(it) }.getOrNull() } ?: PlaybackSource.Auto,
+        bitPerfect = p[K.bitPerfect] ?: false,
     )
 
     val state: StateFlow<Settings> = context.settingsStore.data.map(::read).stateIn(scope, SharingStarted.Eagerly, Settings())
@@ -97,6 +108,7 @@ class AppSettings(private val context: Context, scope: CoroutineScope) {
             p[K.liveBlur] = s.liveBlur
             p[K.phoneMusic] = s.phoneMusic
             p[K.playbackSource] = s.playbackSource.name
+            p[K.bitPerfect] = s.bitPerfect
         }
     }
 }

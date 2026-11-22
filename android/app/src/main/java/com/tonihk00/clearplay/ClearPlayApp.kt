@@ -120,8 +120,14 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
         val cm = getSystemService(android.net.ConnectivityManager::class.java)
         val caps = cm?.getNetworkCapabilities(cm.activeNetwork)
         val unmetered = caps?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED) ?: true
+        // Bit-perfect with a USB DAC attached: always the original file.
+        if (s.bitPerfect && usbDacConnected()) return 0
         return if (unmetered) s.wifiBitrate else s.mobileBitrate
     }
+
+    fun usbDacConnected(): Boolean =
+        getSystemService(android.media.AudioManager::class.java)?.getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS)
+            ?.any { it.type == android.media.AudioDeviceInfo.TYPE_USB_DEVICE || it.type == android.media.AudioDeviceInfo.TYPE_USB_HEADSET } == true
 
     override fun onCreate() {
         super.onCreate()

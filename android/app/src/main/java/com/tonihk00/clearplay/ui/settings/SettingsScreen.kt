@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
@@ -207,6 +208,17 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
                 ) { v -> actions.update { it.copy(playbackSource = v) } }
                 Divider()
             }
+            val bitPerfectNote = when {
+                !com.tonihk00.clearplay.player.AudioPath.supported -> "Needs Android 14 or newer"
+                else -> "For USB DACs: sends each song's exact samples at its own rate, past the Android mixer. " +
+                    "Set the volume on the DAC; other apps' sounds are muted on it while music plays." +
+                    if (s.wifiBitrate > 0 || s.mobileBitrate > 0) " Bitrate caps are skipped while a DAC is plugged in." else ""
+            }
+            SwitchRow(
+                R.drawable.ic_audio_lines, "Bit-perfect USB output", bitPerfectNote, s.bitPerfect,
+                enabled = com.tonihk00.clearplay.player.AudioPath.supported || s.bitPerfect,
+            ) { v -> actions.update { it.copy(bitPerfect = v) } }
+            Divider()
             ActionRow(R.drawable.ic_moon, "Sleep timer", sleepLabel(ui.sleep) ?: "Off") { sleepSheet = true }
             Divider()
             SwitchRow(R.drawable.ic_activity, "Scrobble plays", "Send plays to Navidrome (and on to Last.fm or ListenBrainz)", s.scrobble) { v -> actions.update { it.copy(scrobble = v) } }
@@ -296,9 +308,10 @@ private fun InfoRow(icon: Int, title: String, value: String) {
 }
 
 @Composable
-private fun SwitchRow(icon: Int, title: String, subtitle: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun SwitchRow(icon: Int, title: String, subtitle: String?, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
     Row(
-        Modifier.fillMaxWidth().toggleable(value = checked, role = Role.Switch) { onChange(it) }.padding(start = 16.dp, end = 14.dp, top = 12.dp, bottom = 12.dp),
+        Modifier.fillMaxWidth().toggleable(value = checked, enabled = enabled, role = Role.Switch) { onChange(it) }
+            .then(if (enabled) Modifier else Modifier.alpha(0.5f)).padding(start = 16.dp, end = 14.dp, top = 12.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CpIcon(icon, size = 20.dp, tint = Cp.TextSoft)

@@ -4,7 +4,7 @@ The ClearPlay frosted-glass player for Navidrome / OpenSubsonic, as a native And
 Kotlin, Jetpack Compose, Media3 (ExoPlayer + MediaLibraryService), Coil, Haze, Ktor.
 Same design tokens as the desktop `.glass` theme (`src/themes.css`).
 
-Status: **1.4** — see `CHANGELOG.md`.
+Status: **1.5** — see `CHANGELOG.md`.
 
 ## Build
 
@@ -35,6 +35,7 @@ app/src/main/java/com/tonihk00/clearplay/
   player/Scrobbler         now playing + submission after half the song or 4 min
   data/ScrobbleQueue       listens waiting for the server (offline plays), kept in a file
   player/SourceRouter      playback source per song: download or server
+  player/BitPerfect        USB DAC bit-perfect output (Android 14 mixer attributes) + output path shown in the player
   ui/theme/Theme.kt        design tokens (Cp.*), Inter, motion
   ui/components/           glass panels, covers, play/pause morph, stars, backdrop
   ui/library|search|player|login|settings/
@@ -69,6 +70,20 @@ losing it means the next APK can't update the installed app). Repository secrets
 2. Offline downloads, queue hand-off with the desktop, Android Auto, ReplayGain, EQ,
    sleep timer, bitrate cap.
 3. AutoDJ, stats, widget, several servers.
+
+## Bit-perfect output
+
+`PlaybackService` uses a `DefaultAudioSink` with float output (24-bit FLAC stays exact; the platform
+FLAC decoder gives `sample / 2^(bits-1)`), wrapped by `BitPerfectOutputProvider`. With the setting on
+and a USB DAC attached (API 34+), it picks the DAC's `MIXER_BEHAVIOR_BIT_PERFECT` format with the song's
+rate and channels (32-bit, then 24-bit packed; 16-bit only for 16-bit songs), sets it with
+`AudioManager.setPreferredMixerAttributes` before the AudioTrack opens, and converts the float samples
+back to those integers (exact, tested in `BitPerfectTest`). Volume stays at full scale.
+**Anything that changes samples (ReplayGain, EQ, crossfade, speed) must be off while it is on**:
+list it in `Settings.alteringSamples()`.
+
+Check on a phone with a DAC: `adb shell dumpsys media.audio_flinger`. The USB output thread should
+show the song's sample rate, and the track should be marked `BitPerfect true`.
 
 ## Testing against a server
 

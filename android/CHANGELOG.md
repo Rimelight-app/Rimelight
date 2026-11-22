@@ -1,5 +1,15 @@
 # ClearPlay for Android — changelog
 
+## [1.5.0] - 2026-11-22
+
+### Added
+- **Bit-perfect USB output** (Settings → Player, Android 14 or newer): with a USB DAC plugged in, each song goes to the DAC at its own sample rate and full bit depth, past the Android mixer. No resampling, no volume scaling, no effects. 44.1, 88.2 and 192 kHz albums reach the DAC at those rates. Set the volume on the DAC. While it plays, other apps' sounds are muted on the DAC. Turning it on or plugging the DAC in takes effect at once. Bitrate caps are skipped while a DAC is attached.
+- **Where the sound goes**, under the song quality in the player: "Bit-perfect · FiiO KA3 · 96 kHz · 32-bit", "Speaker · resampled to 48 kHz" or "Bluetooth · re-encoded", so you can see whether what you hear is untouched.
+
+### Changed
+- **24-bit songs keep all 24 bits** on every output. Before, they were cut to 16 bits before Android got them.
+- **"Original" quality now always gets the original file**: streams and downloads ask Navidrome for the raw file, so a transcoding rule on the server can't convert it.
+
 ## [1.4.0] - 2026-11-21
 
 ### Added
