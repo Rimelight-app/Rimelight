@@ -349,7 +349,8 @@ fun OutputLine(song: Song, path: com.tonihk00.clearplay.player.OutputPath, modif
 }
 
 /**
- * Short status of the output: "Bit-perfect · 96 kHz · 24-bit", "Resampled to 48 kHz",
+ * Short status of the output: "Bit-perfect · 96 kHz · 24-bit", "No resampling · 44.1 kHz · 24-bit"
+ * (mixer set to the song's format on phones without bit-perfect), "Resampled to 48 kHz",
  * "Mixed at 48 kHz", "Android mixer" (rate not reported) or "Bluetooth · re-encoded".
  * The decoded rate ([OutputPath.inputRate]) wins over the server's [songRate], so a converted
  * download is judged by what really plays.
@@ -363,6 +364,11 @@ fun outputText(songRate: Int?, songBits: Int?, path: com.tonihk00.clearplay.play
             val bits = songBits?.takeIf { it > 0 }
             if (bits != null && bits > path.bits) "Cut to ${path.bits}-bit · ${khz(path.sampleRate)}"
             else "Bit-perfect · ${khz(path.sampleRate)} · ${bits ?: path.bits}-bit"
+        }
+        com.tonihk00.clearplay.player.OutputPath.Kind.NativeRate -> {
+            val bits = songBits?.takeIf { it > 0 }
+            if (bits != null && bits > path.bits) "Cut to ${path.bits}-bit · ${khz(path.sampleRate)}"
+            else "No resampling · ${khz(path.sampleRate)} · ${bits ?: path.bits}-bit"
         }
         com.tonihk00.clearplay.player.OutputPath.Kind.Bluetooth -> "Bluetooth · re-encoded"
         com.tonihk00.clearplay.player.OutputPath.Kind.Mixer -> when {

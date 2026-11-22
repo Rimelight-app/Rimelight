@@ -213,7 +213,8 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
             val bitPerfectNote = when {
                 !com.tonihk00.clearplay.player.AudioPath.supported -> "Needs Android 14 or newer"
                 else -> "For USB DACs: sends each song's exact samples at its own rate, past the Android mixer. " +
-                    "Set the volume on the DAC; other apps' sounds are muted on it while music plays." +
+                    "Set the volume on the DAC; other apps' sounds are muted on it while music plays. " +
+                    "Phones without bit-perfect support (e.g. Samsung) get the next best: Android's mixer is set to each song's rate, so nothing is resampled." +
                     (if (s.wifiBitrate > 0 || s.mobileBitrate > 0) " Bitrate caps are skipped while a DAC is plugged in." else "") +
                     (if (s.downloadBitrate > 0) " Downloads are saved converted (Download quality), so they play bit-perfect only at Original." else "")
             }

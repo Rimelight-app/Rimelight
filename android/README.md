@@ -86,6 +86,10 @@ to that format (exact, tested in `BitPerfectTest`). Volume stays at full scale.
 **Anything that changes samples (ReplayGain, EQ, crossfade, speed) must be off while it is on**:
 list it in `Settings.alteringSamples()`.
 
+Phones without bit-perfect modes (Samsung One UI, many OEM/Lineage builds) still offer normal
+(`MIXER_BEHAVIOR_DEFAULT`) mixer attributes for the DAC; then the same call sets the mixer to the song's
+rate and depth ("No resampling" in the player). The samples still pass the mixer, so this is not bit-perfect.
+
 Media3 fades in the first 20 ms after a start, seek or output change (against clicks); it can't be
 turned off. Everything after that is exact, including gapless song changes at the same rate.
 

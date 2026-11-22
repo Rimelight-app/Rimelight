@@ -143,6 +143,18 @@ class BitPerfectTest {
         assertEquals(-1f, o16.float); assertEquals(1f / 32_768, o16.float)
     }
 
+    @Test fun nativeRateFallbackForPhonesWithoutBitPerfect() {
+        // Like the Galaxy S24 + EW200: only normal mixer modes, at the DAC's rates.
+        val s24 = listOf(44_100, 48_000, 96_000).flatMap { r -> listOf(i16, i24).map { MixerOption(r, it, stereo, bitPerfect = false) } }
+        assertNull(pickMixer(s24, 44_100, stereo, 16))
+        assertEquals(MixerOption(44_100, i24, stereo, false), pickMixer(s24, 44_100, stereo, 16, bitPerfect = false))
+        assertEquals(MixerOption(96_000, i24, stereo, false), pickMixer(s24, 96_000, stereo, 24, bitPerfect = false))
+        assertNull(pickMixer(s24, 88_200, stereo, 24, bitPerfect = false))
+        val native = OutputPath(OutputPath.Kind.NativeRate, "SIMGOT", 44_100, 24, "phone offers no bit-perfect mode for this DAC", 44_100)
+        assertEquals("No resampling · 44.1 kHz · 16-bit", outputText(44_100, 16, native))
+        assertEquals("Cut to 16-bit · 44.1 kHz", outputText(44_100, 24, native.copy(bits = 16)))
+    }
+
     @Test fun reasonSaysWhyThereIsNoBitPerfect() {
         assertEquals("phone offers no bit-perfect mode for this DAC", noMixerReason(dac.filter { !it.bitPerfect }, 48_000, stereo))
         assertEquals("DAC has no bit-perfect 176.4 kHz", noMixerReason(dac, 176_400, stereo))

@@ -1,5 +1,11 @@
 # ClearPlay for Android — changelog
 
+## [1.5.2] - 2026-11-22
+
+### Added
+- **No resampling on phones without bit-perfect** (e.g. Galaxy S24, whose USB DAC details say "Bit-perfect modes: none"): with Bit-perfect USB output on, ClearPlay now sets Android's mixer to each song's own rate and bit depth on the USB DAC, so 44.1 kHz albums stay 44.1 kHz instead of being resampled to 48 kHz. The player shows "No resampling · 44.1 kHz · 24-bit". It is not bit-perfect: the sound still goes through Android's mixer (volume, other apps' sounds).
+- USB DAC details also list these mixer modes.
+
 ## [1.5.1] - 2026-11-22
 
 ### Fixed

@@ -37,7 +37,7 @@ data class OutputPath(
     /** Rate of the audio the player decoded (the real file's rate, also for converted downloads). */
     val inputRate: Int = 0,
 ) {
-    enum class Kind { Unknown, BitPerfect, Mixer, Bluetooth }
+    enum class Kind { Unknown, BitPerfect, NativeRate, Mixer, Bluetooth }
 }
 
 /** Shared between the playback service (writes) and the UI (reads); both run in the app process. */
@@ -59,8 +59,8 @@ data class MixerOption(val sampleRate: Int, val encoding: Int, val channelMask: 
  * (holds any 16- or 24-bit sample exactly). A 16-bit-only DAC is used only for 16-bit songs
  * ([sourceBits]), else a 24-bit song would be cut.
  */
-fun pickMixer(options: List<MixerOption>, sampleRate: Int, channelMask: Int, sourceBits: Int?): MixerOption? {
-    val fits = options.filter { it.bitPerfect && it.sampleRate == sampleRate && it.channelMask == channelMask }
+fun pickMixer(options: List<MixerOption>, sampleRate: Int, channelMask: Int, sourceBits: Int?, bitPerfect: Boolean = true): MixerOption? {
+    val fits = options.filter { it.bitPerfect == bitPerfect && it.sampleRate == sampleRate && it.channelMask == channelMask }
     for (enc in listOf(AudioFormat.ENCODING_PCM_32BIT, AudioFormat.ENCODING_PCM_24BIT_PACKED, AudioFormat.ENCODING_PCM_FLOAT)) {
         fits.firstOrNull { it.encoding == enc }?.let { return it }
     }
@@ -165,12 +165,19 @@ fun usbAudioReport(context: Context): String {
             val all = runCatching { am.getSupportedMixerAttributes(d) }.getOrDefault(emptyList())
             val bp = all.filter { it.mixerBehavior == AudioMixerAttributes.MIXER_BEHAVIOR_BIT_PERFECT }
             sb.append("Bit-perfect modes: ")
-            if (bp.isEmpty()) sb.append("none (${all.size} other modes)\n")
+            if (bp.isEmpty()) sb.append("none\n")
             else {
                 sb.append("\n")
                 bp.groupBy { it.format.sampleRate }.toSortedMap().forEach { (rate, list) ->
                     val encs = list.map { encodingName(it.format.encoding) + if (it.format.channelMask == AudioFormat.CHANNEL_OUT_STEREO) "" else " (mask ${it.format.channelMask})" }.distinct()
                     sb.append("  ${khzText(rate)}: ${encs.joinToString()}\n")
+                }
+            }
+            val other = all.filter { it.mixerBehavior != AudioMixerAttributes.MIXER_BEHAVIOR_BIT_PERFECT }
+            if (other.isNotEmpty()) {
+                sb.append("Mixer modes (no resampling):\n")
+                other.groupBy { it.format.sampleRate }.toSortedMap().forEach { (rate, list) ->
+                    sb.append("  ${khzText(rate)}: ${list.map { encodingName(it.format.encoding) }.distinct().joinToString()}\n")
                 }
             }
         } else sb.append("Bit-perfect modes: need Android 14\n")
@@ -220,6 +227,14 @@ class BitPerfectOutputProvider(
             return super.getAudioOutput(config)
         }
         val (pick, why) = Api34.apply(this, usb, config, sourceBits())
+        if (pick != null && !pick.bitPerfect) {
+            // No bit-perfect mode on this phone, but the mixer now runs at the song's own rate and
+            // depth: no resampling. The samples still pass the mixer (volume, other apps' sounds).
+            Log.i(TAG, "native rate ${khzText(config.sampleRate)} ${encodingName(pick.encoding)} on ${usb.productName}: $why")
+            setOn = usb
+            AudioPath.set(OutputPath(OutputPath.Kind.NativeRate, usb.productName?.toString(), config.sampleRate, bitsOf(pick.encoding), why, config.sampleRate))
+            return super.getAudioOutput(config)
+        }
         if (pick == null) {
             clear()
             Log.i(TAG, "no bit-perfect for ${khzText(config.sampleRate)} ${encodingName(config.encoding)} on ${usb.productName}: $why")
@@ -289,7 +304,7 @@ class BitPerfectOutputProvider(
 
     private fun refreshMixerPath() {
         val cur = AudioPath.state.value
-        if (cur.kind != OutputPath.Kind.BitPerfect && cur.kind != OutputPath.Kind.Unknown) AudioPath.set(mixerPath(cur.reason))
+        if (cur.kind == OutputPath.Kind.Mixer || cur.kind == OutputPath.Kind.Bluetooth) AudioPath.set(mixerPath(cur.reason))
     }
 
     @RequiresApi(34)
@@ -303,15 +318,20 @@ class BitPerfectOutputProvider(
             }
         }
 
-        /** The chosen format, or null and the reason. */
+        /**
+         * The chosen format and, when it isn't bit-perfect, why. A bit-perfect mode first; else a normal
+         * mixer mode at the song's rate (phones like the Galaxy S24 offer only those); else null.
+         */
         fun apply(p: BitPerfectOutputProvider, usb: AudioDeviceInfo, config: AudioOutputProvider.OutputConfig, sourceBits: Int?): Pair<MixerOption?, String?> {
             val (all, options) = options(p.am, usb)
-            val pick = pickMixer(options, config.sampleRate, config.channelMask, sourceBits)
-                ?: return null to noMixerReason(options, config.sampleRate, config.channelMask)
-            val attrs = all[options.indexOf(pick)]
-            val ok = runCatching { p.am.setPreferredMixerAttributes(p.media, usb, attrs) }
+            fun set(pick: MixerOption) = runCatching { p.am.setPreferredMixerAttributes(p.media, usb, all[options.indexOf(pick)]) }
                 .onFailure { Log.w(TAG, "setPreferredMixerAttributes failed", it) }.getOrDefault(false)
-            return if (ok) pick to null else null to "phone refused bit-perfect mode"
+            val exact = pickMixer(options, config.sampleRate, config.channelMask, sourceBits)
+            if (exact != null && set(exact)) return exact to null
+            val why = if (exact != null) "phone refused bit-perfect mode" else noMixerReason(options, config.sampleRate, config.channelMask)
+            val native = pickMixer(options, config.sampleRate, config.channelMask, sourceBits, bitPerfect = false)
+            if (native != null && set(native)) return native to why
+            return null to why
         }
 
         fun listen(p: BitPerfectOutputProvider) {
