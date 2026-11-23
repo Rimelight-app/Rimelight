@@ -2,6 +2,19 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
+## [0.5.2] - 2026-11-24
+
+### Fixed
+- **Pausing didn't show in Navidrome's Now Playing**: Navidrome kept showing ClearPlay as playing after a pause, until it timed out. ClearPlay only sent "now playing" (`scrobble?submission=false`) once per song, and that call has no paused state. On servers that list the OpenSubsonic `playbackReport` extension (Navidrome 0.64.2 does), ClearPlay now reports what the player is doing with `reportPlayback`: starting when a song loads, playing once audio is really moving, paused on every pause (player bar, space bar, media keys, Windows media controls, MPRIS, or when the audio engine pauses on its own), and stopped when a song ends, the queue is cleared or the app quits. While playing it sends the position every 30 seconds and after every seek. Works with both audio engines.
+  - Play counts work exactly as before: a play is counted by `scrobble?submission=true`, and every report is sent with `ignoreScrobble=true`, so a song is never counted twice.
+  - Servers without the extension (and "Music on this computer") keep the old "now playing" call. The app asks the server which extensions it has at login and again at every start, so a server updated since you logged in is picked up.
+  - These reports are live only: when the server can't be reached they are dropped, not queued. Listens are still queued and retried as before.
+  - "Scrobble plays" off still sends nothing.
+
+### Changed
+- **Settings: frosted look**, like the Android app: each group of settings is a frosted card with its name above it in small capitals, one setting per row with a thin line between rows, on a translucent sheet that lets the cover's colour show through. The page name is shown large at the top. No setting was added, removed, renamed or moved, and every control works as before.
+- Small grey hints in Settings (output details, server addresses, scrobble activity, ReplayGain and equalizer notes) are a little brighter, so they stay readable over a light cover.
+
 ## [0.5.1] - 2026-11-23
 
 ### Changed
