@@ -99,7 +99,7 @@ export function LocalLibrarySettings() {
                   type="button"
                   aria-label={t(`${k}.remove`, { folder })}
                   title={t(`${k}.remove`, { folder })}
-                  className="flex size-7 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+                  className="flex size-7 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white"
                   onClick={async () =>
                     changed(await window.api.localLibrary.removeFolder(folder))
                   }
@@ -110,7 +110,7 @@ export function LocalLibrarySettings() {
             ))}
           </ul>
         ) : (
-          <p className="text-[13px] text-white/50">{t(`${k}.noFolders`)}</p>
+          <p className="text-[13px] text-white/60">{t(`${k}.noFolders`)}</p>
         )}
 
         <div className="flex flex-wrap items-center gap-2">
@@ -160,7 +160,7 @@ export function LocalLibrarySettings() {
             ))}
           {state && state.folders.length > 0 && (
             <span
-              className="ml-1 text-[12px] tabular-nums text-white/50"
+              className="ml-1 text-[12px] tabular-nums text-white/60"
               data-testid="local-status"
             >
               {state.scanning

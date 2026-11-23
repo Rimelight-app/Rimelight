@@ -62,11 +62,11 @@ export function ScrobblingSettings() {
           </ContentItemForm>
         </ContentItem>
         <div className="rounded-2xl bg-white/[0.04] p-2">
-          <p className="px-2 pb-1 pt-1 text-[12px] font-medium text-white/50">
+          <p className="px-2 pb-1 pt-1 text-[12px] font-medium text-white/60">
             {t('clearplay.settings.scrobbling.recent')}
           </p>
           {log.length === 0 ? (
-            <p className="px-2 pb-2 text-[13px] text-white/40">
+            <p className="px-2 pb-2 text-[13px] text-white/60">
               {t('clearplay.settings.scrobbling.none')}
             </p>
           ) : (
@@ -87,10 +87,10 @@ export function ScrobblingSettings() {
                   <span className="min-w-0 flex-1 truncate">
                     {e.title || e.id}
                     {e.artist && (
-                      <span className="text-white/45"> · {e.artist}</span>
+                      <span className="text-white/60"> · {e.artist}</span>
                     )}
                   </span>
-                  <span className="shrink-0 text-[12px] text-white/50">
+                  <span className="shrink-0 text-[12px] text-white/60">
                     {t(`clearplay.settings.scrobbling.kind.${e.kind}`)} ·{' '}
                     {t(`clearplay.settings.scrobbling.status.${e.status}`)} ·{' '}
                     {new Date(e.at).toLocaleTimeString([], {
@@ -103,7 +103,7 @@ export function ScrobblingSettings() {
             </ul>
           )}
         </div>
-        <p className="text-[12px] text-white/45">
+        <p className="text-[12px] text-white/60">
           {t('clearplay.settings.scrobbling.hint')}
         </p>
       </Content>

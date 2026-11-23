@@ -421,6 +421,23 @@ div[data-test-id="table-row"]:hover {
   background: rgb(255 255 255 / 0.1);
 }
 
+/* Settings: a frosted sheet over the app (its cards are .glass-panel), with
+   the cover's colour still showing through. Without live blur it needs a
+   more solid surface to stay readable. */
+.glass [role="dialog"].cp-settings-dialog {
+  background-color: hsl(240 12% 9% / 0.62);
+  border-color: var(--glass-stroke);
+  box-shadow:
+    0 30px 80px -20px rgb(0 0 0 / 0.6),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+.glass .cp-settings-overlay {
+  background-color: rgb(0 0 0 / 0.4);
+}
+.reduce-effects.glass [role="dialog"].cp-settings-dialog {
+  background-color: hsl(240 12% 9% / 0.92);
+}
+
 /* Soft scrollbars everywhere */
 ::-webkit-scrollbar {
   width: 10px;

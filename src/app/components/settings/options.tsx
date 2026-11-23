@@ -51,14 +51,15 @@ export function SettingsOptions() {
   const { currentPage, setCurrentPage } = useAppSettings()
 
   return (
-    <SidebarGroup>
+    <SidebarGroup className="p-3">
       <SidebarGroupContent>
-        <SidebarMenu>
+        <SidebarMenu className="gap-1">
           {options.map((item) => (
             <SidebarMenuItem key={item.id}>
               <SidebarMenuButton
                 isActive={item.id === currentPage}
                 onClick={() => setCurrentPage(item.id)}
+                className="h-9 rounded-xl px-3 text-muted-foreground transition-colors hover:text-foreground data-[active=true]:font-medium data-[active=true]:text-foreground"
               >
                 <item.icon />
                 <span>{t(`settings.options.${item.id}`)}</span>

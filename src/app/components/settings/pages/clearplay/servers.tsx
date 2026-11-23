@@ -100,7 +100,7 @@ function ServerRow({
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-[14px] font-medium">{server.name}</p>
-        <p className="truncate text-[12px] text-white/45">
+        <p className="truncate text-[12px] text-white/60">
           {server.username} · {server.url}
         </p>
       </div>
@@ -128,7 +128,7 @@ function ServerRow({
           <button
             type="button"
             onClick={() => remove(server.id)}
-            className="flex size-8 items-center justify-center rounded-full text-white/45 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
+            className="flex size-8 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
             aria-label={t('clearplay.servers.remove')}
           >
             <Trash2 className="size-4" />

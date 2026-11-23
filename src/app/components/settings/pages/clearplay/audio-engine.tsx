@@ -129,7 +129,7 @@ export function AudioEngineSettings() {
             </ContentItem>
           </>
         ) : (
-          <p className="px-1 text-[12px] text-white/40">
+          <p className="px-1 text-[12px] text-white/60">
             {t(`${k}.info.builtinNote`)}
           </p>
         )}
@@ -293,7 +293,7 @@ function OutputInfo() {
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
         {rows.map(([label, value]) => (
           <div key={label} className="contents">
-            <dt className="text-white/45">{label}</dt>
+            <dt className="text-white/60">{label}</dt>
             <dd
               className={cn(
                 'min-w-0 text-white/80',
@@ -440,5 +440,5 @@ export function MpvDeviceOptions({ deviceKey }: { deviceKey: string }) {
 }
 
 function Hint({ children }: { children: React.ReactNode }) {
-  return <p className="px-1 text-[12px] text-white/45">{children}</p>
+  return <p className="px-1 text-[12px] text-white/60">{children}</p>
 }

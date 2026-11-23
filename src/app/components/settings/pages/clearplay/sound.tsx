@@ -114,7 +114,7 @@ function Equalizer() {
             className="cp-vslider"
             aria-label={t('clearplay.sound.preamp')}
           />
-          <span className="text-[11px] text-white/45">
+          <span className="text-[11px] text-white/60">
             {t('clearplay.sound.preampShort')}
           </span>
         </div>
@@ -135,11 +135,11 @@ function Equalizer() {
               className="cp-vslider"
               aria-label={`${fmtHz(f)} Hz`}
             />
-            <span className="text-[11px] text-white/45">{fmtHz(f)}</span>
+            <span className="text-[11px] text-white/60">{fmtHz(f)}</span>
           </div>
         ))}
       </div>
-      <p className="mt-3 text-[11px] text-white/40">
+      <p className="mt-3 text-[11px] text-white/60">
         {t('clearplay.sound.eqHint')}
       </p>
     </div>
@@ -148,7 +148,7 @@ function Equalizer() {
 
 function FxOffNote({ text }: { text: string }) {
   return (
-    <p className="px-1 text-[12px] text-white/45" data-testid="fx-off-note">
+    <p className="px-1 text-[12px] text-white/60" data-testid="fx-off-note">
       {text}
     </p>
   )
@@ -290,7 +290,7 @@ export function SoundSettings() {
               ? t(`${k}.output.rate`, { khz: (rate / 1000).toFixed(1) })
               : t(`${k}.output.idle`)}
           </p>
-          <p className="mt-1 text-white/40">{t(`${k}.output.note`)}</p>
+          <p className="mt-1 text-white/60">{t(`${k}.output.note`)}</p>
         </div>
       </Content>
       <ContentSeparator />

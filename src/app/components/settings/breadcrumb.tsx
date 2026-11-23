@@ -1,34 +1,19 @@
 import { useTranslation } from 'react-i18next'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/app/components/ui/breadcrumb'
 import { useAppSettings } from '@/store/app.store'
 
+/** "SETTINGS" above the page's name, like the app's other page headers. */
 export function SettingsBreadcrumb() {
   const { t } = useTranslation()
   const { currentPage } = useAppSettings()
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-      <div className="flex items-center gap-2 px-4">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem className="hidden md:block">
-              {t('settings.label')}
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem>
-              <BreadcrumbPage>
-                {t(`settings.options.${currentPage}`)}
-              </BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
+    <header className="flex shrink-0 flex-col gap-1.5 px-6 pb-4 pt-6 pr-14">
+      <p className="hidden text-[11px] font-semibold uppercase leading-none tracking-[0.14em] text-muted-foreground md:block">
+        {t('settings.label')}
+      </p>
+      <h2 className="truncate text-2xl font-bold leading-tight tracking-tight text-foreground">
+        {t(`settings.options.${currentPage}`)}
+      </h2>
     </header>
   )
 }

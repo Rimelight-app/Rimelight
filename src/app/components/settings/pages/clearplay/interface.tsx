@@ -108,7 +108,7 @@ export function InterfaceSettings() {
           </ContentItemForm>
         </ContentItem>
         {mpv && (
-          <p className="px-1 text-[12px] text-white/45">
+          <p className="px-1 text-[12px] text-white/60">
             {t('clearplay.sound.visualizerOff')}
           </p>
         )}
