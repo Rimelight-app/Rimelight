@@ -58,7 +58,22 @@ export function setupEvents(window: BrowserWindow | null) {
     window.webContents.send(IpcChannels.MaximizedStatus, false)
   })
 
+  // Before the window closes for good (quit, or closed without the tray), the
+  // renderer tells the server that playback stopped. Waits at most 1.5 s.
+  let playbackFinished = false
   window.on('close', (event) => {
+    const closing = isQuitting || is.dev || !getAppSetting('minimizeToTray')
+    if (closing && !playbackFinished) {
+      playbackFinished = true
+      event.preventDefault()
+      finishPlayback(window).finally(() => {
+        if (window.isDestroyed()) return
+        if (isQuitting) app.quit()
+        else window.close()
+      })
+      return
+    }
+
     if (isQuitting) {
       if (tray && !tray.isDestroyed()) tray.destroy()
       return
@@ -75,6 +90,25 @@ export function setupEvents(window: BrowserWindow | null) {
 
   window.on('page-title-updated', (_, title) => {
     updateTray(title)
+  })
+}
+
+/** Asks the renderer to report "stopped" and waits for it (1.5 s at most). */
+function finishPlayback(window: BrowserWindow): Promise<void> {
+  return new Promise((resolve) => {
+    const contents = window.webContents
+    const done = () => {
+      clearTimeout(timer)
+      ipcMain.removeListener(IpcChannels.PlaybackFinished, onFinished)
+      resolve()
+    }
+    const onFinished = (event: Electron.IpcMainEvent) => {
+      if (event.sender === contents) done()
+    }
+    const timer = setTimeout(done, 1500)
+    ipcMain.on(IpcChannels.PlaybackFinished, onFinished)
+    if (contents.isDestroyed() || contents.isCrashed()) done()
+    else contents.send(IpcChannels.FinishPlayback)
   })
 }
 

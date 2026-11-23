@@ -52,6 +52,8 @@ export enum IpcChannels {
   MpvSetLoop = 'mpv-set-loop',
   MpvSetSpeed = 'mpv-set-speed',
   MpvEvent = 'mpv-event',
+  FinishPlayback = 'finish-playback',
+  PlaybackFinished = 'playback-finished',
 }
 
 /** "builtin" = Chromium's audio (EQ, visualizer...); "mpv" = bit-perfect. */
@@ -217,6 +219,8 @@ export interface IClearPlayAPI {
   playerStateListener: (
     func: (action: PlayerStateListenerActions) => void,
   ) => void
+  /** Runs before the window closes for good (quit), then lets it close. */
+  onFinishPlayback: (func: () => Promise<void>) => void
   saveAppSettings: (payload: ISettingPayload) => void
   checkForUpdates: () => Promise<UpdateCheckResult | null>
   downloadUpdate: () => void

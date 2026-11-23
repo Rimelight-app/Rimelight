@@ -3,6 +3,7 @@ import { useScrobbleStore } from '@/store/scrobble.store'
 import { SubsonicResponse } from '@/types/responses/subsonicResponse'
 import dateTime from '@/utils/dateTime'
 import { logger } from '@/utils/logger'
+import { getServerExtensions } from '@/utils/servers'
 
 type SongRef = { id: string; title?: string; artist?: string }
 
@@ -28,6 +29,9 @@ async function send(song: SongRef | string, submission = true) {
   const ref = typeof song === 'string' ? { id: song } : song
   const store = useScrobbleStore.getState()
   if (!store.enabled) return
+  // Servers with reportPlayback get "now playing" from playback-reporter.ts,
+  // which can also say paused and stopped. Listens are still sent here.
+  if (!submission && getServerExtensions().playbackReportEnabled) return
 
   const time = dateTime().valueOf()
   logger.info(`${submission ? 'Scrobbling' : 'Now playing'}`, { id: ref.id })

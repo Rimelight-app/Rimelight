@@ -22,7 +22,12 @@ export function getServerExtensions() {
     extensionsSupported.songLyrics &&
     extensionsSupported.songLyrics.length > 0
 
+  // OpenSubsonic reportPlayback, version 1 (listed by Navidrome 0.64.2).
+  const playbackReportEnabled =
+    extensionsSupported?.playbackReport?.includes(1) ?? false
+
   return {
     songLyricsEnabled,
+    playbackReportEnabled,
   }
 }

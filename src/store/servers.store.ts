@@ -1,8 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { httpClient } from '@/api/httpClient'
 import { pingServer } from '@/api/pingServer'
 import { queryServerInfo } from '@/api/queryServerInfo'
 import { useAppStore } from '@/store/app.store'
+import { SubsonicResponse } from '@/types/responses/subsonicResponse'
 import { AuthType } from '@/types/serverConfig'
 import { genEncodedPassword, genPasswordToken } from '@/utils/salt'
 
@@ -159,4 +161,42 @@ export function switchToServer(server: SavedServer) {
   })
   // Let the persisted store flush before reloading.
   setTimeout(() => window.location.reload(), 150)
+}
+
+type ExtensionsResponse = SubsonicResponse & {
+  openSubsonicExtensions?: { name: string; versions: number[] }[]
+}
+
+/**
+ * Asks the active server again which OpenSubsonic extensions it has (they
+ * change when the server is updated) and keeps the answer with that server.
+ * If the server can't be reached, the saved list stays.
+ */
+export async function refreshServerExtensions() {
+  const { url, username, isServerConfigured } = useAppStore.getState().data
+  if (!isServerConfigured || !url) return
+  const res = await httpClient<ExtensionsResponse>(
+    '/getOpenSubsonicExtensions',
+    { method: 'GET', signal: AbortSignal.timeout(8000) },
+  )
+  const list = res?.data?.openSubsonicExtensions
+  if (res?.data?.status !== 'ok' || !Array.isArray(list)) return
+
+  const map: Record<string, number[]> = {}
+  for (const e of list) {
+    if (e?.name) map[e.name] = Array.isArray(e.versions) ? e.versions : []
+  }
+  // The user may have switched server meanwhile.
+  const now = useAppStore.getState().data
+  if (now.url !== url || now.username !== username) return
+  if (JSON.stringify(now.extensionsSupported) !== JSON.stringify(map)) {
+    useAppStore.setState((state) => {
+      state.data.extensionsSupported = map
+    })
+  }
+  const saved = useServersStore
+    .getState()
+    .servers.find((s) => s.url === url && s.username === username)
+  if (saved)
+    useServersStore.getState().upsert({ ...saved, extensionsSupported: map })
 }

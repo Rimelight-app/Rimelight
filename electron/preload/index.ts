@@ -58,6 +58,14 @@ const api: IClearPlayAPI = {
       (_, state: PlayerStateListenerActions) => func(state),
     )
   },
+  onFinishPlayback: (func) => {
+    ipcRenderer.removeAllListeners(IpcChannels.FinishPlayback)
+    ipcRenderer.on(IpcChannels.FinishPlayback, () => {
+      func()
+        .catch(() => {})
+        .finally(() => ipcRenderer.send(IpcChannels.PlaybackFinished))
+    })
+  },
   saveAppSettings: (payload) => {
     ipcRenderer.send(IpcChannels.SaveAppSettings, payload)
   },

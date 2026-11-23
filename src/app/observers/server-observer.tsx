@@ -3,6 +3,7 @@ import { isLocalServer } from '@/service/local-library'
 import { useAppStore } from '@/store/app.store'
 import {
   measureServer,
+  refreshServerExtensions,
   rememberCurrentServer,
   switchToServer,
   useServersStore,
@@ -18,6 +19,8 @@ const CHECKED = 'clearplay_fastest_checked'
 export function ServerObserver() {
   useEffect(() => {
     rememberCurrentServer()
+    // Extensions change when the server is updated (e.g. reportPlayback).
+    refreshServerExtensions().catch(() => {})
     const { autoSelectFastest, servers } = useServersStore.getState()
     const { url, username } = useAppStore.getState().data
     if (!autoSelectFastest || servers.length < 2) return

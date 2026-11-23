@@ -66,6 +66,9 @@ jobs:
       - name: Unit checks (bit-perfect decisions, ALSA parsers)
         run: node tools/dev-rig/bitperfect-unit.mjs
 
+      - name: Unit checks (Now Playing reports)
+        run: node tools/dev-rig/playback-report-unit.mjs
+
       - name: Compile main and renderer
         run: pnpm electron:build
 
