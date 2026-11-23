@@ -6,7 +6,6 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
-import kotlinx.coroutines.async
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -95,6 +94,8 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
         }.bodyAsText()
         val root = json.parseToJsonElement(text).jsonObject["subsonic-response"]?.jsonObject
             ?: throw SubsonicException(-1, "Not a Subsonic server")
+        root["serverVersion"]?.jsonPrimitive?.contentOrNull?.let { serverVersion = it }
+        root["type"]?.jsonPrimitive?.contentOrNull?.let { serverType = it }
         if (root["status"]?.jsonPrimitive?.contentOrNull != "ok") {
             val err = root["error"]?.jsonObject
             throw SubsonicException(
@@ -118,7 +119,33 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
     private inline fun <reified T> JsonObject.obj(key: String): T =
         json.decodeFromJsonElement(this[key] ?: throw SubsonicException(70, "Not found"))
 
+    /** Navidrome's version from the last answer (`serverVersion`, e.g. "0.64.2 (10114574)"), or null before any. */
+    @Volatile var serverVersion: String? = null
+        private set
+
+    /** OpenSubsonic `type` from the last answer, e.g. "navidrome". */
+    @Volatile var serverType: String? = null
+        private set
+
     suspend fun ping() { call("ping") }
+
+    @Volatile private var playbackReportSupport: Boolean? = null
+
+    /**
+     * Whether the server takes [reportPlayback] (OpenSubsonic `playbackReport`, Navidrome 0.62+).
+     * Asked once per server (this client is per server) and cached; a failed check is asked again later.
+     */
+    suspend fun supportsPlaybackReport(): Boolean {
+        playbackReportSupport?.let { return it }
+        val r = runCatching { call("getOpenSubsonicExtensions") }.getOrNull() ?: return false
+        val names = (r["openSubsonicExtensions"] as? JsonArray)
+            ?.mapNotNull { (it as? JsonObject)?.get("name")?.jsonPrimitive?.contentOrNull }.orEmpty()
+        return ("playbackReport" in names).also { playbackReportSupport = it }
+    }
+
+    /** Cached answer of [supportsPlaybackReport], or null if not asked yet. */
+    val playbackReportKnown: Boolean? get() = playbackReportSupport
+
 
     override suspend fun albumList(type: String, size: Int, offset: Int, genre: String?) =
         call("getAlbumList2", "type" to type, "size" to size, "offset" to offset, "genre" to genre)
@@ -170,19 +197,9 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
     override suspend fun albumsByYear(from: Int, to: Int): List<Album> =
         call("getAlbumList2", "type" to "byYear", "fromYear" to from, "toYear" to to, "size" to 500).list("albumList2", "album")
 
-    /** All songs in pages of 500, four requests at a time (same as the desktop stats). */
-    override suspend fun allSongs(onProgress: (Int) -> Unit): List<Song> = kotlinx.coroutines.coroutineScope {
-        val all = ArrayList<Song>()
-        var offset = 0
-        while (offset < 400_000) {
-            val batch = (0 until 4).map { i -> async { songs(500, offset + i * 500) } }.map { it.await() }
-            batch.forEach { all += it }
-            onProgress(all.size)
-            if (batch.any { it.size < 500 }) break
-            offset += 2000
-        }
-        all.distinctBy { it.id }
-    }
+    /** All songs in pages of 500, four requests at a time (the desktop's getAllSongs, shared with Statistics). */
+    override suspend fun allSongs(onProgress: (Int) -> Unit): List<Song> =
+        com.tonihk00.clearplay.data.stats.fetchAllSongs({ offset -> songs(com.tonihk00.clearplay.data.stats.STATS_PAGE, offset) }, onProgress)
 
     /** Starts a library scan (Navidrome: admin accounts only). */
     suspend fun startScan(full: Boolean = false): ScanStatus = scanStatusOf(call("startScan", "fullScan" to full.takeIf { it }))
@@ -206,6 +223,19 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
 
     suspend fun scrobble(id: String, submission: Boolean, timeMs: Long = System.currentTimeMillis()) {
         call("scrobble", "id" to id, "submission" to submission, "time" to timeMs)
+    }
+
+    /**
+     * OpenSubsonic reportPlayback: the live player state for the server's Now Playing.
+     * Always sent with ignoreScrobble=true: plays are counted only by [scrobble] with
+     * submission=true (Navidrome would otherwise also count a play on "stopped" past half the song).
+     */
+    suspend fun reportPlayback(id: String, state: String, positionMs: Long, playbackRate: Float = 1f) {
+        call(
+            "reportPlayback",
+            "mediaId" to id, "mediaType" to "song", "positionMs" to positionMs.coerceAtLeast(0),
+            "state" to state, "playbackRate" to playbackRate, "ignoreScrobble" to true,
+        )
     }
 
     /**

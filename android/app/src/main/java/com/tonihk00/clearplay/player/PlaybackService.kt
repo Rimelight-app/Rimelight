@@ -109,7 +109,7 @@ class PlaybackService : MediaLibraryService() {
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
 
-        scrobbler = Scrobbler(player, scope) { ClearPlayApp.instance.client }
+        scrobbler = Scrobbler(player, scope, client = { ClearPlayApp.instance.client })
         player.addListener(scrobbler)
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) { noteBits(player) }

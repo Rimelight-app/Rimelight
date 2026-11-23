@@ -190,9 +190,44 @@ class ScreenshotTest {
 
     @Test fun stats() = shoot("12-stats") {
         WithDock(2) {
-            com.tonihk00.clearplay.ui.stats.StatsScreen(170.dp, preset = com.tonihk00.clearplay.ui.stats.computeStats(FakeServer.songs))
+            com.tonihk00.clearplay.ui.stats.StatsScreen(170.dp, preset = com.tonihk00.clearplay.data.stats.computeStats(FakeServer.songs))
         }
     }
+
+    /** Offline: the saved snapshot with "Last synced" under the tiles. */
+    @Test fun statsOffline() = shoot("12b-stats-offline", waitFor = "Last synced") {
+        WithDock(2) {
+            com.tonihk00.clearplay.ui.stats.StatsScreen(
+                170.dp, preset = com.tonihk00.clearplay.data.stats.computeStats(FakeServer.songs),
+                presetSyncedAt = System.currentTimeMillis() - 2 * 3_600_000L,
+            )
+        }
+    }
+
+    private fun shootAbout(name: String) {
+        rule.setContent {
+            ClearPlayTheme(reduceMotion = true) {
+                Box(Modifier.fillMaxSize()) {
+                    BackdropLayer(fakeBlur())
+                    com.tonihk00.clearplay.ui.settings.AboutDialog(
+                        com.tonihk00.clearplay.ui.settings.AboutInfo("1.5.3", 58, "Navidrome 0.64.2 (10114574)", "MIT licence · Copyright (c) 2026 Victor Alves"),
+                    ) {}
+                }
+            }
+        }
+        rule.waitUntil(10_000) { rule.onAllNodesWithText("Copy debug info").fetchSemanticsNodes().isNotEmpty() }
+        rule.mainClock.advanceTimeBy(1_500)
+        rule.waitForIdle()
+        com.github.takahirom.roborazzi.captureScreenRoboImage("build/screens/$name.png")
+    }
+
+    @Test fun about() = shootAbout("13-about")
+
+    @Config(sdk = [35], qualifiers = "w880dp-h400dp-land-xxhdpi")
+    @Test fun aboutLandscape() = shootAbout("13b-about-landscape")
+
+    @Config(sdk = [35], qualifiers = "w400dp-h880dp-xxhdpi", fontScale = 2.0f)
+    @Test fun aboutLargestFont() = shootAbout("13c-about-font-200")
 
     /** Regression: switching library tabs must never show (or crash on) another tab's cached data. */
     @Test fun libraryTabsKeepTheirOwnData() {

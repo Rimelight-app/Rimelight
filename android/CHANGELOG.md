@@ -1,5 +1,15 @@
 # ClearPlay for Android — changelog
 
+## [1.5.3] - 2026-11-23
+
+### Fixed
+- **Statistics offline showed old numbers** (e.g. 133 h instead of 142 h). Offline, the page added up the play counts saved with your downloads, which never update. Now every time Statistics loads from Navidrome, the whole result is saved, and offline you see exactly that, with "Last synced 2 hours ago" under the tiles. Plays made offline aren't added; when the server answers again, Statistics reload by themselves.
+- **Statistics differed from the desktop app.** Android kept the first result until the app was closed, cut hours and percentages down instead of rounding them, and counted artists differently. It now uses the desktop's calculation, so both apps show the same Hours listened, Plays, Discovered and Library. Data older than 10 minutes is reloaded when you open the page, like on the desktop. The Library tile now shows hours of music, with albums, artists and size underneath.
+- **Pause now shows on Navidrome's Now Playing.** On servers with the OpenSubsonic playback report (Navidrome 0.62 and newer), ClearPlay sends playing, paused (also from the notification, lock screen, headset buttons, or when another app takes the audio) and stopped, plus the position every 30 s and after each seek. Plays are counted exactly as before. Older servers get the old now-playing message.
+
+### Changed
+- **About** in Settings is now a row that opens a window: version and build number, the connected Navidrome version, the licence, a link to GitHub, and *Copy debug info* (app, Android and server versions and the phone model, with no names or addresses).
+
 ## [1.5.2] - 2026-11-22
 
 ### Added

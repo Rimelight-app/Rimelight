@@ -79,6 +79,13 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
         com.tonihk00.clearplay.data.ScrobbleQueue(filesDir.resolve("scrobbles.json"))
     }
 
+    /** Statistics snapshots per server account: refreshed online, shown unchanged offline. */
+    val stats: com.tonihk00.clearplay.data.stats.StatsRepository by lazy {
+        com.tonihk00.clearplay.data.stats.StatsRepository(
+            com.tonihk00.clearplay.data.stats.StatsStore(filesDir.resolve("stats")), appScope,
+        )
+    }
+
     /** Sends queued listens now, if the server answers. */
     fun flushScrobbles() {
         val c = client ?: return
@@ -157,6 +164,28 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
         appScope.launch {
             combine(session, connection.online) { s, online -> (s as? Session.Active)?.client?.takeIf { online } }
                 .collect { c -> if (c != null) runCatching { scrobbles.flushTo(c) } }
+        }
+        // Signed in / server answering: find out once per server whether it takes reportPlayback.
+        appScope.launch {
+            combine(session, connection.online) { s, online -> (s as? Session.Active)?.client?.takeIf { online } }
+                .collect { c -> c?.supportsPlaybackReport() }
+        }
+        // Back online after being offline: refetch Statistics (if they were ever loaded for this
+        // account) so the saved snapshot is replaced without a pull to refresh.
+        appScope.launch {
+            var offlineFor: com.tonihk00.clearplay.data.api.SubsonicClient? = null
+            combine(session, connection.online) { s, online -> (s as? Session.Active)?.client to online }
+                .collect { (c, online) ->
+                    if (c == null) { offlineFor = null; return@collect }
+                    if (!online) { offlineFor = c; return@collect }
+                    if (offlineFor !== c) return@collect
+                    offlineFor = null
+                    val server = c.server
+                    val known = kotlinx.coroutines.withContext(Dispatchers.IO) { stats.saved(server) } != null
+                    if (known && !stats.fetchedWithin(server, 60_000)) {
+                        stats.refresh(server) { offset -> c.songs(com.tonihk00.clearplay.data.stats.STATS_PAGE, offset) }
+                    }
+                }
         }
     }
 

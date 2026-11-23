@@ -54,7 +54,6 @@ import com.tonihk00.clearplay.data.api.ServerConfig
 import com.tonihk00.clearplay.player.PlayerConnection
 import com.tonihk00.clearplay.ui.components.CpIcon
 import com.tonihk00.clearplay.ui.components.IconButtonCp
-import com.tonihk00.clearplay.ui.components.Logo
 import com.tonihk00.clearplay.ui.components.SectionLabel
 import com.tonihk00.clearplay.ui.components.glassPanel
 import com.tonihk00.clearplay.ui.player.SleepSheet
@@ -73,6 +72,12 @@ data class SettingsUi(
     val imageCacheBytes: Long = 0,
     val sleep: PlayerConnection.Sleep? = null,
     val version: String = "",
+    /** Build number shown in About. */
+    val versionCode: Long = 0,
+    /** "Navidrome 0.64.2 (…)" while connected; null offline. */
+    val serverVersion: String? = null,
+    /** Summary of the bundled app licence, for About. */
+    val licence: String? = null,
     /** Songs found on the phone, or null without permission. */
     val phoneSongs: Int? = null,
     /** Signed in with "Use music on this phone" (no server). */
@@ -111,6 +116,7 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
     var confirmSignOut by remember { mutableStateOf(false) }
     var sleepSheet by remember { mutableStateOf(false) }
     var dacReport by remember { mutableStateOf<String?>(null) }
+    var aboutOpen by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val s = ui.settings
 
@@ -254,16 +260,12 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
         }
 
         // About -----------------------------------------------------------------
-        SectionLabel("About", Modifier.padding(start = 4.dp, top = 8.dp))
-        Row(Modifier.fillMaxWidth().glassPanel().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Logo(Modifier.size(36.dp))
-            Column(Modifier.padding(start = 14.dp)) {
-                Text("ClearPlay", style = MaterialTheme.typography.titleMedium)
-                Text("Version ${ui.version} · MIT licence · github.com/tonihk00/ClearPlay", style = MaterialTheme.typography.bodySmall, color = Cp.TextFaint)
-            }
+        Group("About", null) {
+            ActionRow(R.drawable.ic_info, "About ClearPlay", "Version ${ui.version}") { aboutOpen = true }
         }
     }
 
+    if (aboutOpen) AboutDialog(AboutInfo(ui.version, ui.versionCode, ui.serverVersion, ui.licence)) { aboutOpen = false }
     if (sleepSheet) SleepSheet(ui.sleep, actions::setSleep) { sleepSheet = false }
     if (confirmRemoveAll) {
         Confirm("Remove all downloads?", "${ui.downloadCount} songs (${formatBytes(ui.downloadBytes)}) will be deleted from this phone. They stay on your server.", "Remove") {

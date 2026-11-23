@@ -569,6 +569,7 @@ private fun SettingsRoute(client: SubsonicClient?, bottom: Dp, sleep: PlayerConn
     val dlSongs by app.downloads.songs.collectAsState()
     val dlBytes by app.downloads.bytes.collectAsState()
     val phoneSongs by app.phone.songs.collectAsState()
+    val online by app.connection.online.collectAsState()
     var latency by remember { mutableStateOf<Map<String, Long?>>(emptyMap()) }
     var scanText by remember { mutableStateOf<String?>(null) }
     var scanning by remember { mutableStateOf(false) }
@@ -645,6 +646,9 @@ private fun SettingsRoute(client: SubsonicClient?, bottom: Dp, sleep: PlayerConn
             servers = servers, active = client?.server, latency = latency, settings = settings,
             downloadCount = dlSongs.size, downloadBytes = dlBytes, imageCacheBytes = imageBytes,
             sleep = sleep, version = com.tonihk00.clearplay.BuildConfigInfo.versionName,
+            versionCode = com.tonihk00.clearplay.BuildConfigInfo.versionCode,
+            serverVersion = client?.takeIf { online }?.let { com.tonihk00.clearplay.ui.settings.serverLabel(it.serverType, it.serverVersion) },
+            licence = remember { com.tonihk00.clearplay.ui.settings.readAppLicence(app) },
             phoneSongs = if (app.phone.hasPermission()) phoneSongs.size else null,
             localMode = client == null,
             scan = scanText,
