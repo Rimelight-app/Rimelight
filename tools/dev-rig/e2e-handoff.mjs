@@ -488,13 +488,15 @@ await test('PC pause → server has the right copy of the song and second; the p
   )
   await seek(15)
   await sleep(1200)
+  const before = (await phone.queue()).changed
   const mark = Date.now()
   await playPause()
   await until(async () => !(await player()).playing)
   const at = (await player()).time
   const q = await until(async () => {
     const x = await phone.queue()
-    return saves(mark).length && x.changedBy === 'ClearPlay' ? x : null
+    // Stored by Navidrome (not only sent): its `changed` moved on.
+    return x.changed !== before && x.changedBy === 'ClearPlay' ? x : null
   }, 4000)
   expect(q, 'no save within 4 s of the pause')
   const firstSave = saves(mark)[0].at - mark
@@ -822,6 +824,7 @@ await test('v3: a song before the current one deleted from the library, phone pa
 await test('past song 1 000 (2 500-song queue with local songs): 100 before, 899 after, the current song included', async () => {
   const ids = await allSongs()
   const big = Array.from({ length: 2500 }, (_, i) => ids[i % ids.length])
+  const before = (await phone.queue()).changed
   const mark = Date.now()
   await win.evaluate(
     async ({ big }) => {
@@ -854,7 +857,8 @@ await test('past song 1 000 (2 500-song queue with local songs): 100 before, 899
   expect(cur, 'big queue did not start')
   const q = await until(async () => {
     const x = await phone.queue()
-    return saves(mark).length && x.changedBy === 'ClearPlay' ? x : null
+    // Stored by Navidrome (not only sent): its `changed` moved on.
+    return x.changed !== before && x.changedBy === 'ClearPlay' ? x : null
   }, 9000)
   expect(q, 'not saved')
   expect(q.entry.length === 1000, `saved ${q.entry.length} songs`)
