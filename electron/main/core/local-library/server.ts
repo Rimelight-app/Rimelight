@@ -119,7 +119,12 @@ export function createLocalServer(
     ping: () => ok(),
     getLicense: () => ok({ license: { valid: true } }),
     getOpenSubsonicExtensions: () =>
-      ok({ openSubsonicExtensions: [{ name: 'songLyrics', versions: [1] }] }),
+      ok({
+        openSubsonicExtensions: [
+          { name: 'songLyrics', versions: [1] },
+          { name: 'formPost', versions: [1] },
+        ],
+      }),
     getMusicFolders: () =>
       ok({ musicFolders: { musicFolder: [{ id: 1, name: 'Local' }] } }),
     getUser: () =>
@@ -667,7 +672,22 @@ export function createLocalServer(
       return
     }
     const name = match[1]
-    const q = url.searchParams
+    const q = new URLSearchParams(url.searchParams)
+    // A form POST (OpenSubsonic formPost: the queue and playlist saves) counts
+    // its body fields like URL parameters.
+    if (
+      req.method === 'POST' &&
+      /^application\/x-www-form-urlencoded/i.test(
+        req.headers['content-type'] ?? '',
+      )
+    ) {
+      const body = await readBody(req, MAX_FORM_BYTES)
+      if (body === null) {
+        res.writeHead(413).end()
+        return
+      }
+      for (const [k, v] of new URLSearchParams(body)) q.append(k, v)
+    }
 
     // OpenSubsonic: the extensions list is public (clients read it before login).
     if (!authorised(q) && name !== 'getOpenSubsonicExtensions') {
@@ -770,6 +790,28 @@ async function sendFile(
     return
   }
   createReadStream(t.path).pipe(res)
+}
+
+/** Plenty for 2 000 song ids; anything bigger is refused. */
+const MAX_FORM_BYTES = 1024 * 1024
+
+/** The request body as text, or null when it is over `limit` bytes. */
+function readBody(req: http.IncomingMessage, limit: number) {
+  return new Promise<string | null>((resolve, reject) => {
+    const chunks: Buffer[] = []
+    let size = 0
+    req.on('data', (chunk: Buffer) => {
+      size += chunk.length
+      if (size > limit) {
+        resolve(null)
+        req.destroy()
+        return
+      }
+      chunks.push(chunk)
+    })
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+    req.on('error', reject)
+  })
 }
 
 function safeEqual(a: string, b: string) {

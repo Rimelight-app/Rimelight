@@ -5,6 +5,7 @@ import { usePlayerStore } from '@/store/player.store'
 import { ISong } from '@/types/responses/song'
 import { SubsonicResponse } from '@/types/responses/subsonicResponse'
 import { getServerExtensions } from '@/utils/servers'
+import { isUsingLocalLibrary } from './local-library'
 import { liveMpvElement } from './mpv-player'
 import {
   DESKTOP_APP,
@@ -95,14 +96,19 @@ function currentPositionMs() {
   return Math.max(0, Math.round((seconds || 0) * 1000))
 }
 
-/** The local queue as the handoff rules see it. */
+/**
+ * The local queue as the handoff rules see it. "Only on this device" is
+ * relative to the server in use: when that is "Music on this computer"
+ * itself, its songs are on it, and the queue panel's Save stores them there.
+ */
 export function localQueue() {
   const { songlist, playerState } = usePlayerStore.getState()
   const isSong = playerState.mediaType === 'song'
+  const onLocalServer = isUsingLocalLibrary()
   const songs: QueueSong[] = isSong
     ? songlist.currentList.map((s) => ({
         id: s.id,
-        local: isLocalSongId(s.id),
+        local: !onLocalServer && isLocalSongId(s.id),
       }))
     : []
   return { songs, currentIndex: songlist.currentSongIndex }

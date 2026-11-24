@@ -222,6 +222,54 @@ await test('fullscreen: every line on screen, the highlight moves line by line',
   }
 })
 
+// The queue panel's Save and Save as playlist send form POSTs; the local
+// server used to ignore the body (empty queue, nameless empty playlist).
+await test('local library: queue panel Save stores the queue (form POST)', async () => {
+  await win.keyboard.press('Escape')
+  await sleep(900)
+  await win.locator('[data-testid=player-queue-button]').click()
+  await sleep(1200)
+  const tools = win
+    .locator('[data-testid=queue-clear]')
+    .locator('xpath=..')
+    .locator('button')
+  await tools.nth(0).click()
+  const q = await until(async () => {
+    const x = (await api('getPlayQueue')).playQueue
+    return x?.entry?.length ? x : null
+  }, 5000)
+  expect(
+    q?.entry?.[0]?.id === song.id,
+    `saved queue ${JSON.stringify(q && q.entry?.map((e) => e.id))}`,
+  )
+  expect(q.current === song.id, `current ${q?.current}`)
+  const toast = await until(
+    () => win.getByText('Queue saved to the server').count(),
+    4000,
+  )
+  expect(toast, 'no "Queue saved" message')
+})
+
+await test('local library: Save as playlist creates it with the songs (form POST)', async () => {
+  const tools = win
+    .locator('[data-testid=queue-clear]')
+    .locator('xpath=..')
+    .locator('button')
+  await tools.nth(2).click()
+  await win.getByPlaceholder('Playlist name').fill('Form post check')
+  await win.keyboard.press('Enter')
+  const pl = await until(async () => {
+    const list = (await api('getPlaylists')).playlists?.playlist ?? []
+    return list.find((p) => p.name === 'Form post check') ?? null
+  }, 5000)
+  expect(pl, 'playlist not created (or created without its name)')
+  const full = (await api('getPlaylist', { id: pl.id })).playlist
+  expect(
+    full.entry?.length === 1 && full.entry[0].id === song.id,
+    `songs ${JSON.stringify(full.entry?.map((e) => e.id))}`,
+  )
+})
+
 await test('no page errors', async () => {
   expect(errors.length === 0, errors.join(' | '))
 })

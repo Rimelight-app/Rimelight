@@ -28,6 +28,7 @@ All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
   - Word-by-word markers (`<00:20.60>`) are removed instead of shown as text, also in the fullscreen lyrics. Words aren't highlighted one by one.
   - MP3 synced lyrics (`SYLT`) are used as timed lyrics only when their times are in milliseconds; syllables are joined into lines. Otherwise they show as plain lyrics.
   - Lyrics saved in the lyrics cache are read again once.
+- **"Music on this computer": Save queue and Save as playlist saved nothing**: the built-in local server ignored the body of form posts, so Save stored an empty queue (and still said "Queue saved") and Save as playlist made an empty playlist without its name. Both now work.
 
 ## [0.5.2] - 2026-11-24
 
