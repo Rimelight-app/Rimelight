@@ -8,6 +8,10 @@ export type NowPlayingEntry = ISong & {
   minutesAgo: number
   playerId?: number
   playerName?: string
+  /** playbackReport servers: starting, playing or paused. */
+  state?: string
+  /** playbackReport servers; the server already moves it on while playing. */
+  positionMs?: number
 }
 
 type NowPlayingResponse = SubsonicResponse<{

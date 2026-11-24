@@ -38,6 +38,9 @@ type LoadOptions = {
 
 let current: MpvMediaElement | null = null
 
+/** The element mpv is playing (or last loaded), for queue handoff. */
+export const liveMpvElement = () => current
+
 /** For the automated tests (window.__cp). */
 export const currentMpvElement = () =>
   current

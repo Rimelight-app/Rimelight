@@ -69,6 +69,12 @@ jobs:
       - name: Unit checks (Now Playing reports)
         run: node tools/dev-rig/playback-report-unit.mjs
 
+      - name: Unit checks (Continue on other devices, shared cases)
+        run: node tools/dev-rig/queue-handoff-unit.mjs
+
+      - name: Unit checks (lyrics of local songs)
+        run: node tools/dev-rig/local-lyrics-unit.mjs
+
       - name: Compile main and renderer
         run: pnpm electron:build
 

@@ -3,6 +3,7 @@ import { RouterProvider } from 'react-router-dom'
 import { Linux } from '@/app/components/controls/linux'
 import { SettingsDialog } from '@/app/components/settings/dialog'
 import { EffectsObserver } from '@/app/observers/effects-observer'
+import { HandoffObserver } from '@/app/observers/handoff-observer'
 import { LangObserver } from '@/app/observers/lang-observer'
 import { LocalLibraryObserver } from '@/app/observers/local-library-observer'
 import { MediaSessionObserver } from '@/app/observers/media-session-observer'
@@ -32,6 +33,7 @@ function App() {
       <ServerObserver />
       <SleepObserver />
       <QueueObserver />
+      <HandoffObserver />
       <SettingsDialog />
       <RouterProvider router={router} />
       <ToastContainer />

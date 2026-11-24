@@ -1,9 +1,17 @@
 import { is, platform } from '@electron-toolkit/utils'
-import { app, BrowserWindow, ipcMain, nativeTheme, shell } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  nativeTheme,
+  powerMonitor,
+  shell,
+} from 'electron'
 import {
   IpcChannels,
   OverlayColors,
   PlayerStatePayload,
+  SaveQueueReason,
 } from '../../preload/types'
 import { isQuitting } from '../index'
 import { tray, updateTray } from '../tray'
@@ -91,6 +99,29 @@ export function setupEvents(window: BrowserWindow | null) {
   window.on('page-title-updated', (_, title) => {
     updateTray(title)
   })
+
+  watchSleepAndLock(window)
+}
+
+let sleepWindow: BrowserWindow | null = null
+
+/**
+ * Queue handoff: on system sleep and screen lock the renderer saves the queue
+ * right away. Electron has lock-screen on Windows and macOS only; on Linux
+ * only sleep is seen.
+ */
+function watchSleepAndLock(window: BrowserWindow) {
+  const first = sleepWindow === null
+  sleepWindow = window
+  if (!first) return
+  const ask = (reason: SaveQueueReason) => {
+    const target = sleepWindow
+    if (!target || target.isDestroyed() || target.webContents.isDestroyed())
+      return
+    target.webContents.send(IpcChannels.SaveQueueNow, reason)
+  }
+  powerMonitor.on('suspend', () => ask('sleep'))
+  powerMonitor.on('lock-screen', () => ask('lock'))
 }
 
 /** Asks the renderer to report "stopped" and waits for it (1.5 s at most). */

@@ -5,6 +5,7 @@ import {
   IpcChannels,
   MpvEventPayload,
   PlayerStateListenerActions,
+  SaveQueueReason,
 } from './types'
 
 // Custom APIs for renderer
@@ -65,6 +66,12 @@ const api: IClearPlayAPI = {
         .catch(() => {})
         .finally(() => ipcRenderer.send(IpcChannels.PlaybackFinished))
     })
+  },
+  onSaveQueueNow: (func) => {
+    ipcRenderer.removeAllListeners(IpcChannels.SaveQueueNow)
+    ipcRenderer.on(IpcChannels.SaveQueueNow, (_, reason: SaveQueueReason) =>
+      func(reason),
+    )
   },
   saveAppSettings: (payload) => {
     ipcRenderer.send(IpcChannels.SaveAppSettings, payload)

@@ -54,7 +54,11 @@ export enum IpcChannels {
   MpvEvent = 'mpv-event',
   FinishPlayback = 'finish-playback',
   PlaybackFinished = 'playback-finished',
+  SaveQueueNow = 'save-queue-now',
 }
+
+/** Why the main process asks for the queue to be saved right away. */
+export type SaveQueueReason = 'sleep' | 'lock'
 
 /** "builtin" = Chromium's audio (EQ, visualizer...); "mpv" = bit-perfect. */
 export type AudioEngine = 'builtin' | 'mpv'
@@ -221,6 +225,8 @@ export interface IClearPlayAPI {
   ) => void
   /** Runs before the window closes for good (quit), then lets it close. */
   onFinishPlayback: (func: () => Promise<void>) => void
+  /** System sleep or screen lock: save the queue now (queue handoff). */
+  onSaveQueueNow: (func: (reason: SaveQueueReason) => void) => void
   saveAppSettings: (payload: ISettingPayload) => void
   checkForUpdates: () => Promise<UpdateCheckResult | null>
   downloadUpdate: () => void

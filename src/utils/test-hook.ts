@@ -2,6 +2,8 @@ import { currentMpvElement } from '@/service/mpv-player'
 import { useAppStore } from '@/store/app.store'
 import { useAudioFx, useSleepTimer } from '@/store/audio-fx.store'
 import { useBitPerfect, useMpvRuntime } from '@/store/bitperfect.store'
+import { useClearPlaySettings } from '@/store/clearplay-settings.store'
+import { useHandoffStore } from '@/store/handoff.store'
 import { usePlayerStore } from '@/store/player.store'
 import { useRatingsStore } from '@/store/ratings.store'
 import { resolveOutputDevice } from './output-device'
@@ -24,6 +26,8 @@ export function installTestHook() {
       sleep: useSleepTimer,
       mpv: useMpvRuntime,
       mpvElement: currentMpvElement,
+      settings: useClearPlaySettings,
+      handoff: useHandoffStore,
     },
   })
 }

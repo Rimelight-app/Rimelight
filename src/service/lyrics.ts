@@ -238,6 +238,12 @@ function formatLyrics(lyrics: string) {
   return lyrics.trim().replaceAll('\r\n', '\n')
 }
 
+/**
+ * Bump to read every song's lyrics again once (cached copies become
+ * unreachable). v2: 0.6.0 fixed embedded lyrics of local songs.
+ */
+const LYRICS_CACHE_VERSION = 'v2'
+
 function getLyricsCacheKey(
   getLyricsData: GetLyricsData,
   preferSyncedLyrics: boolean,
@@ -248,7 +254,14 @@ function getLyricsCacheKey(
   const type = preferSyncedLyrics ? 'synced' : 'plain'
   const serverExtension = songLyricsEnabled ? 'internal' : 'external'
 
-  const keys = ['lyrics', artist, title, type, serverExtension]
+  const keys = [
+    'lyrics',
+    LYRICS_CACHE_VERSION,
+    artist,
+    title,
+    type,
+    serverExtension,
+  ]
 
   return keys.join(':')
 }

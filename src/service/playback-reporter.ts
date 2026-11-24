@@ -138,8 +138,12 @@ function flushPending() {
   reconcile()
 }
 
-/** Sends "stopped" for the playing song now (app quitting). */
-export async function finishPlaybackReport() {
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * Sends "stopped" for the playing song now (app quitting), within budgetMs.
+ */
+export async function finishPlaybackReport(budgetMs = 1400) {
   flushPending()
   if (!logic.active) return
   let last = null as PlaybackReport | null
@@ -151,10 +155,36 @@ export async function finishPlaybackReport() {
   if (!last) return
   const stopped: PlaybackReport = last
   logger.info('[reportPlayback] stopped (closing)', { id: stopped.mediaId })
-  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+  const budget = Math.max(300, budgetMs)
+  const chainWait = Math.min(500, Math.round(budget * 0.35))
   // Reports still on their way go first, so "stopped" is the last word.
-  await Promise.race([chain, wait(500)])
-  await Promise.race([post(stopped, true), wait(900)])
+  await Promise.race([chain, wait(chainWait)])
+  await Promise.race([post(stopped, true), wait(budget - chainWait)])
+}
+
+let beforeFinish: (() => Promise<unknown>) | null = null
+
+/** Runs first when the app quits (queue handoff saves the queue). */
+export function setBeforeFinishPlayback(fn: () => Promise<unknown>) {
+  beforeFinish = fn
+}
+
+/** Most the first step may take, so "stopped" still gets its turn. */
+const BEFORE_FINISH_MS = 600
+
+/**
+ * The quit handshake (electron/main/core/events.ts waits 1.5 s): the queue
+ * is saved first, then "stopped" is reported, 1.4 s at most in all.
+ */
+async function finishOnQuit() {
+  const started = Date.now()
+  if (beforeFinish) {
+    await Promise.race([
+      beforeFinish().catch(() => undefined),
+      wait(BEFORE_FINISH_MS),
+    ])
+  }
+  await finishPlaybackReport(1400 - (Date.now() - started))
 }
 
 export function startPlaybackReporter() {
@@ -167,7 +197,7 @@ export function startPlaybackReporter() {
   useAudioFx.subscribe(schedule)
   schedule()
 
-  if (isDesktop()) window.api?.onFinishPlayback?.(finishPlaybackReport)
+  if (isDesktop()) window.api?.onFinishPlayback?.(finishOnQuit)
   // Reload (e.g. after switching server, which is handled above) or a
   // browser tab closing.
   window.addEventListener('pagehide', () => {

@@ -2,6 +2,30 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
+## [0.6.0] - 2026-11-24
+
+### Added
+- **Continue on other devices**: pause on your phone, open ClearPlay on the PC, press Continue, and it picks up at the same song and second. It works the other way too, with ClearPlay for Android 1.6.0 (or any app that reads Navidrome's saved queue, such as Symfonium). Settings → Queue → "Continue on other devices" (off by default) is the old "Sync queue with the server", now with these rules:
+  - ClearPlay saves the queue and position to Navidrome 4 s after the song changes (five quick skips make one save), 0.5 s after a pause, 4 s after you add, remove or move songs, right after you press Continue, and straight away when the app quits, the computer goes to sleep or the screen locks. It never saves while offline, never saves an empty queue, and clearing the queue here leaves the server's saved queue alone.
+  - Only songs Navidrome has are saved: "Music on this computer" songs are left out, and nothing is saved while one of them is playing. At most 1 000 songs are saved, taken around the playing song (up to 100 before it, the rest after), so the playing song is always included, also past song 1 000 in Shuffle library.
+  - On servers that list the OpenSubsonic `indexBasedQueue` extension (Navidrome 0.64.2 does), the queue is saved and read by position, so a song that is in the queue twice continues at the right copy. Saves are sent as a form POST.
+  - Even with saving off, ClearPlay looks at the saved queue when it starts, when its window gets focus (at most every 30 s) and when the server can be reached again. If another device saved it, a pill above the player shows "Paused on ClearPlay Android · song · 5 min ago" with Continue, or "Playing on ClearPlay Android · song" with Continue here when that device is still playing (then ClearPlay starts at the song and second it is playing now). × hides it until the queue is saved again; playing something else here hides it too. Also in Ctrl+K: "Continue from ClearPlay Android".
+  - While you play here, if ClearPlay on your phone starts playing a song from this queue, a pill says "Continued on ClearPlay Android" with Pause here. While it shows, ClearPlay doesn't save, so the phone's queue isn't overwritten. ClearPlay never pauses by itself.
+  - Continue starts at the right second with both audio engines (built-in and mpv).
+  - Who's listening shows "ClearPlay desktop" and "ClearPlay Android" instead of the raw client names.
+  - Known limits:
+    - No remote control: one device can't pause another.
+    - Shuffle library and similar-music refills don't carry over; only the saved songs do.
+    - Two installs of the same app (two PCs, or two phones) send the same client name, so they can't continue from each other.
+    - On Linux, locking the screen doesn't save (the system doesn't tell apps); sleep does.
+
+### Fixed
+- **Embedded lyrics of local songs lost lines and jumped**: lyrics stored in a "Music on this computer" file (FLAC/Ogg `LYRICS`, M4A `©lyr`, APE `Lyrics`, MP3 `USLT`) went through a stricter LRC reader that dropped lines such as `[00:08]` and `[0:15.00]` and kept only the first time of `[00:10.50][01:20.00]` lines, so the highlight stuck on one line, then jumped. ClearPlay now reads the tag's own text with its own LRC reader, as it already did for `.lrc` files. Lyrics from Navidrome and from `.lrc` files are unchanged.
+  - `[offset:+300]` is applied (positive is earlier).
+  - Word-by-word markers (`<00:20.60>`) are removed instead of shown as text, also in the fullscreen lyrics. Words aren't highlighted one by one.
+  - MP3 synced lyrics (`SYLT`) are used as timed lyrics only when their times are in milliseconds; syllables are joined into lines. Otherwise they show as plain lyrics.
+  - Lyrics saved in the lyrics cache are read again once.
+
 ## [0.5.2] - 2026-11-24
 
 ### Fixed

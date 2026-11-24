@@ -17,6 +17,7 @@ import { useGetAlbum, useGetArtistAlbums } from '@/app/hooks/use-album'
 import { useGetArtistInfo } from '@/app/hooks/use-artist'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/routes/routesList'
+import { deviceName } from '@/service/queue-handoff'
 import { stats } from '@/service/stats'
 import { useIsMpvSession } from '@/store/bitperfect.store'
 import { useClearPlaySettings } from '@/store/clearplay-settings.store'
@@ -498,7 +499,7 @@ function ServerListeners() {
                 {e.username}
               </span>
               <span className="text-[11px] text-white/45">
-                {e.playerName}
+                {deviceName(e.playerName ?? '')}
                 {' · '}
                 {e.minutesAgo === 0
                   ? t('clearplay.nowPlaying.justNow')

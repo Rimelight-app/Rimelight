@@ -5,6 +5,7 @@ import path from 'node:path'
 import { nativeImage } from 'electron'
 import { parseFile } from 'music-metadata'
 import { contentType, Library, LocalAlbum } from './library'
+import { readLyrics } from './lyrics'
 import { hashId, LocalTrack } from './scanner'
 
 export const LOCAL_USER = 'clearplay'
@@ -586,42 +587,6 @@ export function createLocalServer(
       .map((t) => library.song(t))
   }
 
-  // ---------------- lyrics ----------------
-  async function readLyrics(t: LocalTrack) {
-    const base = t.path.slice(0, t.path.length - path.extname(t.path).length)
-    for (const ext of ['.lrc', '.LRC', '.txt']) {
-      try {
-        const text = await fs.readFile(base + ext, 'utf8')
-        return parseLyrics(text)
-      } catch {
-        // try the next one
-      }
-    }
-    if (!t.hasEmbeddedLyrics) return null
-    try {
-      const meta = await parseFile(t.path, {
-        skipCovers: true,
-        duration: false,
-      })
-      const tag =
-        meta.common.lyrics?.find((l) => l.syncText?.length) ??
-        meta.common.lyrics?.[0]
-      if (!tag) return null
-      if (tag.syncText?.length) {
-        return {
-          synced: true,
-          lines: tag.syncText.map((l) => ({
-            start: l.timestamp ?? 0,
-            value: l.text,
-          })),
-        }
-      }
-      return tag.text ? parseLyrics(tag.text) : null
-    } catch {
-      return null
-    }
-  }
-
   // ---------------- cover art ----------------
   async function coverFor(id: string): Promise<Buffer | null> {
     let album = library.albums.get(id)
@@ -811,31 +776,4 @@ function safeEqual(a: string, b: string) {
   const x = Buffer.from(a)
   const y = Buffer.from(b)
   return x.length === y.length && timingSafeEqual(x, y)
-}
-
-/** LRC (timed) or plain text into lines; times in milliseconds. */
-export function parseLyrics(text: string) {
-  const lines: { start?: number; value: string }[] = []
-  let synced = false
-  for (const raw of text.split(/\r?\n/)) {
-    const stamps = [...raw.matchAll(/\[(\d+):(\d+(?:[.:]\d+)?)\]/g)]
-    const value = raw.replace(/\[[^\]]*\]/g, '').trim()
-    if (stamps.length) {
-      synced = true
-      for (const m of stamps) {
-        const start = Math.round(
-          (Number(m[1]) * 60 + Number(m[2].replace(':', '.'))) * 1000,
-        )
-        lines.push({ start, value })
-      }
-    } else if (!/^\[[a-z]+:/i.test(raw) && raw.trim()) {
-      lines.push({ value: raw.trim() })
-    }
-  }
-  if (synced) {
-    const timed = lines.filter((l) => l.start !== undefined)
-    timed.sort((a, b) => (a.start ?? 0) - (b.start ?? 0))
-    return { synced: true, lines: timed }
-  }
-  return { synced: false, lines }
 }

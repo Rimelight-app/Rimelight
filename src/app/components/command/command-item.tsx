@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import {
   Cog,
   ListMusic,
+  MonitorSmartphone,
   Palette,
   PlusIcon,
   Shuffle,
@@ -16,6 +17,7 @@ type Variant =
   | 'CreatePlaylist'
   | 'ServerManagement'
   | 'ShuffleLibrary'
+  | 'ContinueFrom'
 
 type CommandItemProps = {
   children: ReactNode
@@ -46,6 +48,10 @@ const icons = {
   ShuffleLibrary: {
     className: '',
     icon: <Shuffle />,
+  },
+  ContinueFrom: {
+    className: '',
+    icon: <MonitorSmartphone />,
   },
 }
 

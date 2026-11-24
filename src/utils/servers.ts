@@ -26,8 +26,14 @@ export function getServerExtensions() {
   const playbackReportEnabled =
     extensionsSupported?.playbackReport?.includes(1) ?? false
 
+  // OpenSubsonic savePlayQueueByIndex / getPlayQueueByIndex (Navidrome 0.64.2
+  // lists it): keeps the right spot when a song is in the queue twice.
+  const indexBasedQueueEnabled =
+    extensionsSupported?.indexBasedQueue?.includes(1) ?? false
+
   return {
     songLyricsEnabled,
     playbackReportEnabled,
+    indexBasedQueueEnabled,
   }
 }

@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import { CommandGroup, CommandItem } from '@/app/components/ui/command'
+import { continueOffer } from '@/service/handoff'
 import { shuffleLibrary } from '@/service/library-shuffle'
 import { useAppStore } from '@/store/app.store'
+import { useHandoffStore } from '@/store/handoff.store'
 import { usePlaylists } from '@/store/playlists.store'
 import { CustomCommandItem } from './command-item'
 import { CommandItemProps } from './command-menu'
@@ -20,9 +22,19 @@ export function CommandHome({ pages, setPages, runCommand }: HomeProps) {
   const { t } = useTranslation()
   const { setPlaylistDialogState } = usePlaylists()
   const hidePlaylistsSection = useAppStore().pages.hidePlaylistsSection
+  const handoff = useHandoffStore((s) => s.offer)
 
   return (
     <CommandGroup heading={t('command.commands.heading')}>
+      {handoff && (
+        <CommandItem onSelect={() => runCommand(() => continueOffer())}>
+          <CustomCommandItem variant="ContinueFrom">
+            {t('clearplay.handoff.continueFrom', {
+              device: handoff.offer.device,
+            })}
+          </CustomCommandItem>
+        </CommandItem>
+      )}
       <CommandItem onSelect={() => runCommand(() => shuffleLibrary())}>
         <CustomCommandItem variant="ShuffleLibrary">
           {t('clearplay.shuffleLibrary.label')}

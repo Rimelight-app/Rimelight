@@ -1,5 +1,12 @@
 import { useEffect } from 'react'
 import {
+  checkLeftBehind,
+  closeLeftBehind,
+  playbackStartedHere,
+  publishEvent,
+  takePauseHere,
+} from '@/service/handoff'
+import {
   isLibraryShuffle,
   topUpLibraryShuffle,
 } from '@/service/library-shuffle'
@@ -9,32 +16,65 @@ import { usePlayerStore } from '@/store/player.store'
 import { logger } from '@/utils/logger'
 
 /**
- * - Queue sync: saves the queue to the server a few seconds after the track
- *   changes, and on pause.
+ * - Continue on other devices: saves the queue to the server 4 s after the
+ *   song changes or the queue is edited, and 0.5 s after a pause (see
+ *   service/handoff.ts). Clearing the queue doesn't save.
  * - AutoDJ: when the last song in the queue starts, appends similar songs.
  * - Library shuffle: when its last song starts, appends more random songs.
  */
 export function QueueObserver() {
   useEffect(() => {
-    let saveTimer: number | undefined
     let autoDjFor: string | null = null
+    /** AutoDJ / shuffle top-ups on their way: their additions aren't the user's. */
+    let autoEdits = 0
 
     const unsub = usePlayerStore.subscribe((state, prev) => {
-      const { syncQueue, autoDj } = useClearPlaySettings.getState()
+      const { autoDj } = useClearPlaySettings.getState()
       const song = state.songlist.currentSong
-      const songChanged = song?.id !== prev.songlist.currentSong?.id
+      const list = state.songlist.currentList
+      const prevList = prev.songlist.currentList
+      const index = state.songlist.currentSongIndex
+      const prevIndex = prev.songlist.currentSongIndex
+      const prevSong = prevList[prevIndex]
+      const isSong = state.playerState.mediaType === 'song'
+      const listChanged = list !== prevList
+      // Also a skip to the same song further on (it's in the queue twice).
+      const songChanged =
+        list[index]?.id !== prevSong?.id ||
+        (!listChanged && index !== prevIndex)
       const paused = prev.playerState.isPlaying && !state.playerState.isPlaying
+      const played = !prev.playerState.isPlaying && state.playerState.isPlaying
+      // "Clear queue" keeps only the playing song.
+      const cleared =
+        listChanged &&
+        list.length === 1 &&
+        prevList.length > 1 &&
+        list[0]?.id === prevSong?.id
+      // The previous song played to its end (not a skip).
+      const prevDuration =
+        prev.playerState.currentDuration || prevSong?.duration || 0
+      const endedNaturally =
+        prevDuration > 0 && prev.playerProgress.progress >= prevDuration - 3
+      const autoEdit = autoEdits > 0 && !songChanged
 
-      if (syncQueue && song?.id && (songChanged || paused)) {
-        window.clearTimeout(saveTimer)
-        saveTimer = window.setTimeout(
-          () => {
-            queueSync
-              .saveToServer()
-              .catch((e) => logger.error('savePlayQueue', e))
-          },
-          songChanged ? 4000 : 500,
-        )
+      if (isSong && list.length) {
+        if (songChanged) {
+          if (!endedNaturally) closeLeftBehind()
+          publishEvent('songChange')
+          checkLeftBehind().catch(() => {})
+        } else if (listChanged && !cleared) {
+          if (!autoEdit) closeLeftBehind()
+          publishEvent('queueEdit')
+        }
+        if (paused) {
+          // A pause from "Pause here" doesn't save.
+          const fromPauseHere = takePauseHere()
+          if (!songChanged && !fromPauseHere) publishEvent('pause')
+        }
+      }
+      if (played) {
+        closeLeftBehind()
+        playbackStartedHere()
       }
 
       const { currentList, currentSongIndex } = state.songlist
@@ -50,7 +90,10 @@ export function QueueObserver() {
         isLibraryShuffle()
       ) {
         autoDjFor = song.id
-        topUpLibraryShuffle().catch((e) => logger.error('Shuffle top-up', e))
+        autoEdits++
+        topUpLibraryShuffle()
+          .catch((e) => logger.error('Shuffle top-up', e))
+          .finally(() => autoEdits--)
         return
       }
       if (
@@ -63,6 +106,7 @@ export function QueueObserver() {
       ) {
         autoDjFor = song.id
         const exclude = new Set(currentList.map((s) => s.id))
+        autoEdits++
         queueSync
           .similarTo(song, exclude)
           .then((songs) => {
@@ -70,12 +114,10 @@ export function QueueObserver() {
               usePlayerStore.getState().actions.setLastOnQueue(songs)
           })
           .catch((e) => logger.error('AutoDJ', e))
+          .finally(() => autoEdits--)
       }
     })
-    return () => {
-      unsub()
-      window.clearTimeout(saveTimer)
-    }
+    return unsub
   }, [])
   return null
 }

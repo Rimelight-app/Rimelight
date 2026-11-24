@@ -14,8 +14,17 @@ interface ClearPlaySettings {
   lyricsSize: LyricsSize
   backdrop: BackdropMode
   startPage: StartPage
-  /** Save the queue to the server so other apps (e.g. Symfonium) can continue it. */
+  /**
+   * "Continue on other devices": save the queue to the server so ClearPlay on
+   * the phone (or another app, e.g. Symfonium) can continue it.
+   */
   syncQueue: boolean
+  /**
+   * Per server and user (`user@url`): the latest server `changed` of a saved
+   * queue this device has dealt with (continued, dismissed or played over).
+   * Always a value copied from the server, never this device's clock.
+   */
+  handledChanged: Record<string, string>
   /** Add similar songs when the queue is about to run out. */
   autoDj: boolean
   /** Spectrum visualizer on the Now Playing page. */
@@ -33,6 +42,7 @@ export const useClearPlaySettings = create<ClearPlaySettings>()(
       backdrop: 'normal',
       startPage: '/',
       syncQueue: false,
+      handledChanged: {},
       autoDj: false,
       visualizer: false,
       set: (patch) => set(patch),
