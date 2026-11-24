@@ -112,8 +112,10 @@ const phone = {
       ANDROID,
     ),
   /** What the phone reads (getPlayQueueByIndex). */
-  queue: async () => (await nd('getPlayQueueByIndex', {}, ANDROID)).playQueueByIndex,
-  nowPlaying: async () => (await nd('getNowPlaying', {}, ANDROID)).nowPlaying?.entry ?? [],
+  queue: async () =>
+    (await nd('getPlayQueueByIndex', {}, ANDROID)).playQueueByIndex,
+  nowPlaying: async () =>
+    (await nd('getNowPlaying', {}, ANDROID)).nowPlaying?.entry ?? [],
 }
 
 // ---------------- app ----------------
@@ -248,8 +250,12 @@ const startQueue = (ids, index) =>
 const seek = (seconds) =>
   win.evaluate((s) => {
     const mpv = window.__cp.mpvElement()
-    if (mpv) window.__cp.player.getState().playerState.audioPlayerRef.currentTime = s
-    else document.querySelector('audio[data-testid="player-song-audio"]').currentTime = s
+    if (mpv)
+      window.__cp.player.getState().playerState.audioPlayerRef.currentTime = s
+    else
+      document.querySelector(
+        'audio[data-testid="player-song-audio"]',
+      ).currentTime = s
   }, seconds)
 const playPause = () =>
   win
@@ -258,7 +264,10 @@ const playPause = () =>
     .first()
     .click()
 const setPlaying = (on) =>
-  win.evaluate((v) => window.__cp.player.getState().actions.setPlayingState(v), on)
+  win.evaluate(
+    (v) => window.__cp.player.getState().actions.setPlayingState(v),
+    on,
+  )
 
 // ---------------- tiny runner ----------------
 let failed = 0
@@ -277,7 +286,9 @@ async function test(name, fn) {
         .slice(0, 400)}`,
     )
     await win
-      ?.screenshot({ path: `/tmp/e2e-handoff-fail-${name.replace(/\W+/g, '_')}.png` })
+      ?.screenshot({
+        path: `/tmp/e2e-handoff-fail-${name.replace(/\W+/g, '_')}.png`,
+      })
       .catch(() => {})
   }
 }
@@ -288,21 +299,33 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol
 
 // ---------------- songs ----------------
 const albumId = (
-  await nd('search3', { query: ALBUM, albumCount: 1, songCount: 0, artistCount: 0 })
+  await nd('search3', {
+    query: ALBUM,
+    albumCount: 1,
+    songCount: 0,
+    artistCount: 0,
+  })
 ).searchResult3.album[0].id
 const albumSongs = (await nd('getAlbum', { id: albumId })).album.song
 const [A, B, C, D] = albumSongs.map((s) => s.id)
 // B twice: index 1 and index 3.
 const QUEUE = [A, B, C, B, D]
-const allSongs = (
-  await nd('search3', { query: '', songCount: 500, albumCount: 0, artistCount: 0 })
-).searchResult3.song.map((s) => s.id)
+/** Every song id now (ids can change when a file is deleted and comes back). */
+const allSongs = async () =>
+  (
+    await nd('search3', {
+      query: '',
+      songCount: 500,
+      albumCount: 0,
+      artistCount: 0,
+    })
+  ).searchResult3.song.map((s) => s.id)
 
 // ======================= the server =======================
 await test('Navidrome lists indexBasedQueue and formPost, and moves positionMs on for playing entries', async () => {
-  const ext = (await nd('getOpenSubsonicExtensions')).openSubsonicExtensions.map(
-    (e) => e.name,
-  )
+  const ext = (
+    await nd('getOpenSubsonicExtensions')
+  ).openSubsonicExtensions.map((e) => e.name)
   expect(ext.includes('indexBasedQueue'), `extensions: ${ext}`)
   expect(ext.includes('formPost'), `extensions: ${ext}`)
   await phone.report(D, 'playing', 10000)
@@ -336,7 +359,10 @@ await test('phone paused → PC offers Continue; it starts at the second copy of
   await look()
   const h = await until(async () => (await handoff()).offer)
   expect(
-    h?.kind === 'paused' && h.index === 3 && h.song === B && h.device === 'ClearPlay Android',
+    h?.kind === 'paused' &&
+      h.index === 3 &&
+      h.song === B &&
+      h.device === 'ClearPlay Android',
     `offer ${JSON.stringify(h)}`,
   )
   const text = await win.locator('[data-testid=handoff-pill]').innerText()
@@ -362,10 +388,18 @@ await test('phone paused → PC offers Continue; it starts at the second copy of
   const s = saves(mark)
   expect(s.length >= 1, 'no save call')
   expect(
-    s.every((c) => c.method === 'POST' && !c.q.has('id') && c.body.getAll('id').length === 5),
+    s.every(
+      (c) =>
+        c.method === 'POST' &&
+        !c.q.has('id') &&
+        c.body.getAll('id').length === 5,
+    ),
     `save calls ${JSON.stringify(s.map((c) => ({ m: c.method, urlIds: c.q.getAll('id').length, bodyIds: c.body.getAll('id').length })))}`,
   )
-  expect(s.every((c) => c.q.get('c') === 'ClearPlay'), 'not sent as c=ClearPlay')
+  expect(
+    s.every((c) => c.q.get('c') === 'ClearPlay'),
+    'not sent as c=ClearPlay',
+  )
   expect(!(await handoff()).offer, 'offer still showing')
 })
 
@@ -396,31 +430,62 @@ await test('phone still playing → "Continue here" starts at its song (first ma
   }, 20000)
   expect(p, `player ${JSON.stringify(await player())}`)
   const expected = 20 + (Date.now() - reported) / 1000
-  expect(near(p.time, expected, 4), `at ${p.time}, phone would be at ~${expected.toFixed(1)}`)
+  expect(
+    near(p.time, expected, 4),
+    `at ${p.time}, phone would be at ~${expected.toFixed(1)}`,
+  )
   const q = await until(async () => {
     const x = await phone.queue()
     return x.changedBy === 'ClearPlay' ? x : null
   }, 5000)
-  expect(q?.currentIndex === 3, `saved back ${JSON.stringify(q && q.currentIndex)}`)
+  expect(
+    q?.currentIndex === 3,
+    `saved back ${JSON.stringify(q && q.currentIndex)}`,
+  )
 })
 
-await test('rule as written: the phone, still playing after "Continue here", makes this PC show "Continued on ClearPlay Android"', async () => {
+await test("v3: PC takes over from a still-playing phone → no pill on the PC; the phone's own check says it was left behind", async () => {
   // No remote control: the phone keeps playing B until someone pauses it.
   await phone.report(B, 'playing', 25000)
-  await win.evaluate(() => window.__cp.handoff.setState({ leftBehindShown: false }))
+  await win.evaluate(() =>
+    window.__cp.handoff.setState({ leftBehindShown: false }),
+  )
   // A song change here runs the left-behind check (so does the 60 s timer).
-  await win.locator('[data-testid=player-button-next]').click().catch(() => {})
-  const lb = await until(async () => (await handoff()).leftBehind, 6000)
-  console.log(`      note: left-behind after Continue here = ${JSON.stringify(lb)}`)
-  expect(lb, 'no left-behind pill (the rule as written shows one)')
-  await win.locator('[data-testid=handoff-left-behind] button[aria-label]').click()
+  await win.locator('[data-testid=player-button-next]').click()
+  await sleep(6000)
+  const lb = (await handoff()).leftBehind
+  expect(!lb, `PC shows left behind: ${JSON.stringify(lb)}`)
+  // The phone's check: its getNowPlaying, then the queue (changedBy).
+  const np = await phone.nowPlaying()
+  const q = await phone.queue()
+  const input = {
+    publishing: true,
+    playingHere: true,
+    thisApp: ANDROID,
+    username: 'admin',
+    nowPlaying: np.map((e) => ({ ...e, playerName: e.playerName ?? '' })),
+    queueIds: QUEUE,
+    alreadyShown: false,
+  }
+  expect(
+    rules.leftBehindCandidate(input),
+    'phone: no candidate entry for the PC',
+  )
+  const phoneSees = rules.leftBehind({ ...input, serverChangedBy: q.changedBy })
+  expect(
+    phoneSees?.device === 'ClearPlay desktop',
+    `phone's check: ${JSON.stringify(phoneSees)} (changedBy ${q.changedBy})`,
+  )
   await phone.report(B, 'stopped', 26000)
 })
 
 // ======================= PC → phone =======================
 await test('PC pause → server has the right copy of the song and second; the phone would offer it', async () => {
   await startQueue(QUEUE, 3)
-  await until(async () => (await player()).playing && (await player()).time > 1, 15000)
+  await until(
+    async () => (await player()).playing && (await player()).time > 1,
+    15000,
+  )
   await seek(15)
   await sleep(1200)
   const mark = Date.now()
@@ -450,10 +515,16 @@ await test('PC pause → server has the right copy of the song and second; the p
     },
     handledChanged: null,
     playingHere: false,
-    nowPlaying: (await phone.nowPlaying()).map((e) => ({ ...e, playerName: e.playerName ?? '' })),
+    nowPlaying: (await phone.nowPlaying()).map((e) => ({
+      ...e,
+      playerName: e.playerName ?? '',
+    })),
   })
   expect(
-    o?.kind === 'paused' && o.index === 3 && o.device === 'ClearPlay desktop' && near(o.positionMs, at * 1000, 1500),
+    o?.kind === 'paused' &&
+      o.index === 3 &&
+      o.device === 'ClearPlay desktop' &&
+      near(o.positionMs, at * 1000, 1500),
     `phone's offer ${JSON.stringify(o && { ...o, song: o.song.id })}`,
   )
 })
@@ -480,31 +551,49 @@ await test('PC playing → the phone would offer "Playing on ClearPlay desktop" 
     nowPlaying: np.map((e) => ({ ...e, playerName: e.playerName ?? '' })),
   })
   expect(
-    o?.kind === 'playing' && o.index === 3 && near(o.positionMs, pc.time * 1000, 2500),
+    o?.kind === 'playing' &&
+      o.index === 3 &&
+      near(o.positionMs, pc.time * 1000, 2500),
     `phone's offer ${JSON.stringify(o && { ...o, song: o.song.id })}, PC at ${pc.time}`,
   )
 })
 
 // ======================= left behind =======================
 await test('phone continues → "Continued on ClearPlay Android"; nothing saved while it shows; Pause here saves nothing', async () => {
-  await win.evaluate(() => window.__cp.handoff.setState({ leftBehindShown: false }))
+  await win.evaluate(() =>
+    window.__cp.handoff.setState({ leftBehindShown: false }),
+  )
   await phone.save(QUEUE, 2, 3000)
   await phone.report(C, 'playing', 3000)
   const mark = Date.now()
   await win.locator('[data-testid=player-button-next]').click()
   const lb = await until(async () => (await handoff()).leftBehind, 6000)
-  expect(lb?.device === 'ClearPlay Android', `left behind ${JSON.stringify(lb)}`)
-  const text = await win.locator('[data-testid=handoff-left-behind]').innerText()
+  expect(
+    lb?.device === 'ClearPlay Android',
+    `left behind ${JSON.stringify(lb)}`,
+  )
+  const text = await win
+    .locator('[data-testid=handoff-left-behind]')
+    .innerText()
   expect(/Continued on ClearPlay Android/.test(text), `pill "${text}"`)
   await sleep(6000)
-  expect(saves(mark).length === 0, `${saves(mark).length} saves while left behind`)
-  expect((await player()).playing, 'paused by itself (never pause automatically)')
+  expect(
+    saves(mark).length === 0,
+    `${saves(mark).length} saves while left behind`,
+  )
+  expect(
+    (await player()).playing,
+    'paused by itself (never pause automatically)',
+  )
   const pauseMark = Date.now()
   await win.locator('[data-testid=handoff-pause-here]').click()
   await until(async () => !(await player()).playing)
   await sleep(2500)
   expect(saves(pauseMark).length === 0, 'Pause here saved')
-  expect((await phone.queue()).changedBy === ANDROID, 'server queue overwritten')
+  expect(
+    (await phone.queue()).changedBy === ANDROID,
+    'server queue overwritten',
+  )
   expect(!(await handoff()).leftBehind, 'pill still showing')
   await phone.report(C, 'stopped', 9000)
 })
@@ -521,7 +610,10 @@ await test('clearing the queue here leaves the server queue alone', async () => 
   await sleep(5500)
   expect(saves(mark).length === 0, 'clear queue saved')
   const q = await phone.queue()
-  expect(q.changedBy === ANDROID && q.entry.length === 2, 'server queue changed')
+  expect(
+    q.changedBy === ANDROID && q.entry.length === 2,
+    'server queue changed',
+  )
 })
 
 // ======================= offer lifecycle =======================
@@ -536,7 +628,10 @@ await test('× hides the offer until the server queue changes again', async () =
     Object.values(window.__cp.settings.getState().handledChanged),
   )
   const q = await phone.queue()
-  expect(handled.includes(q.changed), `handledChanged ${handled} is not the server's ${q.changed}`)
+  expect(
+    handled.includes(q.changed),
+    `handledChanged ${handled} is not the server's ${q.changed}`,
+  )
   await sleep(1100)
   await phone.save([D, C, A], 1, 2000)
   await look()
@@ -544,7 +639,9 @@ await test('× hides the offer until the server queue changes again', async () =
 })
 
 await test('playing something else here hides the offer for good', async () => {
-  await win.evaluate(() => window.__cp.settings.getState().set({ syncQueue: false }))
+  await win.evaluate(() =>
+    window.__cp.settings.getState().set({ syncQueue: false }),
+  )
   expect((await handoff()).offer, 'no offer to start with')
   await startQueue([A], 0)
   await until(async () => (await player()).playing, 15000)
@@ -553,10 +650,12 @@ await test('playing something else here hides the offer for good', async () => {
   await sleep(800)
   await look()
   expect(!(await handoff()).offer, 'offered again after playing something else')
-  await win.evaluate(() => window.__cp.settings.getState().set({ syncQueue: true }))
+  await win.evaluate(() =>
+    window.__cp.settings.getState().set({ syncQueue: true }),
+  )
 })
 
-await test("a clock 10 min off changes nothing (ahead and behind)", async () => {
+await test('a clock 10 min off changes nothing (ahead and behind)', async () => {
   for (const offset of [600_000, -600_000]) {
     await win.evaluate((ms) => {
       window.__realNow = window.__realNow || Date.now
@@ -566,7 +665,10 @@ await test("a clock 10 min off changes nothing (ahead and behind)", async () => 
     await phone.save([B, D], 1, 4000)
     await look()
     const h = await until(async () => (await handoff()).offer, 4000)
-    expect(h?.kind === 'paused' && h.song === D, `offset ${offset}: offer ${JSON.stringify(h)}`)
+    expect(
+      h?.kind === 'paused' && h.song === D,
+      `offset ${offset}: offer ${JSON.stringify(h)}`,
+    )
     const text = await win.locator('[data-testid=handoff-pill]').innerText()
     const age = offset > 0 ? /10 min ago/ : /just now/
     expect(age.test(text), `offset ${offset}: pill "${text}"`)
@@ -579,9 +681,147 @@ await test("a clock 10 min off changes nothing (ahead and behind)", async () => 
   })
 })
 
+// ======================= v3: who to trust =======================
+await test('v3: Symfonium with only scrobble?submission=false → "Saved by Symfonium", Continue uses the saved position', async () => {
+  await setPlaying(false)
+  await sleep(1500)
+  await ndPost(
+    'savePlayQueueByIndex',
+    [
+      ...[A, B, C].map((id) => ['id', id]),
+      ['currentIndex', '1'],
+      ['position', '7000'],
+    ],
+    'Symfonium',
+  )
+  // Old-style now playing at 30 s: Navidrome shows it as playing and counts on.
+  await nd(
+    'scrobble',
+    { id: C, submission: 'false', position: 30 },
+    'Symfonium',
+  )
+  const legacy = (await phone.nowPlaying()).find(
+    (e) => e.playerName === 'Symfonium',
+  )
+  expect(
+    legacy?.state === 'playing',
+    `Symfonium entry ${JSON.stringify(legacy && legacy.state)}`,
+  )
+  await look()
+  const h = await until(async () => (await handoff()).offer)
+  expect(
+    h?.kind === 'saved' &&
+      h.index === 1 &&
+      h.song === B &&
+      h.positionMs === 7000,
+    `offer ${JSON.stringify(h)}`,
+  )
+  const text = await win.locator('[data-testid=handoff-pill]').innerText()
+  const titleB = albumSongs.find((x) => x.id === B).title
+  expect(
+    /Saved by Symfonium/.test(text) &&
+      text.includes(titleB) &&
+      /just now|min ago/.test(text),
+    `pill says "${text}"`,
+  )
+  expect(!/Playing on|Paused on/.test(text), `pill says "${text}"`)
+  await win.locator('[data-testid=handoff-continue]').click()
+  const p = await until(async () => {
+    const x = await player()
+    return x.playing && x.index === 1 && x.time >= 7 ? x : null
+  }, 20000)
+  expect(
+    p && p.id === B && near(p.time, 7, 3),
+    `started at ${JSON.stringify(await player())}`,
+  )
+  await setPlaying(false)
+  await sleep(1500)
+})
+
+/** Navidrome's web API (admin): log in, then delete the files marked missing. */
+async function purgeMissing() {
+  const login = await fetch(`http://127.0.0.1:${ND_PORT}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'admin', password: 'test1234' }),
+  })
+  const { token } = await login.json()
+  const res = await fetch(`http://127.0.0.1:${ND_PORT}/api/missing`, {
+    method: 'DELETE',
+    headers: { 'X-ND-Authorization': `Bearer ${token}` },
+  })
+  expect(res.ok, `DELETE /api/missing: ${res.status}`)
+}
+async function scan() {
+  await nd('startScan')
+  await sleep(1000)
+  await until(
+    async () => !(await nd('getScanStatus')).scanStatus.scanning,
+    30000,
+  )
+}
+
+await test('v3: a song before the current one deleted from the library, phone paused → Continue starts at the right song', async () => {
+  const cold = (
+    await nd('search3', {
+      query: 'Cold Harbour',
+      albumCount: 1,
+      songCount: 0,
+      artistCount: 0,
+    })
+  ).searchResult3.album[0].id
+  const songs = (await nd('getAlbum', { id: cold })).album.song
+  const [W, X, Y, Z] = songs.map((x) => x.id)
+  await phone.save([W, X, Y, Z], 2, 9000)
+  await phone.report(Y, 'paused', 9000)
+  // Delete X (before the current song Y) from the library and purge it.
+  const file = path.join(rig, 'music', songs[1].path)
+  const aside = `${file}.aside`
+  fs.renameSync(file, aside)
+  try {
+    await scan()
+    await purgeMissing()
+    const q = await phone.queue()
+    expect(
+      q.entry.length === 3 && q.currentIndex === 2 && q.entry[2].id === Z,
+      `server queue after the delete: ${q.entry.length} songs, index ${q.currentIndex} → ${q.entry[q.currentIndex]?.title}`,
+    )
+    await look()
+    const h = await until(async () => (await handoff()).offer)
+    expect(
+      h?.kind === 'paused' &&
+        h.song === Y &&
+        h.index === 1 &&
+        h.positionMs === 9000,
+      `offer ${JSON.stringify(h)}`,
+    )
+    const text = await win.locator('[data-testid=handoff-pill]').innerText()
+    expect(
+      text.includes(songs[2].title),
+      `pill names "${text}", not ${songs[2].title}`,
+    )
+    await win.locator('[data-testid=handoff-continue]').click()
+    const p = await until(async () => {
+      const x = await player()
+      return x.playing && x.id === Y && x.time >= 9 ? x : null
+    }, 20000)
+    expect(
+      p && p.index === 1 && near(p.time, 9, 3),
+      `started at ${JSON.stringify(await player())}`,
+    )
+  } finally {
+    fs.renameSync(aside, file)
+    await scan()
+    await phone.report(Y, 'stopped', 9000)
+  }
+  await setPlaying(false)
+  await sleep(1500)
+})
+
 // ======================= saves =======================
 await test('past song 1 000 (2 500-song queue with local songs): 100 before, 899 after, the current song included', async () => {
-  const big = Array.from({ length: 2500 }, (_, i) => allSongs[i % allSongs.length])
+  const ids = await allSongs()
+  const big = Array.from({ length: 2500 }, (_, i) => ids[i % ids.length])
   const mark = Date.now()
   await win.evaluate(
     async ({ big }) => {
@@ -590,14 +830,19 @@ await test('past song 1 000 (2 500-song queue with local songs): 100 before, 899
       const songs = []
       for (const id of big) {
         if (!cache[id]) {
-          const r = await fetch(`${url}/rest/getSong?u=admin&p=test1234&v=1.16.1&c=e2e&f=json&id=${id}`)
+          const r = await fetch(
+            `${url}/rest/getSong?u=admin&p=test1234&v=1.16.1&c=e2e&f=json&id=${id}`,
+          )
           cache[id] = (await r.json())['subsonic-response'].song
         }
         songs.push(cache[id])
       }
       // Ten "Music on this computer" songs before the current one.
       for (let i = 0; i < 10; i++)
-        songs.splice(1450, 0, { ...songs[0], id: `tr-${String(i).padStart(16, 'a')}` })
+        songs.splice(1450, 0, {
+          ...songs[0],
+          id: `tr-${String(i).padStart(16, 'a')}`,
+        })
       window.__cp.player.getState().actions.setSongList(songs, 1510)
     },
     { big },
@@ -614,19 +859,28 @@ await test('past song 1 000 (2 500-song queue with local songs): 100 before, 899
   expect(q, 'not saved')
   expect(q.entry.length === 1000, `saved ${q.entry.length} songs`)
   expect(q.currentIndex === 100, `currentIndex ${q.currentIndex}`)
-  expect(q.entry[100].id === cur.id, 'saved current song is not the playing one')
+  expect(
+    q.entry[100].id === cur.id,
+    'saved current song is not the playing one',
+  )
   const body = saves(mark).at(-1).body.getAll('id')
   expect(!body.some((id) => id.startsWith('tr-')), 'local songs were sent')
 })
 
 await test('system sleep and screen lock save right away', async () => {
   await startQueue(QUEUE, 3)
-  await until(async () => (await player()).playing && (await player()).time > 2, 15000)
+  await until(
+    async () => (await player()).playing && (await player()).time > 2,
+    15000,
+  )
   for (const event of ['suspend', 'lock-screen']) {
     await sleep(4500)
     await phone.save([D], 0, 0)
     const mark = Date.now()
-    await electronApp.evaluate(({ powerMonitor }, e) => powerMonitor.emit(e), event)
+    await electronApp.evaluate(
+      ({ powerMonitor }, e) => powerMonitor.emit(e),
+      event,
+    )
     const q = await until(async () => {
       const x = await phone.queue()
       return x.changedBy === 'ClearPlay' ? x : null
@@ -634,7 +888,9 @@ await test('system sleep and screen lock save right away', async () => {
     expect(q, `${event}: not saved`)
     const pc = await player()
     expect(
-      Date.now() - mark < 3000 && q.currentIndex === 3 && near(q.position, pc.time * 1000, 2000),
+      Date.now() - mark < 3000 &&
+        q.currentIndex === 3 &&
+        near(q.position, pc.time * 1000, 2000),
       `${event}: ${JSON.stringify({ i: q.currentIndex, pos: q.position, pc: pc.time })}`,
     )
   }
@@ -649,12 +905,20 @@ await test('quit while playing saves first (inside the quit handshake)', async (
   const mark = Date.now()
   await quit()
   const q = await phone.queue()
-  expect(q.changedBy === 'ClearPlay', `server changedBy ${q.changedBy} after quit`)
+  expect(
+    q.changedBy === 'ClearPlay',
+    `server changedBy ${q.changedBy} after quit`,
+  )
   expect(
     q.currentIndex === 3 && near(q.position, quitAt * 1000, 2000),
     `saved ${JSON.stringify({ i: q.currentIndex, pos: q.position })}, quit at ${quitAt}`,
   )
-  const report = calls.find((c) => c.ep === 'reportPlayback' && c.at >= mark && c.q.get('state') === 'stopped')
+  const report = calls.find(
+    (c) =>
+      c.ep === 'reportPlayback' &&
+      c.at >= mark &&
+      c.q.get('state') === 'stopped',
+  )
   expect(report, 'no "stopped" report after the save')
   const save = saves(mark)[0]
   expect(save && save.at <= report.at, 'the save did not go first')

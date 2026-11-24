@@ -122,7 +122,9 @@ function HandoffPill() {
   const left = useHandoffStore((s) => s.leftBehind)
   const [busy, setBusy] = useState(false)
   const age = useAge(
-    current?.offer.kind === 'paused' ? current.offer.changed : undefined,
+    current && current.offer.kind !== 'playing'
+      ? current.offer.changed
+      : undefined,
   )
   const k = 'clearplay.handoff'
 
@@ -136,8 +138,14 @@ function HandoffPill() {
   if (current) {
     const { offer } = current
     const playing = offer.kind === 'playing'
+    const lead = {
+      playing: `${k}.playingOn`,
+      paused: `${k}.pausedOn`,
+      saved: `${k}.savedBy`,
+    }[offer.kind]
+    // The song Continue starts (offer.song), never another one.
     const parts = [
-      t(playing ? `${k}.playingOn` : `${k}.pausedOn`, { device: offer.device }),
+      t(lead, { device: offer.device }),
       offer.song.title,
       ...(playing ? [] : [age]),
     ]

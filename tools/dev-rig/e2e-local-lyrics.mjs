@@ -9,7 +9,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { _electron as electron } from 'playwright-core'
 
-const app = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..')
+const app = path.resolve(
+  path.dirname(new URL(import.meta.url).pathname),
+  '../..',
+)
 const rig = process.env.RIG || '/tmp/clearplay-rig'
 const music = path.join(rig, 'local-lyrics-music')
 const userData = path.join(rig, 'userdata-local-lyrics')
@@ -27,10 +30,25 @@ const LYRICS = [
   '[00:20.00]<00:20.00>Word <00:20.60>by <00:21.10>word',
 ].join('\n')
 execFileSync('ffmpeg', [
-  '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'sine=frequency=330:duration=90',
-  '-af', 'volume=0.1', '-c:a', 'flac',
-  '-metadata', 'title=Embedded lyrics', '-metadata', 'artist=Test', '-metadata', 'album=Lyrics',
-  '-metadata', `LYRICS=${LYRICS}`,
+  '-loglevel',
+  'error',
+  '-y',
+  '-f',
+  'lavfi',
+  '-i',
+  'sine=frequency=330:duration=90',
+  '-af',
+  'volume=0.1',
+  '-c:a',
+  'flac',
+  '-metadata',
+  'title=Embedded lyrics',
+  '-metadata',
+  'artist=Test',
+  '-metadata',
+  'album=Lyrics',
+  '-metadata',
+  `LYRICS=${LYRICS}`,
   path.join(music, 'Test', 'Lyrics', '01 - Embedded lyrics.flac'),
 ])
 
@@ -49,9 +67,22 @@ async function until(fn, ms = 8000) {
 async function api(endpoint, params = {}) {
   const c = await win.evaluate(() => window.api.localLibrary.connect())
   const salt = crypto.randomBytes(6).toString('hex')
-  const t = crypto.createHash('md5').update(c.password + salt).digest('hex')
-  const q = new URLSearchParams({ u: c.username, t, s: salt, v: '1.16.1', c: 'e2e', f: 'json', ...params })
-  return (await (await fetch(`${c.url}/rest/${endpoint}?${q}`)).json())['subsonic-response']
+  const t = crypto
+    .createHash('md5')
+    .update(c.password + salt)
+    .digest('hex')
+  const q = new URLSearchParams({
+    u: c.username,
+    t,
+    s: salt,
+    v: '1.16.1',
+    c: 'e2e',
+    f: 'json',
+    ...params,
+  })
+  return (await (await fetch(`${c.url}/rest/${endpoint}?${q}`)).json())[
+    'subsonic-response'
+  ]
 }
 let passed = 0
 let failed = 0
@@ -62,8 +93,16 @@ async function test(name, fn) {
     console.log(`PASS  ${name}`)
   } catch (e) {
     failed++
-    console.log(`FAIL  ${name}: ${String(e?.message || e).split('\n')[0].slice(0, 300)}`)
-    await win.screenshot({ path: `/tmp/e2e-local-lyrics-fail-${name.replace(/\W+/g, '_')}.png` }).catch(() => {})
+    console.log(
+      `FAIL  ${name}: ${String(e?.message || e)
+        .split('\n')[0]
+        .slice(0, 300)}`,
+    )
+    await win
+      .screenshot({
+        path: `/tmp/e2e-local-lyrics-fail-${name.replace(/\W+/g, '_')}.png`,
+      })
+      .catch(() => {})
   }
 }
 function expect(cond, msg) {
@@ -72,7 +111,12 @@ function expect(cond, msg) {
 
 const electronApp = await electron.launch({
   executablePath: path.join(app, 'node_modules/electron/dist/electron'),
-  args: [app, '--no-sandbox', '--disable-gpu-sandbox', `--user-data-dir=${userData}`],
+  args: [
+    app,
+    '--no-sandbox',
+    '--disable-gpu-sandbox',
+    `--user-data-dir=${userData}`,
+  ],
   cwd: app,
   env: { ...process.env, CLEARPLAY_E2E: '1' },
   timeout: 60000,
@@ -81,7 +125,10 @@ const win = await electronApp.firstWindow()
 win.on('pageerror', (e) => errors.push(String(e).slice(0, 200)))
 await win.waitForLoadState('domcontentloaded')
 await electronApp.evaluate(({ webContents, BrowserWindow }) => {
-  const bw = webContents.getAllWebContents().map((c) => BrowserWindow.fromWebContents(c)).find(Boolean)
+  const bw = webContents
+    .getAllWebContents()
+    .map((c) => BrowserWindow.fromWebContents(c))
+    .find(Boolean)
   bw?.setSize(1440, 900)
 })
 await win.waitForTimeout(2500)
@@ -94,12 +141,17 @@ await test('the local server returns all 6 timed lines of the embedded tag', asy
     return !s.scanning && s.tracks === 1
   }, 30000)
   await win.locator('[data-testid=login-local]').click()
-  await until(async () => (await win.locator('input[name="url"]').count()) === 0, 8000)
+  await until(
+    async () => (await win.locator('input[name="url"]').count()) === 0,
+    8000,
+  )
   song = (await api('getRandomSongs', { size: 1 })).randomSongs.song[0]
-  const sl = (await api('getLyricsBySongId', { id: song.id })).lyricsList.structuredLyrics[0]
+  const sl = (await api('getLyricsBySongId', { id: song.id })).lyricsList
+    .structuredLyrics[0]
   expect(sl?.synced, 'not synced')
   expect(
-    JSON.stringify(sl.line.map((l) => l.start)) === JSON.stringify([4700, 7700, 10200, 14700, 19700, 79700]),
+    JSON.stringify(sl.line.map((l) => l.start)) ===
+      JSON.stringify([4700, 7700, 10200, 14700, 19700, 79700]),
     `starts ${JSON.stringify(sl.line.map((l) => l.start))}`,
   )
   expect(!sl.line.some((l) => /[<>]/.test(l.value)), 'word markers left')
@@ -107,7 +159,9 @@ await test('the local server returns all 6 timed lines of the embedded tag', asy
 
 const active = () =>
   win.evaluate(() => {
-    const lines = [...document.querySelectorAll('[role=dialog] p[lang], [role=dialog] p')]
+    const lines = [
+      ...document.querySelectorAll('[role=dialog] p[lang], [role=dialog] p'),
+    ]
     return lines.find((p) => p.style.opacity === '1')?.innerText ?? null
   })
 const seekTo = async (s) => {
@@ -121,12 +175,30 @@ await test('fullscreen: every line on screen, the highlight moves line by line',
   await win.evaluate((s) => {
     window.__cp.player.getState().actions.setSongList([s], 0)
   }, song)
-  await until(() => win.evaluate(() => (document.querySelector('[data-testid=player-song-audio]')?.currentTime ?? 0) > 0.3), 10000)
-  await win.evaluate(() => window.__cp.player.getState().actions.setPlayingState(false))
+  await until(
+    () =>
+      win.evaluate(
+        () =>
+          (document.querySelector('[data-testid=player-song-audio]')
+            ?.currentTime ?? 0) > 0.3,
+      ),
+    10000,
+  )
+  await win.evaluate(() =>
+    window.__cp.player.getState().actions.setPlayingState(false),
+  )
   await win.locator('[data-testid=track-fullscreen-button]').click()
   await sleep(1800)
-  const text = await win.evaluate(() => document.querySelector('[role=dialog]')?.innerText ?? '')
-  for (const line of ['First line', 'No fraction line', 'Chorus line (repeats)', 'One-digit minute', 'Word by word'])
+  const text = await win.evaluate(
+    () => document.querySelector('[role=dialog]')?.innerText ?? '',
+  )
+  for (const line of [
+    'First line',
+    'No fraction line',
+    'Chorus line (repeats)',
+    'One-digit minute',
+    'Word by word',
+  ])
     expect(text.includes(line), `"${line}" not on screen`)
   expect(!/<\d+:\d+/.test(text), 'a <mm:ss.xx> marker is on screen')
   const steps = [
@@ -143,7 +215,10 @@ await test('fullscreen: every line on screen, the highlight moves line by line',
     await seekTo(t)
     const got = await active()
     seen.push(`${t}s:${got}`)
-    expect(got === want, `at ${t} s the highlight is on "${got}", expected "${want}" (${seen.join(' | ')})`)
+    expect(
+      got === want,
+      `at ${t} s the highlight is on "${got}", expected "${want}" (${seen.join(' | ')})`,
+    )
   }
 })
 

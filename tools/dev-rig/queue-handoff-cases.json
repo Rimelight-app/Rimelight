@@ -1,7 +1,20 @@
 {
-  "version": 2,
+  "version": 3,
   "date": "2026-11-24",
   "about": "Shared rules for \"Continue on other devices\" (ClearPlay desktop 0.6.0, ClearPlay Android 1.6.0). Desktop runs these in tools/dev-rig/queue-handoff-unit.mjs against src/service/queue-handoff.ts; Android copies this file unchanged and runs the same cases against QueueHandoff.kt. Change this file first, in both apps, when a rule changes. Times are server times (ISO 8601) except nowMs (this device clock, epoch ms). Long lists are written as {\"generate\":{\"prefix\":\"s\",\"from\":A,\"to\":B,\"step\":K}}: the ids s<i> for i = A, A+K, ... while i < B. As songs, each is {\"id\":\"s<i>\",\"local\":false}, except with \"localEvery\":N, where i % N == N-1 is local.",
+  "notes": [
+    "v3: Live position (Now Playing) is trusted only from the other ClearPlay app, playing or paused. Any other app: the saved song and position, kind \"saved\" (\"Saved by <app> · <song> · <age>\").",
+    "v3: <song> in every pill is the song Continue starts (offer.song), never the Now Playing song when that one is not in the saved queue.",
+    "v3: Left behind needs a candidate Now Playing entry (leftBehindCandidate) AND the server queue changedBy = the other ClearPlay app (leftBehind). Read the queue only when there is a candidate.",
+    "v3: On a song change, run the left-behind check first, then schedule that change's save (otherwise the device left behind could save first and make itself changedBy).",
+    "Left behind shows once per period away: alreadyShown is set when it shows and cleared when this device saves successfully.",
+    "Server times (changed, handledChanged) are compared as instants, never as strings and never with this device's clock.",
+    "A saved currentIndex past the end of the entries is clamped to the last song.",
+    "saveWindow never fills up from before the current song: at most 100 before, the rest after.",
+    "ageText: \"yesterday\" is 24 to 48 hours of elapsed time, not the calendar day.",
+    "A song change counts as natural (not a skip; it does not close the left-behind pill) when the previous song was within 3 s of its end (isNaturalEnd).",
+    "Clearing the queue = only the playing song is left (isQueueCleared); it is not saved."
+  ],
   "thisApp": {
     "desktop": "ClearPlay",
     "android": "ClearPlay-Android"
@@ -468,7 +481,7 @@
   ],
   "offer": [
     {
-      "name": "no handledChanged yet: offered (paused, saved song and position)",
+      "name": "no handledChanged yet, phone gone from Now Playing: offered (paused, saved song and position)",
       "input": {
         "thisApp": "ClearPlay",
         "username": "toni",
@@ -831,7 +844,7 @@
       "expected": null
     },
     {
-      "name": "other device still playing: its song and position",
+      "name": "other ClearPlay app still playing: its song and live position",
       "input": {
         "thisApp": "ClearPlay",
         "username": "toni",
@@ -882,7 +895,7 @@
       }
     },
     {
-      "name": "other device paused: saved song and position",
+      "name": "v3: other ClearPlay app paused in Now Playing: its song and position",
       "input": {
         "thisApp": "ClearPlay",
         "username": "toni",
@@ -916,7 +929,7 @@
             "username": "toni",
             "playerName": "ClearPlay-Android",
             "state": "paused",
-            "positionMs": 90500,
+            "positionMs": 33000,
             "id": "c"
           }
         ]
@@ -925,10 +938,116 @@
         "kind": "paused",
         "device": "ClearPlay Android",
         "song": {
-          "id": "b"
+          "id": "c"
+        },
+        "index": 2,
+        "positionMs": 33000,
+        "changed": "2026-11-24T18:05:00.250Z"
+      }
+    },
+    {
+      "name": "v3: a song before the current one was deleted (server index now points one too far): the paused entry finds the right song",
+      "input": {
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "queue": {
+          "entries": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "c"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "d"
+            }
+          ],
+          "currentIndex": 2,
+          "positionMs": 61000,
+          "changed": "2026-11-24T18:05:00.250Z",
+          "changedBy": "ClearPlay-Android"
+        },
+        "handledChanged": null,
+        "playingHere": false,
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "paused",
+            "positionMs": 61000,
+            "id": "c"
+          }
+        ]
+      },
+      "expected": {
+        "kind": "paused",
+        "device": "ClearPlay Android",
+        "song": {
+          "id": "c"
         },
         "index": 1,
         "positionMs": 61000,
+        "changed": "2026-11-24T18:05:00.250Z"
+      }
+    },
+    {
+      "name": "v3: playing and paused entries of the other app: the playing one wins",
+      "input": {
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "queue": {
+          "entries": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "c"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "d"
+            }
+          ],
+          "currentIndex": 1,
+          "positionMs": 61000,
+          "changed": "2026-11-24T18:05:00.250Z",
+          "changedBy": "ClearPlay-Android"
+        },
+        "handledChanged": null,
+        "playingHere": false,
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "paused",
+            "positionMs": 1000,
+            "id": "a"
+          },
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 2000,
+            "id": "d"
+          }
+        ]
+      },
+      "expected": {
+        "kind": "playing",
+        "device": "ClearPlay Android",
+        "song": {
+          "id": "d"
+        },
+        "index": 4,
+        "positionMs": 2000,
         "changed": "2026-11-24T18:05:00.250Z"
       }
     },
@@ -1035,7 +1154,7 @@
       }
     },
     {
-      "name": "playing song not in the saved queue: saved song and position, still \"playing\"",
+      "name": "v3: playing song not in the saved queue: kind \"playing\", but song, index and position are the saved ones (the pill names the saved song)",
       "input": {
         "thisApp": "ClearPlay",
         "username": "toni",
@@ -1188,7 +1307,7 @@
       }
     },
     {
-      "name": "Symfonium saved and is paused",
+      "name": "v3: saved by Symfonium, nothing in Now Playing: \"saved\", saved song and position",
       "input": {
         "thisApp": "ClearPlay",
         "username": "toni",
@@ -1220,7 +1339,7 @@
         "nowPlaying": []
       },
       "expected": {
-        "kind": "paused",
+        "kind": "saved",
         "device": "Symfonium",
         "song": {
           "id": "b"
@@ -1231,7 +1350,7 @@
       }
     },
     {
-      "name": "Symfonium saved and is still playing",
+      "name": "v3: saved by Symfonium and it shows as playing: not trusted, saved song and position",
       "input": {
         "thisApp": "ClearPlay",
         "username": "toni",
@@ -1271,13 +1390,115 @@
         ]
       },
       "expected": {
-        "kind": "playing",
+        "kind": "saved",
         "device": "Symfonium",
         "song": {
-          "id": "d"
+          "id": "b"
         },
-        "index": 4,
-        "positionMs": 5000,
+        "index": 1,
+        "positionMs": 61000,
+        "changed": "2026-11-24T18:05:00.250Z"
+      }
+    },
+    {
+      "name": "v3: saved by Symfonium and it shows as paused: not trusted either",
+      "input": {
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "queue": {
+          "entries": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "c"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "d"
+            }
+          ],
+          "currentIndex": 1,
+          "positionMs": 61000,
+          "changed": "2026-11-24T18:05:00.250Z",
+          "changedBy": "Symfonium"
+        },
+        "handledChanged": null,
+        "playingHere": false,
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "Symfonium",
+            "state": "paused",
+            "positionMs": 5000,
+            "id": "d"
+          }
+        ]
+      },
+      "expected": {
+        "kind": "saved",
+        "device": "Symfonium",
+        "song": {
+          "id": "b"
+        },
+        "index": 1,
+        "positionMs": 61000,
+        "changed": "2026-11-24T18:05:00.250Z"
+      }
+    },
+    {
+      "name": "v3: Android sees a Symfonium queue: \"saved\"",
+      "input": {
+        "thisApp": "ClearPlay-Android",
+        "username": "toni",
+        "queue": {
+          "entries": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "c"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "d"
+            }
+          ],
+          "currentIndex": 1,
+          "positionMs": 61000,
+          "changed": "2026-11-24T18:05:00.250Z",
+          "changedBy": "Symfonium"
+        },
+        "handledChanged": null,
+        "playingHere": false,
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "Symfonium",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "d"
+          }
+        ]
+      },
+      "expected": {
+        "kind": "saved",
+        "device": "Symfonium",
+        "song": {
+          "id": "b"
+        },
+        "index": 1,
+        "positionMs": 61000,
         "changed": "2026-11-24T18:05:00.250Z"
       }
     },
@@ -1369,9 +1590,9 @@
       }
     }
   ],
-  "leftBehind": [
+  "leftBehindCandidate": [
     {
-      "name": "Android plays a song from this queue",
+      "name": "the other ClearPlay app plays a song from this queue: read the server queue",
       "input": {
         "publishing": true,
         "playingHere": true,
@@ -1395,157 +1616,20 @@
       }
     },
     {
-      "name": "desktop seen from Android",
+      "name": "nobody else playing: no need to read the queue",
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay-Android",
-        "username": "toni",
-        "nowPlaying": [
-          {
-            "username": "toni",
-            "playerName": "ClearPlay",
-            "state": "playing",
-            "positionMs": 90500,
-            "id": "c"
-          }
-        ],
-        "queueIds": ["a", "b", "c"],
-        "alreadyShown": false
-      },
-      "expected": {
-        "device": "ClearPlay desktop",
-        "song": "c"
-      }
-    },
-    {
-      "name": "publishing off: nothing",
-      "input": {
-        "publishing": false,
-        "playingHere": true,
         "thisApp": "ClearPlay",
         "username": "toni",
-        "nowPlaying": [
-          {
-            "username": "toni",
-            "playerName": "ClearPlay-Android",
-            "state": "playing",
-            "positionMs": 90500,
-            "id": "b"
-          }
-        ],
+        "nowPlaying": [],
         "queueIds": ["a", "b", "c"],
         "alreadyShown": false
       },
       "expected": null
     },
     {
-      "name": "not playing here: nothing",
-      "input": {
-        "publishing": true,
-        "playingHere": false,
-        "thisApp": "ClearPlay",
-        "username": "toni",
-        "nowPlaying": [
-          {
-            "username": "toni",
-            "playerName": "ClearPlay-Android",
-            "state": "playing",
-            "positionMs": 90500,
-            "id": "b"
-          }
-        ],
-        "queueIds": ["a", "b", "c"],
-        "alreadyShown": false
-      },
-      "expected": null
-    },
-    {
-      "name": "already shown: nothing",
-      "input": {
-        "publishing": true,
-        "playingHere": true,
-        "thisApp": "ClearPlay",
-        "username": "toni",
-        "nowPlaying": [
-          {
-            "username": "toni",
-            "playerName": "ClearPlay-Android",
-            "state": "playing",
-            "positionMs": 90500,
-            "id": "b"
-          }
-        ],
-        "queueIds": ["a", "b", "c"],
-        "alreadyShown": true
-      },
-      "expected": null
-    },
-    {
-      "name": "other device paused: nothing",
-      "input": {
-        "publishing": true,
-        "playingHere": true,
-        "thisApp": "ClearPlay",
-        "username": "toni",
-        "nowPlaying": [
-          {
-            "username": "toni",
-            "playerName": "ClearPlay-Android",
-            "state": "paused",
-            "positionMs": 90500,
-            "id": "b"
-          }
-        ],
-        "queueIds": ["a", "b", "c"],
-        "alreadyShown": false
-      },
-      "expected": null
-    },
-    {
-      "name": "song not in this queue: nothing",
-      "input": {
-        "publishing": true,
-        "playingHere": true,
-        "thisApp": "ClearPlay",
-        "username": "toni",
-        "nowPlaying": [
-          {
-            "username": "toni",
-            "playerName": "ClearPlay-Android",
-            "state": "playing",
-            "positionMs": 90500,
-            "id": "zz"
-          }
-        ],
-        "queueIds": ["a", "b", "c"],
-        "alreadyShown": false
-      },
-      "expected": null
-    },
-    {
-      "name": "another user: nothing",
-      "input": {
-        "publishing": true,
-        "playingHere": true,
-        "thisApp": "ClearPlay",
-        "username": "toni",
-        "nowPlaying": [
-          {
-            "username": "guest",
-            "playerName": "ClearPlay-Android",
-            "state": "playing",
-            "positionMs": 90500,
-            "id": "b"
-          }
-        ],
-        "queueIds": ["a", "b", "c"],
-        "alreadyShown": false
-      },
-      "expected": null
-    },
-    {
-      "name": "Symfonium playing: nothing (only the other ClearPlay app)",
+      "name": "Symfonium playing: no candidate",
       "input": {
         "publishing": true,
         "playingHere": true,
@@ -1566,6 +1650,324 @@
       "expected": null
     },
     {
+      "name": "publishing off: no candidate",
+      "input": {
+        "publishing": false,
+        "playingHere": true,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false
+      },
+      "expected": null
+    }
+  ],
+  "leftBehind": [
+    {
+      "name": "Android plays a song from this queue and saved last",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "ClearPlay-Android"
+      },
+      "expected": {
+        "device": "ClearPlay Android",
+        "song": "b"
+      }
+    },
+    {
+      "name": "desktop seen from Android",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "ClearPlay-Android",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "c"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "ClearPlay"
+      },
+      "expected": {
+        "device": "ClearPlay desktop",
+        "song": "c"
+      }
+    },
+    {
+      "name": "v3: this device took over (it saved last): nothing, even though the other app still plays",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "ClearPlay"
+      },
+      "expected": null
+    },
+    {
+      "name": "v3: Symfonium saved last: nothing",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "Symfonium"
+      },
+      "expected": null
+    },
+    {
+      "name": "v3: server queue not read (no candidate): nothing",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": null
+      },
+      "expected": null
+    },
+    {
+      "name": "publishing off: nothing",
+      "input": {
+        "publishing": false,
+        "playingHere": true,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "ClearPlay-Android"
+      },
+      "expected": null
+    },
+    {
+      "name": "not playing here: nothing",
+      "input": {
+        "publishing": true,
+        "playingHere": false,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "ClearPlay-Android"
+      },
+      "expected": null
+    },
+    {
+      "name": "already shown since this device last saved: nothing",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": true,
+        "serverChangedBy": "ClearPlay-Android"
+      },
+      "expected": null
+    },
+    {
+      "name": "shows again once this device has saved (alreadyShown cleared)",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "ClearPlay-Android"
+      },
+      "expected": {
+        "device": "ClearPlay Android",
+        "song": "b"
+      }
+    },
+    {
+      "name": "other device paused: nothing",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "paused",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "ClearPlay-Android"
+      },
+      "expected": null
+    },
+    {
+      "name": "song not in this queue: nothing",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "zz"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "ClearPlay-Android"
+      },
+      "expected": null
+    },
+    {
+      "name": "another user: nothing",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "guest",
+            "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "ClearPlay-Android"
+      },
+      "expected": null
+    },
+    {
+      "name": "Symfonium playing: nothing (only the other ClearPlay app)",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "ClearPlay",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "Symfonium",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "ClearPlay-Android"
+      },
+      "expected": null
+    },
+    {
       "name": "this app itself: nothing",
       "input": {
         "publishing": true,
@@ -1582,9 +1984,99 @@
           }
         ],
         "queueIds": ["a", "b", "c"],
-        "alreadyShown": false
+        "alreadyShown": false,
+        "serverChangedBy": "ClearPlay-Android"
       },
       "expected": null
+    }
+  ],
+  "isNaturalEnd": [
+    {
+      "name": "at the end",
+      "input": {
+        "positionS": 180,
+        "durationS": 180
+      },
+      "expected": true
+    },
+    {
+      "name": "3 s before the end",
+      "input": {
+        "positionS": 177,
+        "durationS": 180
+      },
+      "expected": true
+    },
+    {
+      "name": "just over 3 s before the end: a skip",
+      "input": {
+        "positionS": 176.9,
+        "durationS": 180
+      },
+      "expected": false
+    },
+    {
+      "name": "middle: a skip",
+      "input": {
+        "positionS": 60,
+        "durationS": 180
+      },
+      "expected": false
+    },
+    {
+      "name": "unknown duration: a skip",
+      "input": {
+        "positionS": 60,
+        "durationS": 0
+      },
+      "expected": false
+    }
+  ],
+  "isQueueCleared": [
+    {
+      "name": "only the playing song left",
+      "input": {
+        "previousIds": ["a", "b", "c"],
+        "currentIds": ["b"],
+        "previousCurrentId": "b"
+      },
+      "expected": true
+    },
+    {
+      "name": "one other song left (not the playing one)",
+      "input": {
+        "previousIds": ["a", "b", "c"],
+        "currentIds": ["c"],
+        "previousCurrentId": "b"
+      },
+      "expected": false
+    },
+    {
+      "name": "one song removed",
+      "input": {
+        "previousIds": ["a", "b", "c"],
+        "currentIds": ["a", "b"],
+        "previousCurrentId": "b"
+      },
+      "expected": false
+    },
+    {
+      "name": "was already a single song",
+      "input": {
+        "previousIds": ["b"],
+        "currentIds": ["b"],
+        "previousCurrentId": "b"
+      },
+      "expected": false
+    },
+    {
+      "name": "emptied (nothing left): not a clear to save around, nothing to save anyway",
+      "input": {
+        "previousIds": ["a", "b"],
+        "currentIds": [],
+        "previousCurrentId": "b"
+      },
+      "expected": false
     }
   ],
   "ageText": [

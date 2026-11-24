@@ -9,6 +9,7 @@ import {
   DESKTOP_APP,
   latestChanged,
   leftBehind,
+  leftBehindCandidate,
   offer,
   SaveEvent,
   shouldSave,
@@ -227,26 +228,44 @@ export function closeLeftBehind() {
     useHandoffStore.setState({ leftBehind: null })
 }
 
-/** Checks Now Playing: is the other ClearPlay app playing a song from this queue? */
-export async function checkLeftBehind() {
+let checking: Promise<void> | null = null
+
+/**
+ * Is this device left behind? The other ClearPlay app plays a song from this
+ * queue (Now Playing) and saved the server's queue last (read only then).
+ * Runs before a song change's save (see QueueObserver), so the device left
+ * behind doesn't save first and make itself changedBy.
+ */
+export function checkLeftBehind() {
+  if (!checking)
+    checking = runLeftBehindCheck().finally(() => {
+      checking = null
+    })
+  return checking
+}
+
+async function runLeftBehindCheck() {
   const state = useHandoffStore.getState()
   if (state.leftBehind || state.leftBehindShown || isUsingLocalLibrary()) return
-  const publishing = useClearPlaySettings.getState().syncQueue
-  if (!publishing || !isPlayingHere()) return
+  if (!useClearPlaySettings.getState().syncQueue || !isPlayingHere()) return
   const nowPlaying = await queueSync.getNowPlaying()
   if (!nowPlaying) return
-  const { currentList } = usePlayerStore.getState().songlist
-  const found = leftBehind({
+  const input = () => ({
     publishing: useClearPlaySettings.getState().syncQueue,
     playingHere: isPlayingHere(),
     thisApp: DESKTOP_APP,
     username: useAppStore.getState().data.username,
     nowPlaying,
-    queueIds: currentList.map((s) => s.id),
+    queueIds: usePlayerStore.getState().songlist.currentList.map((s) => s.id),
     alreadyShown: useHandoffStore.getState().leftBehindShown,
   })
+  if (!leftBehindCandidate(input())) return
+  const queue = await queueSync.getFromServer()
+  if (!queue) return
+  const found = leftBehind({ ...input(), serverChangedBy: queue.changedBy })
   if (!found) return
   debouncer.cancel()
+  const { currentList } = usePlayerStore.getState().songlist
   useHandoffStore.setState({
     leftBehind: {
       device: found.device,

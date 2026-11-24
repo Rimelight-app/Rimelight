@@ -10,6 +10,7 @@ import {
   isLibraryShuffle,
   topUpLibraryShuffle,
 } from '@/service/library-shuffle'
+import { isNaturalEnd, isQueueCleared } from '@/service/queue-handoff'
 import { queueSync } from '@/service/queue-sync'
 import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { usePlayerStore } from '@/store/player.store'
@@ -47,21 +48,25 @@ export function QueueObserver() {
       // "Clear queue" keeps only the playing song.
       const cleared =
         listChanged &&
-        list.length === 1 &&
-        prevList.length > 1 &&
-        list[0]?.id === prevSong?.id
+        isQueueCleared(
+          prevList.map((s) => s.id),
+          list.map((s) => s.id),
+          prevSong?.id ?? null,
+        )
       // The previous song played to its end (not a skip).
-      const prevDuration =
-        prev.playerState.currentDuration || prevSong?.duration || 0
-      const endedNaturally =
-        prevDuration > 0 && prev.playerProgress.progress >= prevDuration - 3
+      const endedNaturally = isNaturalEnd(
+        prev.playerProgress.progress,
+        prev.playerState.currentDuration || prevSong?.duration || 0,
+      )
       const autoEdit = autoEdits > 0 && !songChanged
 
       if (isSong && list.length) {
         if (songChanged) {
           if (!endedNaturally) closeLeftBehind()
-          publishEvent('songChange')
-          checkLeftBehind().catch(() => {})
+          // Left behind first, then this change's save (if any).
+          checkLeftBehind()
+            .catch(() => {})
+            .finally(() => publishEvent('songChange'))
         } else if (listChanged && !cleared) {
           if (!autoEdit) closeLeftBehind()
           publishEvent('queueEdit')

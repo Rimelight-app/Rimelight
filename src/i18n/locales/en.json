@@ -1121,6 +1121,7 @@
     "handoff": {
       "playingOn": "Playing on {{device}}",
       "pausedOn": "Paused on {{device}}",
+      "savedBy": "Saved by {{device}}",
       "continue": "Continue",
       "continueHere": "Continue here",
       "continueFrom": "Continue from {{device}}",

@@ -11,7 +11,7 @@ import { parseFile } from 'music-metadata'
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '../..')
 const fixtures = path.join(here, 'fixtures')
-const { parseLyrics, readLyrics } = await import(
+const { parseLyrics, readLyrics, syltLyrics } = await import(
   pathToFileURL(path.join(root, 'electron/main/core/local-library/lyrics.ts'))
     .href
 )
@@ -53,11 +53,14 @@ const EXPECTED = [
   { start: 79700, value: 'Chorus line (repeats)' },
 ]
 
-await t('parseLyrics: the fixture text gives 6 timed lines, offset applied', () => {
-  const r = parseLyrics(FIXTURE)
-  assert.equal(r.synced, true)
-  assert.deepEqual(r.lines, EXPECTED)
-})
+await t(
+  'parseLyrics: the fixture text gives 6 timed lines, offset applied',
+  () => {
+    const r = parseLyrics(FIXTURE)
+    assert.equal(r.synced, true)
+    assert.deepEqual(r.lines, EXPECTED)
+  },
+)
 
 await t('parseLyrics: no <…> markers and no [ar:] left', () => {
   const text = parseLyrics(FIXTURE)
@@ -90,23 +93,29 @@ await t('parseLyrics: [mm:ss:xx], [m:ss.xx], [mm:ss], several stamps', () => {
   ])
 })
 
-await t('parseLyrics: negative offset is later; a line never goes below 0', () => {
-  assert.deepEqual(parseLyrics('[offset:-250]\n[00:01.00]A').lines, [
-    { start: 1250, value: 'A' },
-  ])
-  assert.deepEqual(parseLyrics('[offset:+5000]\n[00:01.00]A').lines, [
-    { start: 0, value: 'A' },
-  ])
-  assert.deepEqual(parseLyrics('[offset: 200 ]\n[00:01.00]A').lines, [
-    { start: 800, value: 'A' },
-  ])
-})
+await t(
+  'parseLyrics: negative offset is later; a line never goes below 0',
+  () => {
+    assert.deepEqual(parseLyrics('[offset:-250]\n[00:01.00]A').lines, [
+      { start: 1250, value: 'A' },
+    ])
+    assert.deepEqual(parseLyrics('[offset:+5000]\n[00:01.00]A').lines, [
+      { start: 0, value: 'A' },
+    ])
+    assert.deepEqual(parseLyrics('[offset: 200 ]\n[00:01.00]A').lines, [
+      { start: 800, value: 'A' },
+    ])
+  },
+)
 
-await t('parseLyrics: lyrics text with < and > but no markers is untouched', () => {
-  assert.deepEqual(parseLyrics('[00:01.00]a <3 b  > c').lines, [
-    { start: 1000, value: 'a <3 b  > c' },
-  ])
-})
+await t(
+  'parseLyrics: lyrics text with < and > but no markers is untouched',
+  () => {
+    assert.deepEqual(parseLyrics('[00:01.00]a <3 b  > c').lines, [
+      { start: 1000, value: 'a <3 b  > c' },
+    ])
+  },
+)
 
 await t('readLyrics on the FLAC fixture returns all 6 lines', async () => {
   const r = await readLyrics({
@@ -117,34 +126,40 @@ await t('readLyrics on the FLAC fixture returns all 6 lines', async () => {
   assert.deepEqual(r.lines, EXPECTED)
 })
 
-await t("0.5.2's way (music-metadata common.lyrics) loses 3 of them", async () => {
-  const meta = await parseFile(path.join(fixtures, 'local-lyrics.flac'), {
-    skipCovers: true,
-    duration: false,
-  })
-  const sync = meta.common.lyrics?.find((l) => l.syncText?.length)?.syncText
-  assert.deepEqual(
-    sync.map((l) => [l.timestamp, l.text]),
-    [
-      [5000, 'First line'],
-      [10500, '[01:20.00]Chorus line (repeats)'],
-      [20000, '<00:20.00>Word <00:20.60>by <00:21.10>word'],
-    ],
-  )
-})
+await t(
+  "0.5.2's way (music-metadata common.lyrics) loses 3 of them",
+  async () => {
+    const meta = await parseFile(path.join(fixtures, 'local-lyrics.flac'), {
+      skipCovers: true,
+      duration: false,
+    })
+    const sync = meta.common.lyrics?.find((l) => l.syncText?.length)?.syncText
+    assert.deepEqual(
+      sync.map((l) => [l.timestamp, l.text]),
+      [
+        [5000, 'First line'],
+        [10500, '[01:20.00]Chorus line (repeats)'],
+        [20000, '<00:20.00>Word <00:20.60>by <00:21.10>word'],
+      ],
+    )
+  },
+)
 
-await t('readLyrics: a sidecar .lrc still wins over embedded lyrics', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cp-lyrics-'))
-  const song = path.join(dir, 'song.flac')
-  fs.copyFileSync(path.join(fixtures, 'local-lyrics.flac'), song)
-  fs.writeFileSync(path.join(dir, 'song.lrc'), '[00:03.00]Sidecar')
-  try {
-    const r = await readLyrics({ path: song, hasEmbeddedLyrics: true })
-    assert.deepEqual(r.lines, [{ start: 3000, value: 'Sidecar' }])
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true })
-  }
-})
+await t(
+  'readLyrics: a sidecar .lrc still wins over embedded lyrics',
+  async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cp-lyrics-'))
+    const song = path.join(dir, 'song.flac')
+    fs.copyFileSync(path.join(fixtures, 'local-lyrics.flac'), song)
+    fs.writeFileSync(path.join(dir, 'song.lrc'), '[00:03.00]Sidecar')
+    try {
+      const r = await readLyrics({ path: song, hasEmbeddedLyrics: true })
+      assert.deepEqual(r.lines, [{ start: 3000, value: 'Sidecar' }])
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
+  },
+)
 
 await t('readLyrics: ID3 SYLT in ms, syllables joined into lines', async () => {
   const r = await readLyrics({
@@ -170,6 +185,32 @@ await t('readLyrics: ID3 SYLT in MPEG frames is unsynced', async () => {
     ['Hello world', 'Second line', 'Third line'],
   )
   assert.ok(r.lines.every((l) => l.start === undefined))
+})
+
+await t('SYLT without line breaks keeps one line per entry', () => {
+  const native = {
+    'ID3v2.4': [
+      {
+        id: 'SYLT',
+        value: {
+          timeStampFormat: 2,
+          syncText: [
+            { text: 'One line', timestamp: 1000 },
+            { text: 'Another line', timestamp: 3000 },
+            { text: 'Last line', timestamp: 6000 },
+          ],
+        },
+      },
+    ],
+  }
+  assert.deepEqual(syltLyrics(native), {
+    synced: true,
+    lines: [
+      { start: 1000, value: 'One line' },
+      { start: 3000, value: 'Another line' },
+      { start: 6000, value: 'Last line' },
+    ],
+  })
 })
 
 await t('parseLrc (fullscreen): markers stripped, both chorus times', () => {

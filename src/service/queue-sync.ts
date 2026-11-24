@@ -7,6 +7,7 @@ import { SubsonicResponse } from '@/types/responses/subsonicResponse'
 import { getServerExtensions } from '@/utils/servers'
 import { liveMpvElement } from './mpv-player'
 import {
+  DESKTOP_APP,
   NowPlaying,
   QueueSong,
   SavedQueue,
@@ -236,14 +237,15 @@ async function startQueueAt(
 
 /**
  * Load button: replaces the local queue with the server's and starts where
- * the other device is (still playing) or stopped (paused or gone).
+ * ClearPlay on the phone is (playing or paused, from Now Playing), else at
+ * the saved song and position.
  */
 async function restoreFromServer() {
   const queue = await getFromServer()
   if (!queue?.entries.length) return false
   const { username } = useAppStore.getState().data
   const nowPlaying = (await getNowPlaying()) ?? []
-  const start = startPoint(queue, username, nowPlaying)
+  const start = startPoint(queue, DESKTOP_APP, username, nowPlaying)
   await startQueueAt(queue.entries, start.index, start.positionMs)
   return true
 }

@@ -47,7 +47,7 @@ function songs(list) {
   })
 }
 
-assert.equal(cases.version, 2, 'cases file version')
+assert.equal(cases.version, 3, 'cases file version')
 assert.equal(cases.thisApp.desktop, h.DESKTOP_APP)
 assert.equal(cases.thisApp.android, h.ANDROID_APP)
 
@@ -117,9 +117,34 @@ for (const c of cases.offer)
     }
   })
 
+for (const c of cases.leftBehindCandidate)
+  t(`leftBehindCandidate: ${c.name}`, () =>
+    assert.deepEqual(h.leftBehindCandidate(c.input), c.expected),
+  )
+
 for (const c of cases.leftBehind)
   t(`leftBehind: ${c.name}`, () =>
     assert.deepEqual(h.leftBehind(c.input), c.expected),
+  )
+
+for (const c of cases.isNaturalEnd)
+  t(`isNaturalEnd: ${c.name}`, () =>
+    assert.equal(
+      h.isNaturalEnd(c.input.positionS, c.input.durationS),
+      c.expected,
+    ),
+  )
+
+for (const c of cases.isQueueCleared)
+  t(`isQueueCleared: ${c.name}`, () =>
+    assert.equal(
+      h.isQueueCleared(
+        c.input.previousIds,
+        c.input.currentIds,
+        c.input.previousCurrentId,
+      ),
+      c.expected,
+    ),
   )
 
 for (const c of cases.ageText)

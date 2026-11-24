@@ -1,6 +1,6 @@
 /**
  * "Continue on other devices": the rules shared by ClearPlay desktop 0.6.0
- * and ClearPlay Android 1.6.0 (version 2, 2026-11-24).
+ * and ClearPlay Android 1.6.0 (version 3, 2026-11-24).
  *
  * Pure functions only (no stores, no network, no clock of their own), so the
  * shared cases in tools/dev-rig/queue-handoff-cases.json run against them
@@ -58,6 +58,11 @@ export interface NowPlaying {
 }
 
 // ---------------------------------------------------------------- names
+
+/** The other ClearPlay app: the only one whose Now Playing entry is trusted. */
+export function otherApp(thisApp: string) {
+  return thisApp === DESKTOP_APP ? ANDROID_APP : DESKTOP_APP
+}
 
 /** "ClearPlay desktop", "ClearPlay Android", or the client's own name. */
 export function deviceName(client: string) {
@@ -148,6 +153,27 @@ export function createSaveDebouncer(
   }
 }
 
+/**
+ * The song changed because the previous one played to its end (within 3 s),
+ * not because of a skip. A natural change doesn't close "Continued on ...".
+ */
+export function isNaturalEnd(positionS: number, durationS: number) {
+  return durationS > 0 && positionS >= durationS - 3
+}
+
+/** "Clear queue": only the playing song is left. Not saved. */
+export function isQueueCleared(
+  previousIds: string[],
+  currentIds: string[],
+  previousCurrentId: string | null,
+) {
+  return (
+    previousIds.length > 1 &&
+    currentIds.length === 1 &&
+    currentIds[0] === previousCurrentId
+  )
+}
+
 // ---------------------------------------------------------------- look
 
 /** Server times are compared as instants, never with this device's clock. */
@@ -176,51 +202,51 @@ export function latestChanged(
 }
 
 /**
- * Where Continue starts. If the device that saved the queue is still
- * playing (a Now Playing entry with the same user, playerName = changedBy and
- * state = playing): at its song and position, the song found in the saved
- * queue at or after the saved current index, else anywhere. Otherwise, or if
- * that song isn't in the queue: the saved current song and position.
+ * Where Continue starts, and what kind of offer it is.
+ *
+ * Saved by the other ClearPlay app: if it is in Now Playing (same user,
+ * playerName = changedBy), start at that entry's song and position, playing
+ * or paused. The song is looked up in the saved queue: the first match at or
+ * after the saved index, else the first match anywhere. This also finds the
+ * right song when the server's index moved (a song before it was deleted).
+ * Not in Now Playing, or its song isn't in the queue: the saved song and
+ * position.
+ *
+ * Saved by any other app (or by this app): the saved song and position
+ * ("saved"). Their Now Playing can't be read reliably.
  */
 export function startPoint(
   queue: SavedQueue,
+  thisApp: string,
   username: string,
   nowPlaying: NowPlaying[],
 ) {
   const last = queue.entries.length - 1
   const saved = Math.min(Math.max(0, queue.currentIndex), last)
-  const live = nowPlaying.find(
-    (e) =>
-      e.username === username &&
-      e.playerName === queue.changedBy &&
-      e.state === 'playing',
+  const savedPosition = Math.max(0, queue.positionMs)
+  if (queue.changedBy !== otherApp(thisApp)) {
+    return { kind: 'saved' as const, index: saved, positionMs: savedPosition }
+  }
+  const mine = nowPlaying.filter(
+    (e) => e.username === username && e.playerName === queue.changedBy,
   )
-  if (live) {
-    let index = -1
-    for (let i = saved; i <= last && index < 0; i++) {
-      if (queue.entries[i].id === live.id) index = i
-    }
-    for (let i = 0; i < saved && index < 0; i++) {
-      if (queue.entries[i].id === live.id) index = i
-    }
-    if (index >= 0) {
-      return {
-        playing: true,
-        index,
-        positionMs: Math.max(0, live.positionMs),
-      }
-    }
-    return {
-      playing: true,
-      index: saved,
-      positionMs: Math.max(0, queue.positionMs),
-    }
+  const live =
+    mine.find((e) => e.state === 'playing') ??
+    mine.find((e) => e.state === 'paused')
+  if (!live) {
+    return { kind: 'paused' as const, index: saved, positionMs: savedPosition }
   }
-  return {
-    playing: false,
-    index: saved,
-    positionMs: Math.max(0, queue.positionMs),
+  const kind =
+    live.state === 'playing' ? ('playing' as const) : ('paused' as const)
+  let index = -1
+  for (let i = saved; i <= last && index < 0; i++) {
+    if (queue.entries[i].id === live.id) index = i
   }
+  for (let i = 0; i < saved && index < 0; i++) {
+    if (queue.entries[i].id === live.id) index = i
+  }
+  if (index < 0) return { kind, index: saved, positionMs: savedPosition }
+  return { kind, index, positionMs: Math.max(0, live.positionMs) }
 }
 
 export interface OfferInput<S extends { id: string }> {
@@ -235,7 +261,12 @@ export interface OfferInput<S extends { id: string }> {
 }
 
 export interface Offer<S extends { id: string } = { id: string }> {
-  kind: 'playing' | 'paused'
+  /**
+   * playing: "Playing on <device> · <song>", Continue here.
+   * paused: "Paused on <device> · <song> · <age>", Continue.
+   * saved: "Saved by <app> · <song> · <age>", Continue.
+   */
+  kind: 'playing' | 'paused' | 'saved'
   device: string
   song: S
   index: number
@@ -253,9 +284,14 @@ export function offer<S extends { id: string }>(
   if (!isLater(queue.changed, input.handledChanged)) return null
   if (input.playingHere) return null
 
-  const start = startPoint(queue, input.username, input.nowPlaying)
+  const start = startPoint(
+    queue,
+    input.thisApp,
+    input.username,
+    input.nowPlaying,
+  )
   return {
-    kind: start.playing ? 'playing' : 'paused',
+    kind: start.kind,
     device: deviceName(queue.changedBy),
     song: queue.entries[start.index],
     index: start.index,
@@ -266,7 +302,7 @@ export function offer<S extends { id: string }>(
 
 // ---------------------------------------------------------------- left behind
 
-export interface LeftBehindInput {
+export interface LeftBehindCandidateInput {
   /** "Continue on other devices" is on. */
   publishing: boolean
   playingHere: boolean
@@ -279,10 +315,18 @@ export interface LeftBehindInput {
   alreadyShown: boolean
 }
 
-/** "Continued on <device>": the other ClearPlay app is playing a song from this queue. */
-export function leftBehind(input: LeftBehindInput) {
+export interface LeftBehindInput extends LeftBehindCandidateInput {
+  /** changedBy of the server's queue; null when it wasn't read. */
+  serverChangedBy: string | null
+}
+
+/**
+ * The other ClearPlay app is playing a song from this queue. Only then is
+ * the server's queue read, to finish the check with leftBehind.
+ */
+export function leftBehindCandidate(input: LeftBehindCandidateInput) {
   if (!input.publishing || !input.playingHere || input.alreadyShown) return null
-  const other = input.thisApp === DESKTOP_APP ? ANDROID_APP : DESKTOP_APP
+  const other = otherApp(input.thisApp)
   const ids = new Set(input.queueIds)
   const entry = input.nowPlaying.find(
     (e) =>
@@ -293,6 +337,18 @@ export function leftBehind(input: LeftBehindInput) {
   )
   if (!entry) return null
   return { device: deviceName(other), song: entry.id }
+}
+
+/**
+ * "Continued on <device>": a candidate, and the other ClearPlay app saved
+ * the server's queue last (it continued). If this device saved last, it is
+ * the one that took over, and the other device is the one left behind.
+ */
+export function leftBehind(input: LeftBehindInput) {
+  const found = leftBehindCandidate(input)
+  if (!found) return null
+  if (input.serverChangedBy !== otherApp(input.thisApp)) return null
+  return found
 }
 
 // ---------------------------------------------------------------- age
