@@ -80,7 +80,7 @@ async function flush() {
   flushing = true
   try {
     const { pending, setPending, addLog } = useScrobbleStore.getState()
-    const remaining = []
+    const remaining: typeof pending = []
     for (const item of pending) {
       let ok = false
       try {

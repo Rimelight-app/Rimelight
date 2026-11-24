@@ -97,6 +97,9 @@ export interface SongList {
 export interface RandomSongsResponse
   extends SubsonicResponse<{ randomSongs: SongList }> {}
 
+export interface SongsByGenreResponse
+  extends SubsonicResponse<{ songsByGenre: SongList }> {}
+
 export interface TopSongsResponse
   extends SubsonicResponse<{ topSongs: SongList }> {}
 

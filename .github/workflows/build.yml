@@ -60,8 +60,11 @@ jobs:
         shell: pwsh
         run: ./tools/fetch-mpv-windows.ps1
 
+      # Main process + preload, then renderer + preload + Cypress tests. (The
+      # root tsconfig.json only lists the two as references, so a bare
+      # `tsc --noEmit` there checked no files at all.)
       - name: Typecheck
-        run: pnpm exec tsc --noEmit
+        run: pnpm typecheck
 
       - name: Unit checks (bit-perfect decisions, ALSA parsers)
         run: node tools/dev-rig/bitperfect-unit.mjs

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import type { TFunction } from 'i18next'
 import {
   ExternalLink,
   Headphones,
@@ -81,10 +82,7 @@ const stripHtml = (html?: string) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-function timeAgo(
-  iso: string | undefined,
-  t: (k: string, o?: object) => string,
-) {
+function timeAgo(iso: string | undefined, t: TFunction) {
   if (!iso) return null
   const days = (Date.now() - Date.parse(iso)) / 86_400_000
   if (Number.isNaN(days)) return null

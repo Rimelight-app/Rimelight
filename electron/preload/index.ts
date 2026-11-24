@@ -146,12 +146,11 @@ if (process.contextIsolated) {
     console.error(error)
   }
 } else {
-  // @ts-expect-error (define in dts)
-  window.electron = electronAPI
-  // @ts-expect-error (define in dts)
-  window.api = api
-  // @ts-expect-error (define in dts)
-  window.envVars = {
-    XDG_CURRENT_DESKTOP: process.env.XDG_CURRENT_DESKTOP,
-  }
+  // Without context isolation. Object.assign type-checks in both projects
+  // that include this file (only the web one declares these on Window).
+  Object.assign(window, {
+    electron: electronAPI,
+    api,
+    envVars: { XDG_CURRENT_DESKTOP: process.env.XDG_CURRENT_DESKTOP },
+  })
 }

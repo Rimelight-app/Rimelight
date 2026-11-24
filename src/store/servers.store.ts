@@ -82,8 +82,8 @@ export function currentServerSnapshot(): SavedServer | null {
     username: d.username,
     password: d.password,
     authType: d.authType as AuthType,
-    protocolVersion: d.protocolVersion,
-    serverType: d.serverType,
+    protocolVersion: d.protocolVersion ?? '1.16.0',
+    serverType: d.serverType ?? 'subsonic',
     extensionsSupported: d.extensionsSupported,
   }
 }
