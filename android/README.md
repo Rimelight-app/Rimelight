@@ -38,6 +38,12 @@ app/src/main/java/com/tonihk00/clearplay/
   player/BitPerfect        USB DAC bit-perfect output (Android 14 mixer attributes) + output path shown in the player
   player/HiResAudioRenderer  float decoding only for songs above 16 bits
   player/PcmTap           debug-only capture of the PCM sent to the output (sample checks)
+  player/QueueStore        the queue as last left (filesDir/queue.json) for playback resumption
+  player/QueueWatcher      service-side listener: saves the queue, feeds Continue, Resume shortcut
+  player/QueueFiller       shuffle library's refill, on the service's player
+  player/QueueHandoff      Continue on other devices: the rules, ported line by line from desktop 0.6.0
+  player/Handoff           Continue on other devices at run time (saves, look, offer, left behind)
+  data/LibraryCache        first page of each library list on disk, per account
   ui/theme/Theme.kt        design tokens (Cp.*), Inter, motion
   ui/components/           glass panels, covers, play/pause morph, stars, backdrop
   ui/library|search|player|login|settings/
@@ -109,3 +115,29 @@ show the song's sample rate, and the track should be marked `BitPerfect true`.
 Never test against a real library: ratings, likes and scrobbles change it. Use the
 dev rig on another port, e.g. `PORT=4544 RIG=~/clearplay-rig tools/dev-rig/setup.sh`;
 the emulator reaches it at `http://10.0.2.2:4544` (admin / test1234).
+
+### Continue on other devices, end to end
+
+`tools/e2e/` drives the app through its UI (adb + `uiautomator dump`) against the rig's
+Navidrome 0.64.2, with `pretend_desktop.mjs` playing ClearPlay desktop (c=ClearPlay) using the
+desktop's own rules (`git show v0.6.0:src/service/queue-handoff.ts > rules.ts`, Node 22.18+):
+
+```sh
+cd android/tools/e2e
+ANDROID_SERIAL=emulator-5554 RULES=/path/to/rules.ts python3 handoff_e2e.py        # the 12 cases
+ANDROID_SERIAL=emulator-5554 python3 device_checks.py   # Android 17 audio, resumption, shortcuts, Statistics
+```
+
+The shared rule cases (`app/src/test/resources/queue-handoff-cases.json`) are a byte-for-byte
+copy of the desktop's; change them there first, then copy.
+
+### Benchmarks and the Baseline Profile
+
+```sh
+./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest   # startup, Albums fling, player → lyrics
+./gradlew :app:generateBaselineProfile                       # before a release: regenerates
+                                                             # app/src/main/generated/baselineProfiles/
+```
+
+Both sign in to the rig through the login screen if needed (instrumentation arguments
+`cpServer`, `cpUser`, `cpPassword`).

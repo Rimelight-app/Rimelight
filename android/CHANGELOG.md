@@ -1,5 +1,45 @@
 # ClearPlay for Android — changelog
 
+## [1.6.0] - 2026-11-25
+
+### Added
+- **Continue on other devices** (Settings → Player, off by default): ClearPlay saves your queue and position to Navidrome when the song changes or you pause, so ClearPlay on your computer (desktop 0.6.0) or another app such as Symfonium can carry on where you left off, and the other way round. When another device saved a queue more recently, a pill above the player offers it: "Playing on ClearPlay desktop · Way Bigger" (*Continue here*), "Paused on ClearPlay desktop · Way Bigger · 5 min ago" or "Saved by Symfonium · Way Bigger · 2 h ago" (*Continue*). Continue starts the same song at the same second, also when that song is in the queue twice. If the computer takes over while the phone is playing, the phone shows "Continued on ClearPlay desktop" with *Pause here*; it never pauses by itself. The queue menu (⋮ next to *Clear*) has *Load queue from server* and *Save queue to server*. Both apps follow the same written rules, checked by the same 91 shared test cases.
+- **Your queue survives**: the queue, the position, shuffle, repeat and shuffle library are kept on the phone. When Android closes ClearPlay in the background, a headset or Bluetooth play button, the system's media controls (also the resume card after a restart) or the new Resume shortcut pick up at the same song and second. Stream links are always made fresh (never with an old login or bitrate), a queue saved for another server or account isn't restored, and songs the server no longer has (Navidrome 0.64 gave every song a new id) are skipped instead of stopping playback.
+- **App shortcuts**: long-press the ClearPlay icon for *Shuffle library*, *Resume · <song>* and *Downloads*. They work when the app is closed, too.
+- **Refresh button on Statistics**, where Shuffle library sits on Library: reloads the numbers from Navidrome right away, even if they were loaded a minute ago. It turns while loading, is greyed out offline, and if the server can't be reached the old numbers stay and a message says so. Without a server it recounts your downloads and phone music.
+
+### Changed
+- **Library opens instantly**: the first page of Albums, Artists, Playlists, Favorites and Genres is kept on the phone (about 2 MB at most, per server account) and shown at once on a cold start, then refreshed in the background; the list only changes if the server's answer did, and keeps its scroll position. Cleared on sign-out, server switch and Settings → Clear cache, and dropped when Navidrome is updated.
+- **Faster start-up**: the app ships a Baseline Profile and a startup profile, so Android compiles the code used at start-up and while scrolling when the APK is installed.
+- **Less work loading Statistics and long lists**: songs, albums, playlists, favorites and search results are decoded in one pass from the server's answer. Reading Statistics allocates about a third of the memory (a page of 500 songs: 3.8 MB instead of 10.7 MB, 13.7 ms instead of 15.1 ms, measured on the JVM).
+- **Live glass blur on new installs** starts on only on phones Android rates as media performance class 13 or newer (never on low-RAM phones), because it costs more than the frame budget while scrolling on mid-range phones (measured below). If you update from an earlier version, your setting stays as it is, and the switch in Settings → Appearance works as before.
+
+### Fixed
+- **Playback ended, but the notification kept ClearPlay in the foreground for 10 minutes.** When the queue plays to its end, ClearPlay now leaves the foreground at once, as Android 17 expects; playing again from the notification, a media button or the app starts it again.
+- Shuffle library keeps adding songs with the screen off or the app closed (the refill now runs in the player service, not in the app's screen).
+- **Back and the tabs could stop working** when you pressed Back on a page just as something changed under the player bar (a song starting, a confirmation appearing): the page stayed half-way through sliding away. The pages no longer rebuild the navigation when that happens.
+
+### Known limits of Continue on other devices
+- No remote control: one device can't pause another.
+- Shuffle library and similar-music refills don't carry over; only the saved songs do.
+- Two installs of the same app (two PCs, or two phones) send the same client name, so they can't continue from each other.
+- From other apps, Continue uses their saved position, never their live one.
+- Desktop on Fedora: Electron doesn't report a screen lock on Linux, so locking doesn't save (sleep does).
+
+### Measured
+On an **emulator** (Android 17, x86_64, software rendering; no phone was connected), before (1.5.3) and after (1.6.0), same emulator. An emulator's frame times aren't a phone's: without a GPU every frame misses the 120 Hz budget, so the jank counts only say "all frames"; compare the percentiles.
+
+| Emulator | 1.5.3 | 1.6.0 |
+|---|---|---|
+| Cold start to Albums, first frame (median) | 1 832 ms | 1 393 ms |
+| Cold start to Albums with covers drawn (median) | 3 047 ms | 2 336 ms |
+| Albums fling, frame time p50 / p90 / p99 | 139 / 149 / 155 ms | 97 / 108 / 130 ms |
+| Full player → lyrics → back, p50 / p90 / p99 | 112 / 168 / 223 ms | 114 / 163 / 215 ms |
+| Frames over budget (fling / player) | 58 of 58 / 229 of 229 | 699 of 699 / 214 of 214 |
+
+Live glass blur on vs off (Albums fling with the mini player showing, emulator): p90 167 ms vs 138 ms, about 29 ms per frame; a lower blur input scale didn't change it (168 vs 144 ms), so the look is unchanged and the first-run default depends on the phone instead. (1.5.3's fling ran with blur on, 1.6.0's with the new default, which is off on this emulator.)
+
+
 ## [1.5.3] - 2026-11-23
 
 ### Fixed
