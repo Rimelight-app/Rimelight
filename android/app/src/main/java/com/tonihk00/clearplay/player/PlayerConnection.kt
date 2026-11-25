@@ -35,12 +35,36 @@ class PlayerConnection(
     private val context: Context,
     private val scope: CoroutineScope,
     private val client: () -> SubsonicClient?,
+    /** Shuffle library's refill, on the service side; this class only reads and switches [QueueFiller.endless]. */
+    private val filler: QueueFiller? = null,
+    /** The queue saved by the service, for Resume when the player is empty. */
+    private val store: QueueStore? = null,
+    /** The account the saved queue must belong to ([QueueStore.keyOf]). */
+    private val serverKey: () -> String = { QueueStore.keyOf(client()) },
+    /** Builds the session token (tests swap in a controller that connects later). */
+    private val buildController: suspend () -> MediaController? = {
+        val token = SessionToken(context, ComponentName(context, PlaybackService::class.java))
+        runCatching { MediaController.Builder(context, token).buildAsync().await() }.getOrNull()
+    },
 ) {
     private var controller: MediaController? = null
     private val _state = MutableStateFlow(PlayerState())
     val state: StateFlow<PlayerState> = _state
-    private var endless = false
-    private var filling = false
+    private val endless: Boolean get() = filler?.endless?.value ?: false
+    private var connecting = false
+
+    /** Work waiting for the controller (a shortcut used at cold start comes before it connects). */
+    private val waiting = ArrayList<(MediaController) -> Unit>()
+
+    /** Runs [block] once the player service is connected: now if it is, else as soon as it connects. */
+    fun whenConnected(block: (MediaController) -> Unit) {
+        val c = controller
+        if (c != null) return block(c)
+        waiting += block
+        connect()
+    }
+
+    val isConnected: Boolean get() = controller != null
 
     /** Sleep timer: pause at [endsAtMs], or when the current song ends. Null when off. */
     data class Sleep(val endsAtMs: Long? = null, val endOfSong: Boolean = false)
@@ -68,10 +92,10 @@ class PlayerConnection(
     val positionMs: Long get() = controller?.currentPosition ?: 0L
 
     fun connect() {
-        if (controller != null) return
+        if (controller != null || connecting) return
+        connecting = true
         scope.launch {
-            val token = SessionToken(context, ComponentName(context, PlaybackService::class.java))
-            val c = runCatching { MediaController.Builder(context, token).buildAsync().await() }.getOrNull()
+            val c = try { buildController() } finally { connecting = false }
                 ?: return@launch
             controller = c
             c.addListener(object : Player.Listener {
@@ -81,10 +105,13 @@ class PlayerConnection(
                         c.pause()
                         _sleep.value = null
                     }
-                    refillIfNeeded()
                 }
             })
+            filler?.let { f -> scope.launch { f.endless.collect { publish() } } }
             publish()
+            val run = waiting.toList()
+            waiting.clear()
+            run.forEach { it(c) }
         }
     }
 
@@ -115,7 +142,7 @@ class PlayerConnection(
     fun play(songs: List<Song>, startIndex: Int = 0, shuffle: Boolean = false) {
         val c = controller ?: return
         val list = items(songs) ?: return
-        endless = false
+        filler?.setEndless(false)
         c.shuffleModeEnabled = shuffle
         val start = if (shuffle && startIndex == 0) songs.indices.random() else startIndex
         c.setMediaItems(list, start.coerceIn(0, (list.size - 1).coerceAtLeast(0)), 0L)
@@ -140,7 +167,7 @@ class PlayerConnection(
     /** Removes everything except the playing song; with only that song left, stops. */
     fun clearQueue() {
         val c = controller ?: return
-        endless = false
+        filler?.setEndless(false)
         val idx = c.currentMediaItemIndex
         if (c.mediaItemCount <= 1 || idx < 0) {
             c.stop()
@@ -161,27 +188,58 @@ class PlayerConnection(
         scope.launch {
             val songs = runCatching { lib.randomSongs(100) }.getOrNull().orEmpty()
             if (songs.isEmpty()) return@launch
-            play(songs)
-            controller?.shuffleModeEnabled = false
-            endless = true
-            publish()
+            whenConnected {
+                play(songs)
+                it.shuffleModeEnabled = false
+                filler?.setEndless(true)
+                publish()
+            }
         }
     }
 
-    private fun refillIfNeeded() {
-        val c = controller ?: return
-        if (!endless || filling) return
-        if (c.mediaItemCount - c.currentMediaItemIndex > 5) return
-        val lib = library() ?: return
-        filling = true
-        scope.launch {
-            runCatching { lib.randomSongs(50) }.getOrNull()?.let { more ->
-                val have = (0 until c.mediaItemCount).map { c.getMediaItemAt(it).mediaId }.toSet()
-                c.addMediaItems(items(more.filterNot { it.id in have }).orEmpty())
-            }
-            filling = false
+    /**
+     * Resume: plays what is loaded, or, with an empty player (after Android killed the app), the
+     * queue the service saved, at its song and position, with its shuffle/repeat/shuffle-library
+     * modes. Returns false when there is nothing to resume.
+     */
+    fun resume(): Boolean {
+        val c = controller ?: return false
+        if (c.mediaItemCount > 0) {
+            if (!c.isPlaying) togglePlay()
+            return true
         }
+        val saved = store?.load()?.takeIf { it.server == serverKey() } ?: return false
+        val list = items(saved.songs) ?: return false
+        c.shuffleModeEnabled = saved.shuffle
+        c.repeatMode = saved.repeat
+        filler?.setEndless(saved.endless)
+        c.setMediaItems(list, saved.index.coerceIn(0, list.size - 1), saved.positionMs)
+        c.prepare()
+        c.play()
+        return true
     }
+
+    /**
+     * Continue: replaces the queue, starts at [index] / [positionMs] and plays. Resolves true
+     * once that song is loaded and playing there (false if it doesn't within 20 s).
+     */
+    suspend fun startQueueAt(songs: List<Song>, index: Int, positionMs: Long): Boolean {
+        if (songs.isEmpty() || index !in songs.indices) return false
+        val c = kotlinx.coroutines.suspendCancellableCoroutine<MediaController> { cont -> whenConnected { cont.resumeWith(Result.success(it)) } }
+        val list = items(songs) ?: return false
+        filler?.setEndless(false)
+        c.shuffleModeEnabled = false
+        c.setMediaItems(list, index, positionMs.coerceAtLeast(0))
+        c.prepare()
+        c.play()
+        val id = songs[index].id
+        return kotlinx.coroutines.withTimeoutOrNull(20_000) {
+            while (!(c.currentMediaItem?.mediaId == id && c.playbackState == Player.STATE_READY)) kotlinx.coroutines.delay(100)
+            true
+        } ?: false
+    }
+
+    fun pause() { controller?.pause() }
 
     fun skipTo(index: Int) {
         controller?.run { seekToDefaultPosition(index); play() }
@@ -237,6 +295,6 @@ class PlayerConnection(
     /** Called on logout: stop and forget the queue. */
     fun reset() {
         controller?.run { stop(); clearMediaItems() }
-        endless = false
+        filler?.setEndless(false)
     }
 }

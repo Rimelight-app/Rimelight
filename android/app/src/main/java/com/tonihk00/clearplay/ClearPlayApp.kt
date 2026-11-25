@@ -17,6 +17,8 @@ import com.tonihk00.clearplay.data.ServerStore
 import com.tonihk00.clearplay.data.SongEdits
 import com.tonihk00.clearplay.data.api.SubsonicClient
 import com.tonihk00.clearplay.player.PlayerConnection
+import com.tonihk00.clearplay.player.toMediaItem
+import com.tonihk00.clearplay.player.toSong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.guava.await
 
 /** Plain constructor-injected app graph; no DI framework. */
 class ClearPlayApp : Application(), SingletonImageLoader.Factory {
@@ -41,6 +44,35 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
 
     lateinit var player: PlayerConnection
         private set
+
+    /** The queue as last left on this phone (filesDir/queue.json), written by the player service. */
+    val queueStore by lazy { com.tonihk00.clearplay.player.QueueStore(filesDir.resolve("queue.json")) }
+
+    /** Shuffle library's refill, attached to the player service's player. */
+    val queueFiller by lazy {
+        com.tonihk00.clearplay.player.QueueFiller(appScope, { library.value }) { songs ->
+            val c = client
+            val bitrate = streamBitrate()
+            val format = settings.state.value.format.param
+            songs.map { it.toMediaItem(c, bitrate, format) }
+        }
+    }
+
+    /** The player service's own player while the service runs (main thread only). */
+    @Volatile var servicePlayer: androidx.media3.common.Player? = null
+
+    /** Continue on other devices. */
+    lateinit var handoff: com.tonihk00.clearplay.player.Handoff
+        private set
+
+    /** First pages of the library lists on disk, per account (shown at once on a cold start). */
+    val libraryCache by lazy { com.tonihk00.clearplay.data.LibraryCache(cacheDir.resolve("library")) }
+
+    /** Launcher shortcuts (Shuffle library, Resume, Downloads). */
+    val shortcuts by lazy { Shortcuts(this, appScope) }
+
+    /** Shortcut actions from MainActivity, waiting for the UI (replayed once to a late collector). */
+    val shortcutRequests = kotlinx.coroutines.flow.MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 4)
 
     val edits = SongEdits()
 
@@ -140,7 +172,7 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         instance = this
         servers = ServerStore(this)
-        settings = AppSettings(this, appScope)
+        settings = AppSettings(this, appScope, blurDefault = blurDefault())
         session = combine(servers.active, servers.localMode) { s, local ->
             when {
                 local -> Session.Local
@@ -158,8 +190,54 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
                 }
             }
         }
-        player = PlayerConnection(this, appScope) { client }
+        // Debug builds: say once whether the Baseline Profile was installed and compiled.
+        if (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            appScope.launch {
+                runCatching {
+                    // Suspends (never parks a thread): the status may never come (e.g. in tests).
+                    val s = kotlinx.coroutines.withTimeoutOrNull(30_000) {
+                        androidx.profileinstaller.ProfileVerifier.getCompilationStatusAsync().await()
+                    } ?: return@runCatching
+                    android.util.Log.i(
+                        "ProfileVerifier",
+                        "status=${s.profileInstallResultCode} compiledWithProfile=${s.isCompiledWithProfile} pendingCompilation=${s.hasProfileEnqueuedForCompilation()}",
+                    )
+                }
+            }
+        }
+        player = PlayerConnection(this, appScope, { client }, queueFiller, queueStore)
+        handoff = com.tonihk00.clearplay.player.Handoff(
+            appScope,
+            client = { client },
+            online = { connection.online.value },
+            enabled = { settings.state.value.syncQueue },
+            player = HandoffPlayer(),
+            handled = object : com.tonihk00.clearplay.player.Handoff.HandledStore {
+                override fun get(key: String) = settings.handledChanged.value[key]
+                override fun set(key: String, value: String) { appScope.launch { settings.setHandledChanged(key, value) } }
+            },
+        )
         savedServers
+        // Continue on other devices: look at the server's queue when the app starts, when the
+        // account changes and when the server answers again after being unreachable.
+        appScope.launch {
+            var lastClient: SubsonicClient? = null
+            combine(session, connection.online) { s, online -> (s as? Session.Active)?.client to online }
+                .collect { (c, online) ->
+                    if (c !== lastClient) { handoff.reset(); lastClient = c }
+                    if (c != null && online) handoff.look()
+                }
+        }
+        // Shortcuts: Resume names the saved song of the account in use (disabled when none).
+        appScope.launch {
+            session.collect { s ->
+                if (s is Session.Loading) return@collect
+                val key = com.tonihk00.clearplay.player.QueueStore.keyOf((s as? Session.Active)?.client)
+                val saved = kotlinx.coroutines.withContext(Dispatchers.IO) { queueStore.load() }
+                    ?.takeIf { s !is Session.LoggedOut && it.server == key }
+                shortcuts.publish(saved?.songs?.getOrNull(saved.index))
+            }
+        }
         // Listens made offline go out as soon as the server answers again.
         appScope.launch {
             combine(session, connection.online) { s, online -> (s as? Session.Active)?.client?.takeIf { online } }
@@ -189,6 +267,17 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
         }
     }
 
+    /** Live glass blur on a first run, by device (see liveBlurDefault); the inputs are logged once. */
+    private fun blurDefault(): Boolean {
+        val info = runCatching { packageManager.getPackageInfo(packageName, 0) }.getOrNull()
+        val updated = info != null && info.lastUpdateTime > info.firstInstallTime
+        val pc = if (android.os.Build.VERSION.SDK_INT >= 31) android.os.Build.VERSION.MEDIA_PERFORMANCE_CLASS else 0
+        val lowRam = getSystemService(android.app.ActivityManager::class.java)?.isLowRamDevice == true
+        return com.tonihk00.clearplay.data.liveBlurDefault(updated, pc, lowRam).also {
+            android.util.Log.i("ClearPlay", "media performance class $pc, low RAM $lowRam, updated from an earlier version $updated → live blur default $it")
+        }
+    }
+
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader.Builder(context)
             .components { add(com.tonihk00.clearplay.data.PhoneArtFetcher.Factory(this@ClearPlayApp)) }
@@ -202,6 +291,34 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
     companion object {
         lateinit var instance: ClearPlayApp
             private set
+    }
+}
+
+/**
+ * What "Continue on other devices" reads from the player: the service's own player while it
+ * runs (works without the UI), else the UI's mirror of it. Starting a queue goes through the
+ * UI's controller (Continue is always a tap in the app).
+ */
+private class HandoffPlayer : com.tonihk00.clearplay.player.Handoff.Player {
+    private val app get() = ClearPlayApp.instance
+    private val service get() = app.servicePlayer
+
+    override fun songs(): List<com.tonihk00.clearplay.data.api.Song> {
+        service?.let { p -> return (0 until p.mediaItemCount).map { p.getMediaItemAt(it).toSong() } }
+        return app.player.state.value.queue
+    }
+
+    override fun currentIndex(): Int = service?.currentMediaItemIndex ?: app.player.state.value.index
+
+    override fun positionMs(): Long = service?.currentPosition ?: app.player.positionMs
+
+    override fun isPlaying(): Boolean = service?.isPlaying ?: app.player.state.value.isPlaying
+
+    override suspend fun startQueueAt(songs: List<com.tonihk00.clearplay.data.api.Song>, index: Int, positionMs: Long) =
+        app.player.startQueueAt(songs, index, positionMs)
+
+    override fun pause() {
+        service?.pause() ?: app.player.pause()
     }
 }
 

@@ -52,6 +52,7 @@ class PlaybackService : MediaLibraryService() {
     private var session: MediaLibrarySession? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var scrobbler: Scrobbler
+    private var watcher: QueueWatcher? = null
     private var bitPerfect: BitPerfectOutputProvider? = null
     @Volatile private var nextBits: Int? = null
 
@@ -111,9 +112,30 @@ class PlaybackService : MediaLibraryService() {
 
         scrobbler = Scrobbler(player, scope, client = { ClearPlayApp.instance.client })
         player.addListener(scrobbler)
+        // Saved queue (playback resumption), "Continue on other devices", the Resume shortcut and
+        // shuffle library's refill all follow this player, so they work without the UI.
+        app.queueFiller.attach(player)
+        watcher = QueueWatcher(
+            player, scope, app.queueStore,
+            serverKey = { QueueStore.keyOf(app.client) },
+            endless = { app.queueFiller.endless.value },
+            autoEdit = { app.queueFiller.adding },
+            handoff = { app.handoff },
+            client = { app.client },
+            online = { app.connection.online.value },
+            onSongChange = { app.shortcuts.songChanged(it) },
+        ).also(player::addListener)
+        app.servicePlayer = player
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) { noteBits(player) }
             override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) { noteBits(player) }
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                // Playing again after the queue ended: Media3's usual grace after a pause.
+                if (isPlaying) setForegroundServiceTimeoutMs(DEFAULT_FOREGROUND_SERVICE_TIMEOUT_MS)
+            }
+            override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_ENDED) playbackEnded()
+            }
         })
         // Turning bit-perfect on or off, or plugging a USB DAC in, takes effect at once: re-seeking
         // makes the player open a new output for the playing song. (Media3 skips a seek to the exact
@@ -147,7 +169,12 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         val player = session?.player
-        if (player == null || !player.playWhenReady || player.mediaItemCount == 0) stopSelf()
+        if (player == null || !player.playWhenReady || player.mediaItemCount == 0) {
+            // The service stops: keep the queue now (onDestroy may not come before the process goes).
+            watcher?.saveBlocking()
+            ClearPlayApp.instance.handoff.saveNow(QueueHandoff.SaveEvent.quit)
+            stopSelf()
+        }
     }
 
     /** Bit depth of the playing song and the next one (a 16-bit-only DAC may only take 16-bit songs). */
@@ -157,7 +184,25 @@ class PlaybackService : MediaLibraryService() {
         nextBits = bits.maxOrNull()
     }
 
+    /**
+     * The queue played to its end: playback is over, so the service leaves the foreground now
+     * instead of after Media3's 10-minute grace (Android 17's background-audio rules). Playing
+     * again (a user action: notification, media button, the app) brings it back.
+     */
+    private fun playbackEnded() {
+        setForegroundServiceTimeoutMs(0)
+    }
+
     override fun onDestroy() {
+        val app = ClearPlayApp.instance
+        session?.player?.let { p ->
+            // Last chance to keep the queue: written synchronously, and sent to the server if
+            // "Continue on other devices" is on.
+            watcher?.saveBlocking()
+            app.handoff.saveNow(QueueHandoff.SaveEvent.quit)
+            app.queueFiller.detach(p)
+        }
+        app.servicePlayer = null
         bitPerfect?.clear()
         scrobbler.release()
         scope.cancel()
@@ -183,6 +228,31 @@ class PlaybackService : MediaLibraryService() {
                 if (uri == null) item else item.buildUpon().setUri(uri).setCustomCacheKey(Downloads.cacheKey(item.mediaId)).build()
             }
             return Futures.immediateFuture(resolved.toMutableList())
+        }
+
+        /**
+         * Playback resumption (media button or the system's resume card after the app was killed
+         * or the phone restarted): the queue the service saved, if it belongs to the account in
+         * use. Items are built again with today's client, bitrate and format; saved stream URLs
+         * are never reused. [isForPlayback] false (the resume card after a reboot): disk only, no
+         * network; only the current song, with the saved title and the cached cover.
+         */
+        override fun onPlaybackResumption(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            isForPlayback: Boolean,
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            val future = com.google.common.util.concurrent.SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
+            scope.launch {
+                try {
+                    val restored = Resumption.restore(this@PlaybackService, mediaSession.player, isForPlayback)
+                    if (restored == null) future.setException(IllegalStateException("No saved queue for this account"))
+                    else future.set(restored)
+                } catch (e: Exception) {
+                    future.setException(e)
+                }
+            }
+            return future
         }
 
         override fun onGetLibraryRoot(
