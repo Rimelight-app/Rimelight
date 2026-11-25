@@ -192,6 +192,7 @@ fun QueueList(state: PlayerState, controls: PlayerControls, modifier: Modifier =
                 Spacer(Modifier.width(6.dp))
                 Text("Clear", style = MaterialTheme.typography.labelLarge, color = Cp.TextSoft)
             }
+            if (controls.hasServer) QueueServerMenu(controls)
         }
         LazyColumn(Modifier.fillMaxSize().edgeFade(0.04f, 0.08f), state = list, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
             items(rows, key = { it.key }) { entry ->
@@ -314,5 +315,31 @@ private fun QueueRow(
             Text(song.artist.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = Cp.TextFaint, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         if (!current) IconButtonCp(R.drawable.ic_x, "Remove", onRemove, size = 34.dp, iconSize = 16.dp, tint = Cp.TextFaint)
+    }
+}
+
+/** ⋮ next to Clear: Load queue from server / Save queue to server (Continue on other devices). */
+@Composable
+private fun QueueServerMenu(controls: PlayerControls) {
+    var open by remember { mutableStateOf(false) }
+    androidx.compose.foundation.layout.Box {
+        IconButtonCp(R.drawable.ic_ellipsis_vertical, "Queue menu", { open = true }, size = 36.dp, iconSize = 18.dp)
+        androidx.compose.material3.DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            containerColor = Cp.Card,
+            shape = RoundedCornerShape(14.dp),
+        ) {
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text("Load queue from server", style = MaterialTheme.typography.bodyLarge) },
+                leadingIcon = { CpIcon(R.drawable.ic_cloud_download, size = 18.dp, tint = Cp.TextSoft) },
+                onClick = { open = false; controls.loadQueueFromServer() },
+            )
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text("Save queue to server", style = MaterialTheme.typography.bodyLarge) },
+                leadingIcon = { CpIcon(R.drawable.ic_server, size = 18.dp, tint = Cp.TextSoft) },
+                onClick = { open = false; controls.saveQueueToServer() },
+            )
+        }
     }
 }

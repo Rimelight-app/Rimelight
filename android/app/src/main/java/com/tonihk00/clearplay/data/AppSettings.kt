@@ -12,8 +12,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 private val Context.settingsStore by preferencesDataStore("settings")
+
+private val handledJson = kotlinx.serialization.json.Json
 
 enum class Backdrop(val label: String) { Vivid("Vivid"), Balanced("Balanced"), Dim("Dim"), Off("Off") }
 
@@ -54,6 +57,8 @@ data class Settings(
     val playbackSource: PlaybackSource = PlaybackSource.Auto,
     /** Send the file's exact samples to a USB DAC (Android 14+), bypassing the Android mixer. */
     val bitPerfect: Boolean = false,
+    /** Continue on other devices: save the queue and position to Navidrome (off by default). */
+    val syncQueue: Boolean = false,
 ) {
     /**
      * Whether something in the app would change the samples. Bit-perfect output is only honest
@@ -64,7 +69,15 @@ data class Settings(
 }
 
 /** User settings in DataStore, exposed as a StateFlow so the player service can read them synchronously. */
-class AppSettings(private val context: Context, scope: CoroutineScope) {
+class AppSettings(
+    private val context: Context,
+    scope: CoroutineScope,
+    /**
+     * Live glass blur on a first run (no saved choice yet): see [liveBlurDefault]. Written to
+     * DataStore once, so it never changes under the user later.
+     */
+    private val blurDefault: Boolean = true,
+) {
     private object K {
         val wifi = intPreferencesKey("wifi_bitrate")
         val mobile = intPreferencesKey("mobile_bitrate")
@@ -77,6 +90,8 @@ class AppSettings(private val context: Context, scope: CoroutineScope) {
         val phoneMusic = booleanPreferencesKey("phone_music")
         val playbackSource = stringPreferencesKey("playback_source")
         val bitPerfect = booleanPreferencesKey("bit_perfect")
+        val syncQueue = booleanPreferencesKey("sync_queue")
+        val handled = stringPreferencesKey("handled_changed")
     }
 
     private fun read(p: Preferences) = Settings(
@@ -87,13 +102,18 @@ class AppSettings(private val context: Context, scope: CoroutineScope) {
         downloadWifiOnly = p[K.dlWifi] ?: true,
         scrobble = p[K.scrobble] ?: true,
         backdrop = p[K.backdrop]?.let { runCatching { Backdrop.valueOf(it) }.getOrNull() } ?: Backdrop.Balanced,
-        liveBlur = p[K.liveBlur] ?: true,
+        liveBlur = p[K.liveBlur] ?: blurDefault,
         phoneMusic = p[K.phoneMusic] ?: true,
         playbackSource = p[K.playbackSource]?.let { runCatching { PlaybackSource.valueOf(it) }.getOrNull() } ?: PlaybackSource.Auto,
         bitPerfect = p[K.bitPerfect] ?: false,
+        syncQueue = p[K.syncQueue] ?: false,
     )
 
-    val state: StateFlow<Settings> = context.settingsStore.data.map(::read).stateIn(scope, SharingStarted.Eagerly, Settings())
+    val state: StateFlow<Settings> = context.settingsStore.data.map(::read).stateIn(scope, SharingStarted.Eagerly, Settings(liveBlur = blurDefault))
+
+    init {
+        scope.launch { context.settingsStore.edit { if (it[K.liveBlur] == null) it[K.liveBlur] = blurDefault } }
+    }
 
     suspend fun update(change: (Settings) -> Settings) {
         context.settingsStore.edit { p ->
@@ -109,6 +129,36 @@ class AppSettings(private val context: Context, scope: CoroutineScope) {
             p[K.phoneMusic] = s.phoneMusic
             p[K.playbackSource] = s.playbackSource.name
             p[K.bitPerfect] = s.bitPerfect
+            p[K.syncQueue] = s.syncQueue
         }
     }
+
+    /**
+     * "Continue on other devices": per server account ("user@address"), the latest `changed` of
+     * the server's saved queue this phone has dealt with (Continue, ×, or playback started here).
+     * Always a value copied from the server, never this phone's clock.
+     */
+    val handledChanged: StateFlow<Map<String, String>> = context.settingsStore.data.map { p ->
+        p[K.handled]?.let { runCatching { handledJson.decodeFromString<Map<String, String>>(it) }.getOrNull() } ?: emptyMap()
+    }.stateIn(scope, SharingStarted.Eagerly, emptyMap())
+
+    suspend fun setHandledChanged(key: String, value: String) {
+        context.settingsStore.edit { p ->
+            val map = p[K.handled]?.let { runCatching { handledJson.decodeFromString<Map<String, String>>(it) }.getOrNull() }.orEmpty()
+            p[K.handled] = handledJson.encodeToString(map + (key to value))
+        }
+    }
+}
+
+/**
+ * Live glass blur's first-run setting. Measured in 1.6.0: on mid-range phones the live blur costs
+ * more than the frame budget allows while scrolling, so it starts on only where Android vouches for
+ * the hardware (media performance class 13 or newer, i.e. Build.VERSION.MEDIA_PERFORMANCE_CLASS
+ * ≥ 33) and never on low-RAM devices. Someone updating from an earlier version keeps blur on (the
+ * setting they had). The Settings switch is unchanged either way.
+ */
+fun liveBlurDefault(updatedFromEarlier: Boolean, mediaPerformanceClass: Int, lowRam: Boolean): Boolean = when {
+    updatedFromEarlier -> true
+    lowRam -> false
+    else -> mediaPerformanceClass >= 33
 }

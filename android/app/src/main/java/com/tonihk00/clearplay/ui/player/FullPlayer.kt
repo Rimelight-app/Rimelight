@@ -78,6 +78,10 @@ interface PlayerControls {
     fun clearQueue() {}
     fun position(): Long = 0
     fun setSleep(minutes: Int?, endOfSong: Boolean = false) {}
+    /** Signed in to a server: the queue menu offers Load / Save queue (Continue on other devices). */
+    val hasServer: Boolean get() = false
+    fun loadQueueFromServer() {}
+    fun saveQueueToServer() {}
 }
 
 sealed interface LyricsState {

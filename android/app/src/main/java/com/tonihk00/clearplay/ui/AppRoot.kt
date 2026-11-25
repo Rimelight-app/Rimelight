@@ -120,6 +120,12 @@ fun AppRoot() {
     val settings by app.settings.state.collectAsState()
     val scope = rememberCoroutineScope()
     val usePhone = rememberUsePhone()
+    // A shortcut used while signed out: the login screen shows and the shortcut is dropped.
+    LaunchedEffect(session) {
+        if (session is Session.LoggedOut) {
+            app.shortcutRequests.collect { app.shortcutRequests.resetReplayCache() }
+        }
+    }
     CompositionLocalProvider(LocalBackdropMode provides settings.backdrop) {
         when (val s = session) {
             Session.Loading -> BackdropLayer(null)
@@ -131,6 +137,8 @@ fun AppRoot() {
                 MainScaffold(app.player, s.client) {
                     scope.launch {
                         app.player.reset()
+                        app.queueStore.clear()
+                        app.libraryCache.clear(s.client.server)
                         app.servers.remove(s.client.server)
                     }
                 }
@@ -139,6 +147,7 @@ fun AppRoot() {
                 MainScaffold(app.player, null) {
                     scope.launch {
                         app.player.reset()
+                        app.queueStore.clear()
                         app.servers.setLocalMode(false)
                     }
                 }
@@ -162,6 +171,22 @@ private class PlayerControlsImpl(private val p: PlayerConnection) : PlayerContro
     override fun setSleep(minutes: Int?, endOfSong: Boolean) = p.setSleepTimer(minutes, endOfSong)
 }
 
+/** The queue menu's server actions (Continue on other devices), with a toast for the result. */
+private class QueueServerControls(
+    private val base: PlayerControls,
+    private val scope: kotlinx.coroutines.CoroutineScope,
+    private val toast: (String) -> Unit,
+    override val hasServer: Boolean,
+) : PlayerControls by base {
+    private val handoff get() = ClearPlayApp.instance.handoff
+    override fun loadQueueFromServer() {
+        scope.launch { toast(if (handoff.loadFromServer()) "Queue loaded from your server" else "No saved queue on your server") }
+    }
+    override fun saveQueueToServer() {
+        scope.launch { toast(if (handoff.saveToServer()) "Queue saved to your server" else "Couldn't save the queue") }
+    }
+}
+
 private enum class Tab(val route: String, val label: String, val icon: Int) {
     Library("library", "Library", R.drawable.ic_library),
     Search("search", "Search", R.drawable.ic_search),
@@ -180,7 +205,10 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
     val scope = rememberCoroutineScope()
     val hazeState = rememberHazeState()
     val reduce = LocalReduceMotion.current
-    val controls = remember(player) { PlayerControlsImpl(player) }
+    val toast = remember { ToastState() }
+    val controls = remember(player, client) { QueueServerControls(PlayerControlsImpl(player), scope, toast::show, client != null) }
+    // Library's tab lives here, so a shortcut can open Library at Downloads.
+    var libraryTab by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableIntStateOf(0) }
     val settings by app.settings.state.collectAsState()
     val haze = if (settings.liveBlur) hazeState else null
     val dlStates by app.downloads.states.collectAsState()
@@ -190,7 +218,6 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
     val library by app.library.collectAsState()
     val online by app.connection.online.collectAsState()
     val sleep by player.sleep.collectAsState()
-    val toast = remember { ToastState() }
     var fullOpen by remember { mutableStateOf(false) }
     val playerVisibility = remember { androidx.compose.animation.core.MutableTransitionState(false) }
     var revealing by remember { mutableStateOf(false) }
@@ -267,6 +294,31 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
         }
     }
 
+    // Launcher shortcuts (also the one that started the app: replayed once to this collector).
+    val shortcutActions = remember(player) {
+        com.tonihk00.clearplay.ShortcutActions(
+            signedIn = { true },
+            whenConnected = { block -> player.whenConnected { block() } },
+            shuffleLibrary = { actions.shuffleLibrary() },
+            resume = { player.resume() },
+            openDownloads = {
+                fullOpen = false
+                libraryTab = com.tonihk00.clearplay.ui.library.DownloadsTabIndex
+                nav.navigate(Tab.Library.route) {
+                    popUpTo(Tab.Library.route) { inclusive = false }
+                    launchSingleTop = true
+                }
+            },
+            onNothingToResume = { toast.show("Nothing to resume") },
+        )
+    }
+    LaunchedEffect(shortcutActions) {
+        app.shortcutRequests.collect { action ->
+            app.shortcutRequests.resetReplayCache()
+            shortcutActions.handle(action)
+        }
+    }
+
     // Lyrics for the current song: from the server, or the copy saved with a download.
     var lyrics by remember { mutableStateOf<LyricsState>(LyricsState.None) }
     val current = state.current
@@ -284,6 +336,19 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
     }
 
     val playingId = current?.id
+    // What the pages need from here, in one stable holder: the NavHost's builder must never
+    // change (a new builder rebuilds the graph, and one rebuilt in the middle of a page's
+    // slide-out left the slide unfinished, so Back and the tabs stopped working).
+    val pages = remember(nav) { PageArgs() }
+    val logoutNow by androidx.compose.runtime.rememberUpdatedState(onLogout)
+    pages.bottom = dockHeight
+    pages.playingId = playingId
+    pages.client = client
+    pages.sleep = sleep
+    pages.libraryTab = libraryTab
+    pages.onLibraryTab = { libraryTab = it }
+    pages.onLogout = { logoutNow() }
+    pages.onAddServer = { addingServer = true }
     val streamCap = remember(settings, online) { app.streamBitrate().takeIf { it > 0 }?.let { it to settings.format.param } }
 
     CompositionLocalProvider(
@@ -311,14 +376,26 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
             Box(Modifier.fillMaxSize().then(skipDraw).hazeSource(hazeState).then(hidden)) {
                 com.tonihk00.clearplay.ui.components.BackdropLayer(pageBackdrop)
                 CompositionLocalProvider(com.tonihk00.clearplay.ui.components.LocalPageBackdrop provides pageBackdrop) {
-                    AppNavHost(nav, dockHeight, playingId, client, onLogout, sleep) { addingServer = true }
+                    AppNavHost(nav, pages)
                 }
             }
+            // Only the mini player and tab bar set the pages' bottom padding. The toast and the
+            // Continue pill float above them: their animations must not change the padding (and
+            // with it the NavHost) every frame, which left a page transition unfinished: Back and
+            // the tabs then did nothing.
             Column(
-                Modifier.align(Alignment.BottomCenter).then(skipDraw).then(hidden).onSizeChanged { dockHeight = with(density) { it.height.toDp() } },
+                Modifier.align(Alignment.BottomCenter).then(skipDraw).then(hidden).padding(bottom = dockHeight),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 ToastHost(toast, haze, Modifier.padding(bottom = 8.dp))
+                if (client != null) {
+                    com.tonihk00.clearplay.ui.player.HandoffPills(
+                        app.handoff, haze, onError = toast::show,
+                        modifier = Modifier.padding(horizontal = 10.dp),
+                    )
+                }
+            }
+            Box(Modifier.align(Alignment.BottomCenter).then(skipDraw).then(hidden).onSizeChanged { dockHeight = with(density) { it.height.toDp() } }) {
                 Dock(nav, state, controls, haze, onOpen = { fullOpen = true })
             }
             AnimatedVisibility(
@@ -335,6 +412,7 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
                     BackdropLayer(null, dim = 0.1f)
                     LoginScreen(onLoggedIn = { srv ->
                         player.reset()
+                        client?.let { app.libraryCache.clear(it.server) }
                         app.servers.saveAndActivate(srv)
                         addingServer = false
                     })
@@ -350,19 +428,25 @@ private fun isUnmetered(context: android.content.Context): Boolean {
     return cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED) ?: false
 }
 
+/** Values the pages read (state, so only the pages recompose when they change, never the NavHost's graph). */
+@androidx.compose.runtime.Stable
+private class PageArgs {
+    var bottom by mutableStateOf(0.dp)
+    var playingId by mutableStateOf<String?>(null)
+    var client by mutableStateOf<SubsonicClient?>(null)
+    var sleep by mutableStateOf<PlayerConnection.Sleep?>(null)
+    var libraryTab by mutableStateOf(0)
+    var onLibraryTab: (Int) -> Unit = {}
+    var onLogout: () -> Unit = {}
+    var onAddServer: () -> Unit = {}
+}
+
+private fun dec(s: String?) = URLDecoder.decode(s.orEmpty(), "UTF-8")
+
 @Composable
-private fun AppNavHost(
-    nav: NavHostController,
-    bottom: Dp,
-    playingId: String?,
-    client: SubsonicClient?,
-    onLogout: () -> Unit,
-    sleep: PlayerConnection.Sleep?,
-    onAddServer: () -> Unit,
-) {
+private fun AppNavHost(nav: NavHostController, p: PageArgs) {
     val reduce = LocalReduceMotion.current
     val t = if (reduce) 0 else Cp.ScreenMs
-    fun dec(s: String?) = URLDecoder.decode(s.orEmpty(), "UTF-8")
     val safe = rememberSafeBack(nav)
     NavHost(
         nav, startDestination = Tab.Library.route,
@@ -391,33 +475,33 @@ private fun AppNavHost(
         predictivePopEnterTransition = { slideInHorizontally(tween(t, easing = LinearEasing)) { -it / 4 } },
         predictivePopExitTransition = { slideOutHorizontally(tween(t, easing = LinearEasing)) { it } },
     ) {
-        composable(Tab.Library.route) { com.tonihk00.clearplay.ui.components.Page { LibraryScreen(bottom, playingId) } }
-        composable(Tab.Search.route) { com.tonihk00.clearplay.ui.components.Page { SearchScreen(bottom, playingId) } }
-        composable(Tab.Stats.route) { com.tonihk00.clearplay.ui.components.Page { StatsScreen(bottom) } }
-        composable(Tab.Settings.route) { com.tonihk00.clearplay.ui.components.Page { SettingsRoute(client, bottom, sleep, onLogout, onAddServer) } }
+        composable(Tab.Library.route) { com.tonihk00.clearplay.ui.components.Page { LibraryScreen(p.bottom, p.playingId, tab = p.libraryTab, onTab = { p.onLibraryTab(it) }) } }
+        composable(Tab.Search.route) { com.tonihk00.clearplay.ui.components.Page { SearchScreen(p.bottom, p.playingId) } }
+        composable(Tab.Stats.route) { com.tonihk00.clearplay.ui.components.Page { StatsScreen(p.bottom) } }
+        composable(Tab.Settings.route) { com.tonihk00.clearplay.ui.components.Page { SettingsRoute(p.client, p.bottom, p.sleep, { p.onLogout() }, { p.onAddServer() }) } }
         composable("album/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
             com.tonihk00.clearplay.ui.components.Page {
-                AlbumScreen(dec(it.arguments?.getString("id")), bottom, playingId) { safe.back() }
+                AlbumScreen(dec(it.arguments?.getString("id")), p.bottom, p.playingId) { safe.back() }
             }
         }
         composable("artist/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
             com.tonihk00.clearplay.ui.components.Page {
-                ArtistScreen(dec(it.arguments?.getString("id")), bottom) { safe.back() }
+                ArtistScreen(dec(it.arguments?.getString("id")), p.bottom) { safe.back() }
             }
         }
         composable("playlist/{id}", listOf(navArgument("id") { type = NavType.StringType })) {
             com.tonihk00.clearplay.ui.components.Page {
-                PlaylistScreen(dec(it.arguments?.getString("id")), bottom, playingId) { safe.back() }
+                PlaylistScreen(dec(it.arguments?.getString("id")), p.bottom, p.playingId) { safe.back() }
             }
         }
         composable("decade/{start}", listOf(navArgument("start") { type = NavType.IntType })) {
             com.tonihk00.clearplay.ui.components.Page {
-                com.tonihk00.clearplay.ui.library.DecadeScreen(it.arguments?.getInt("start") ?: 2000, bottom) { safe.back() }
+                com.tonihk00.clearplay.ui.library.DecadeScreen(it.arguments?.getInt("start") ?: 2000, p.bottom) { safe.back() }
             }
         }
         composable("genre/{name}", listOf(navArgument("name") { type = NavType.StringType })) {
             com.tonihk00.clearplay.ui.components.Page {
-                GenreScreen(dec(it.arguments?.getString("name")), bottom, playingId) { safe.back() }
+                GenreScreen(dec(it.arguments?.getString("name")), p.bottom, p.playingId) { safe.back() }
             }
         }
     }
@@ -593,12 +677,19 @@ private fun SettingsRoute(client: SubsonicClient?, bottom: Dp, sleep: PlayerConn
             }
         }
     }
-    LaunchedEffect(Unit) { imageBytes = loader.diskCache?.size ?: 0L }
+    LaunchedEffect(Unit) {
+        imageBytes = (loader.diskCache?.size ?: 0L) +
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { app.libraryCache.size() }
+    }
 
     val actions = remember(client) {
         object : com.tonihk00.clearplay.ui.settings.SettingsActions {
             override fun switchServer(s: com.tonihk00.clearplay.data.api.ServerConfig) {
-                scope.launch { app.player.reset(); app.servers.saveAndActivate(s) }
+                scope.launch {
+                    app.player.reset()
+                    client?.let { app.libraryCache.clear(it.server) }
+                    app.servers.saveAndActivate(s)
+                }
             }
             override fun removeServer(s: com.tonihk00.clearplay.data.api.ServerConfig) { scope.launch { app.servers.remove(s) } }
             override fun addServer() = onAddServer()
@@ -610,6 +701,7 @@ private fun SettingsRoute(client: SubsonicClient?, bottom: Dp, sleep: PlayerConn
             override fun clearImageCache() {
                 loader.memoryCache?.clear()
                 loader.diskCache?.clear()
+                app.libraryCache.clearAll()
                 imageBytes = 0L
             }
             override fun setSleep(minutes: Int?, endOfSong: Boolean) = app.player.setSleepTimer(minutes, endOfSong)

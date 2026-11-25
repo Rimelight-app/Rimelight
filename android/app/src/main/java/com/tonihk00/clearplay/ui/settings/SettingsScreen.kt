@@ -238,6 +238,10 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
             ActionRow(R.drawable.ic_moon, "Sleep timer", sleepLabel(ui.sleep) ?: "Off") { sleepSheet = true }
             Divider()
             SwitchRow(R.drawable.ic_activity, "Scrobble plays", "Send plays to Navidrome (and on to Last.fm or ListenBrainz)", s.scrobble) { v -> actions.update { it.copy(scrobble = v) } }
+            if (!ui.localMode) {
+                Divider()
+                SwitchRow(R.drawable.ic_signal, "Continue on other devices", CONTINUE_NOTE, s.syncQueue) { v -> actions.update { it.copy(syncQueue = v) } }
+            }
         }
 
         // Appearance ------------------------------------------------------------
@@ -319,6 +323,10 @@ private fun InfoRow(icon: Int, title: String, value: String) {
         Text(value, style = MaterialTheme.typography.bodyMedium, color = Cp.TextFaint)
     }
 }
+
+const val CONTINUE_NOTE =
+    "Saves your queue and position to Navidrome when the song changes or you pause, so ClearPlay on your computer " +
+        "(or another app such as Symfonium) can continue it. Shuffle library and similar-music refills don't carry over."
 
 @Composable
 private fun SwitchRow(icon: Int, title: String, subtitle: String?, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {

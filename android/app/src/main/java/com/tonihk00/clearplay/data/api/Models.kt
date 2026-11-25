@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Song(
-    val id: String,
+    override val id: String,
     val title: String = "",
     val artist: String? = null,
     val artistId: String? = null,
@@ -27,7 +27,7 @@ data class Song(
     val contentType: String? = null,
     /** Server the song came from; kept with downloads so covers resolve offline. */
     val server: String? = null,
-) {
+) : com.tonihk00.clearplay.player.QueueHandoff.HasId {
     val isStarred get() = starred != null
 
     /** On this phone (MediaStore), not from a server. */
@@ -81,12 +81,14 @@ data class Genre(
     val albumCount: Int = 0,
 )
 
+@Serializable
 data class SearchResult(
     val artists: List<Artist> = emptyList(),
     val albums: List<Album> = emptyList(),
     val songs: List<Song> = emptyList(),
 )
 
+@Serializable
 data class Starred(
     val artists: List<Artist> = emptyList(),
     val albums: List<Album> = emptyList(),
@@ -106,3 +108,23 @@ data class Lyrics(val lines: List<LyricLine>) {
 data class ScanStatus(val scanning: Boolean, val count: Int, val lastScan: String?)
 
 class SubsonicException(val code: Int, override val message: String) : Exception(message)
+
+/** The queue saved on the server (getPlayQueueByIndex / getPlayQueue), current song as an index. */
+data class SavedPlayQueue(
+    val entries: List<Song> = emptyList(),
+    val currentIndex: Int = 0,
+    val positionMs: Long = 0,
+    /** Server time, as the server sent it. */
+    val changed: String = "",
+    /** The `c` of the client that saved it (Navidrome's changedBy). */
+    val changedBy: String = "",
+)
+
+/** One getNowPlaying entry. */
+data class NowPlayingEntry(
+    val username: String,
+    val playerName: String,
+    val state: String,
+    val positionMs: Long,
+    val song: Song,
+)

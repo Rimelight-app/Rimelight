@@ -3,7 +3,11 @@ package com.tonihk00.clearplay.data.api
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
+import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.bodyAsBytes
+import kotlinx.serialization.json.decodeFromStream
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import kotlinx.serialization.json.Json
@@ -92,7 +96,51 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
             parameter("f", "json")
             for ((k, v) in params) if (v != null) parameter(k, v)
         }.bodyAsText()
-        val root = json.parseToJsonElement(text).jsonObject["subsonic-response"]?.jsonObject
+        return checked(json.parseToJsonElement(text))
+    }
+
+    /**
+     * One-pass decoding for the heavy calls: the response bytes go straight into the typed
+     * envelope (no String, no JsonElement tree), with the same status="failed" → SubsonicException
+     * handling as [call]. A server that sends a single object where a list belongs (old Subsonic
+     * JSON) fails to decode; that call is then made again on the generic path.
+     */
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+    private suspend fun <T> typed(endpoint: String, vararg params: Pair<String, Any?>, generic: suspend () -> T, pick: (TypedResponse) -> T): T {
+        if (!typedDecoding) return generic()
+        val root = try {
+            http.prepareGet("${server.baseUrl}/rest/$endpoint") {
+                parameter("u", server.user)
+                parameter("t", server.token)
+                parameter("s", server.salt)
+                parameter("v", API_VERSION)
+                parameter("c", CLIENT)
+                parameter("f", "json")
+                for ((k, v) in params) if (v != null) parameter(k, v)
+            }.execute { response ->
+                // The body as bytes (cancellable, unlike a blocking stream over the channel), then
+                // decoded in one pass off the main thread.
+                val bytes = response.bodyAsBytes()
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    java.io.ByteArrayInputStream(bytes).use { json.decodeFromStream(TypedRoot.serializer(), it) }
+                }
+            }
+        } catch (e: kotlinx.serialization.SerializationException) {
+            return generic()
+        }
+        val r = root.response ?: throw SubsonicException(-1, "Not a Subsonic server")
+        r.serverVersion?.let { serverVersion = it }
+        r.type?.let { serverType = it }
+        if (r.status != "ok") throw SubsonicException(r.error?.code ?: -1, r.error?.message ?: "Server error")
+        return pick(r)
+    }
+
+    /** One-pass typed decoding for the heavy calls (tests compare it with the generic path). */
+    @Volatile internal var typedDecoding = true
+
+    /** The subsonic-response object of an answer; throws [SubsonicException] unless status is ok. */
+    private fun checked(answer: JsonElement): JsonObject {
+        val root = (answer as? JsonObject)?.get("subsonic-response") as? JsonObject
             ?: throw SubsonicException(-1, "Not a Subsonic server")
         root["serverVersion"]?.jsonPrimitive?.contentOrNull?.let { serverVersion = it }
         root["type"]?.jsonPrimitive?.contentOrNull?.let { serverType = it }
@@ -129,29 +177,40 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
 
     suspend fun ping() { call("ping") }
 
-    @Volatile private var playbackReportSupport: Boolean? = null
+    @Volatile private var extensionNames: Set<String>? = null
 
     /**
-     * Whether the server takes [reportPlayback] (OpenSubsonic `playbackReport`, Navidrome 0.62+).
-     * Asked once per server (this client is per server) and cached; a failed check is asked again later.
+     * The server's OpenSubsonic extensions (getOpenSubsonicExtensions), e.g. playbackReport,
+     * indexBasedQueue. Asked once per server (this client is per server) and cached; a failed
+     * check (offline) is asked again next time and answers an empty set meanwhile.
      */
-    suspend fun supportsPlaybackReport(): Boolean {
-        playbackReportSupport?.let { return it }
-        val r = runCatching { call("getOpenSubsonicExtensions") }.getOrNull() ?: return false
+    suspend fun extensions(): Set<String> {
+        extensionNames?.let { return it }
+        val r = runCatching { call("getOpenSubsonicExtensions") }.getOrNull() ?: return emptySet()
         val names = (r["openSubsonicExtensions"] as? JsonArray)
-            ?.mapNotNull { (it as? JsonObject)?.get("name")?.jsonPrimitive?.contentOrNull }.orEmpty()
-        return ("playbackReport" in names).also { playbackReportSupport = it }
+            ?.mapNotNull { (it as? JsonObject)?.get("name")?.jsonPrimitive?.contentOrNull }.orEmpty().toSet()
+        return names.also { extensionNames = it }
     }
 
+    /** Whether the server takes [reportPlayback] (OpenSubsonic `playbackReport`, Navidrome 0.62+). */
+    suspend fun supportsPlaybackReport(): Boolean = "playbackReport" in extensions()
+
     /** Cached answer of [supportsPlaybackReport], or null if not asked yet. */
-    val playbackReportKnown: Boolean? get() = playbackReportSupport
+    val playbackReportKnown: Boolean? get() = extensionNames?.let { "playbackReport" in it }
 
+    override suspend fun albumList(type: String, size: Int, offset: Int, genre: String?): List<Album> =
+        typed(
+            "getAlbumList2", "type" to type, "size" to size, "offset" to offset, "genre" to genre,
+            generic = {
+                call("getAlbumList2", "type" to type, "size" to size, "offset" to offset, "genre" to genre)
+                    .list<Album>("albumList2", "album")
+            },
+        ) { it.albumList2?.album.orEmpty() }
 
-    override suspend fun albumList(type: String, size: Int, offset: Int, genre: String?) =
-        call("getAlbumList2", "type" to type, "size" to size, "offset" to offset, "genre" to genre)
-            .list<Album>("albumList2", "album")
-
-    override suspend fun album(id: String): Album = call("getAlbum", "id" to id).obj("album")
+    override suspend fun album(id: String): Album =
+        typed("getAlbum", "id" to id, generic = { call("getAlbum", "id" to id).obj<Album>("album") }) {
+            it.album ?: throw SubsonicException(70, "Not found")
+        }
 
     override suspend fun artists(): List<Artist> {
         val idx = call("getArtists")["artists"]?.jsonObject?.get("index")?.jsonArray ?: return emptyList()
@@ -162,28 +221,44 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
 
     override suspend fun artist(id: String): Artist = call("getArtist", "id" to id).obj("artist")
 
-    override suspend fun search(query: String, songs: Int, albums: Int, artists: Int): SearchResult {
-        val r = call("search3", "query" to query, "songCount" to songs, "albumCount" to albums, "artistCount" to artists)
-        return SearchResult(
-            artists = r.list("searchResult3", "artist"),
-            albums = r.list("searchResult3", "album"),
-            songs = r.list("searchResult3", "song"),
-        )
-    }
+    override suspend fun search(query: String, songs: Int, albums: Int, artists: Int): SearchResult =
+        typed(
+            "search3", "query" to query, "songCount" to songs, "albumCount" to albums, "artistCount" to artists,
+            generic = {
+                val r = call("search3", "query" to query, "songCount" to songs, "albumCount" to albums, "artistCount" to artists)
+                SearchResult(
+                    artists = r.list("searchResult3", "artist"),
+                    albums = r.list("searchResult3", "album"),
+                    songs = r.list("searchResult3", "song"),
+                )
+            },
+        ) { SearchResult(it.searchResult3?.artist.orEmpty(), it.searchResult3?.album.orEmpty(), it.searchResult3?.song.orEmpty()) }
 
     /** Songs list for the library: an empty search3 query returns every song on Navidrome. */
     override suspend fun songs(size: Int, offset: Int): List<Song> =
-        call("search3", "query" to "", "songCount" to size, "songOffset" to offset, "albumCount" to 0, "artistCount" to 0)
-            .list("searchResult3", "song")
+        typed(
+            "search3", "query" to "", "songCount" to size, "songOffset" to offset, "albumCount" to 0, "artistCount" to 0,
+            generic = {
+                call("search3", "query" to "", "songCount" to size, "songOffset" to offset, "albumCount" to 0, "artistCount" to 0)
+                    .list<Song>("searchResult3", "song")
+            },
+        ) { it.searchResult3?.song.orEmpty() }
 
     override suspend fun playlists(): List<Playlist> = call("getPlaylists").list("playlists", "playlist")
 
-    override suspend fun playlist(id: String): Playlist = call("getPlaylist", "id" to id).obj("playlist")
+    override suspend fun playlist(id: String): Playlist =
+        typed("getPlaylist", "id" to id, generic = { call("getPlaylist", "id" to id).obj<Playlist>("playlist") }) {
+            it.playlist ?: throw SubsonicException(70, "Not found")
+        }
 
-    override suspend fun starred(): Starred {
-        val r = call("getStarred2")
-        return Starred(r.list("starred2", "artist"), r.list("starred2", "album"), r.list("starred2", "song"))
-    }
+    override suspend fun starred(): Starred =
+        typed(
+            "getStarred2",
+            generic = {
+                val r = call("getStarred2")
+                Starred(r.list("starred2", "artist"), r.list("starred2", "album"), r.list("starred2", "song"))
+            },
+        ) { Starred(it.starred2?.artist.orEmpty(), it.starred2?.album.orEmpty(), it.starred2?.song.orEmpty()) }
 
     override suspend fun genres(): List<Genre> =
         call("getGenres").list<Genre>("genres", "genre").sortedByDescending { it.songCount }
@@ -239,6 +314,81 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
     }
 
     /**
+     * Form POST (application/x-www-form-urlencoded): every parameter, login included, goes in the
+     * body, so long lists (1 000 song ids of 128 bits ≈ 30 KB) never hit URL length limits and
+     * nothing is in the URL. Navidrome lists this as the `formPost` extension.
+     */
+    private suspend fun post(endpoint: String, params: List<Pair<String, String>>): JsonObject {
+        val form = io.ktor.http.Parameters.build {
+            append("u", server.user)
+            append("t", server.token)
+            append("s", server.salt)
+            append("v", API_VERSION)
+            append("c", CLIENT)
+            append("f", "json")
+            for ((k, v) in params) append(k, v)
+        }
+        val text = http.submitForm("${server.baseUrl}/rest/$endpoint", form).bodyAsText()
+        return checked(json.parseToJsonElement(text))
+    }
+
+    /**
+     * Saves the play queue on the server: savePlayQueueByIndex (the right copy of a song that is
+     * in the queue twice) when the server lists `indexBasedQueue`, else savePlayQueue with the
+     * current song's id. [currentIndex] is 0-based into [ids].
+     */
+    suspend fun savePlayQueue(ids: List<String>, currentIndex: Int, positionMs: Long) {
+        require(currentIndex in ids.indices)
+        val pairs = ids.map { "id" to it }
+        if (INDEX_QUEUE in extensions()) {
+            post("savePlayQueueByIndex", pairs + listOf("currentIndex" to "$currentIndex", "position" to "${positionMs.coerceAtLeast(0)}"))
+        } else {
+            post("savePlayQueue", pairs + listOf("current" to ids[currentIndex], "position" to "${positionMs.coerceAtLeast(0)}"))
+        }
+    }
+
+    /**
+     * The queue saved on the server (by any client), with the current song as an index. An empty
+     * queue has no entries. Entries come back as songs of this server.
+     */
+    suspend fun playQueue(): SavedPlayQueue {
+        val byIndex = INDEX_QUEUE in extensions()
+        val r = call(if (byIndex) "getPlayQueueByIndex" else "getPlayQueue")
+        val q = r[if (byIndex) "playQueueByIndex" else "playQueue"] as? JsonObject ?: return SavedPlayQueue()
+        val entries = q.list<Song>("entry").map { it.copy(server = server.baseUrl) }
+        val currentIndex = if (byIndex) {
+            q["currentIndex"]?.jsonPrimitive?.intOrNull ?: 0
+        } else {
+            val current = q["current"]?.jsonPrimitive?.contentOrNull
+            entries.indexOfFirst { it.id == current }.coerceAtLeast(0)
+        }
+        return SavedPlayQueue(
+            entries = entries,
+            currentIndex = currentIndex,
+            positionMs = q["position"]?.jsonPrimitive?.longOrNull ?: 0L,
+            changed = q["changed"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            changedBy = q["changedBy"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+        )
+    }
+
+    /** getNowPlaying: who plays what where (playerName, state and positionMs need `playbackReport`). */
+    suspend fun nowPlaying(): List<NowPlayingEntry> {
+        val r = call("getNowPlaying")
+        return (r["nowPlaying"] as? JsonObject)?.list<JsonObject>("entry").orEmpty().map { e ->
+            NowPlayingEntry(
+                username = e["username"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                playerName = e["playerName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                state = e["state"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                positionMs = e["positionMs"]?.jsonPrimitive?.longOrNull ?: 0L,
+                song = json.decodeFromJsonElement<Song>(e).copy(server = server.baseUrl),
+            )
+        }
+    }
+
+    /** One song (getSong); throws SubsonicException code 70 when the server doesn't have it. */
+    suspend fun song(id: String): Song = call("getSong", "id" to id).obj<Song>("song").copy(server = server.baseUrl)
+
+    /**
      * Synced lyrics first (OpenSubsonic getLyricsBySongId, which Navidrome fills from
      * embedded tags and .lrc files), then the legacy getLyrics text, parsed as LRC when it
      * carries timestamps.
@@ -270,6 +420,7 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
     companion object {
         const val API_VERSION = "1.16.1"
         const val CLIENT = "ClearPlay-Android"
+        private const val INDEX_QUEUE = "indexBasedQueue"
 
         val json = Json {
             ignoreUnknownKeys = true
