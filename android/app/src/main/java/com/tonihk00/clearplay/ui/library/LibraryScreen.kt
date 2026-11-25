@@ -76,14 +76,24 @@ import com.tonihk00.clearplay.ui.theme.Cp
 val LibraryTabs = listOf("Albums", "Artists", "Songs", "Playlists", "Favorites", "Genres", "Downloads")
 
 @Composable
-fun LibraryScreen(bottomPadding: Dp, playingId: String?, modifier: Modifier = Modifier, initialTab: Int? = null) {
-    var tab by rememberSaveable { mutableStateOf(initialTab ?: 0) }
+fun LibraryScreen(
+    bottomPadding: Dp,
+    playingId: String?,
+    modifier: Modifier = Modifier,
+    initialTab: Int? = null,
+    /** The selected tab when the app holds it (AppRoot, so a shortcut can open Downloads). */
+    tab: Int? = null,
+    onTab: ((Int) -> Unit)? = null,
+) {
+    var ownTab by rememberSaveable { mutableStateOf(initialTab ?: 0) }
+    val current = tab ?: ownTab
+    fun select(t: Int) { if (onTab != null) onTab(t) else ownTab = t }
     // Long-press selection of albums, shared by the album grids.
     val selection = remember { androidx.compose.runtime.mutableStateMapOf<String, Album>() }
     var visible by remember { mutableStateOf<List<Album>>(emptyList()) }
     val sel = remember(selection) { AlbumSelection(selection) { visible = it } }
     androidx.activity.compose.BackHandler(selection.isNotEmpty()) { selection.clear() }
-    LaunchedEffect(tab) { selection.clear() }
+    LaunchedEffect(current) { selection.clear() }
     Column(modifier.fillMaxSize()) {
         AnimatedContent(
             selection.isNotEmpty(),
@@ -93,15 +103,15 @@ fun LibraryScreen(bottomPadding: Dp, playingId: String?, modifier: Modifier = Mo
             if (selecting) SelectionBar(selection.values.toList(), { visible.forEach { a -> selection[a.id] = a } }, { selection.clear() })
             else LibraryHeader()
         }
-        PillTabs(LibraryTabs, tab, { tab = it }, Modifier.padding(bottom = 8.dp))
+        PillTabs(LibraryTabs, current, { select(it) }, Modifier.padding(bottom = 8.dp))
         AnimatedContent(
-            tab,
+            current,
             transitionSpec = { fadeIn(tween(200, easing = Cp.EaseOutSoft)) togetherWith fadeOut(tween(90)) },
             label = "libtab",
         ) { t ->
             val pad = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = bottomPadding + 12.dp)
             when (t) {
-                0 -> AlbumsTab(pad, sel) { tab = DownloadsTabIndex }
+                0 -> AlbumsTab(pad, sel) { select(DownloadsTabIndex) }
                 1 -> ArtistsTab(pad)
                 2 -> SongsTab(pad, playingId)
                 3 -> PlaylistsTab(pad)
@@ -290,19 +300,60 @@ fun AlbumsTab(pad: PaddingValues, sel: AlbumSelection? = null, onDownloads: () -
     var loading by remember(client) { mutableStateOf(false) }
     var failed by paged::failed
     val grid = rememberLazyGridState()
+    // The first page from the server's last answer, on disk: shown at once, then loaded again.
+    val server = (client as? com.tonihk00.clearplay.data.api.SubsonicClient)?.server
+    val diskName = "albums-$ALBUM_SORT"
+    remember(client) {
+        if (albums.isEmpty() && !end && server != null) {
+            com.tonihk00.clearplay.ui.libraryCache()
+                ?.read(server, diskName, kotlinx.serialization.builtins.ListSerializer(Album.serializer()), (client as com.tonihk00.clearplay.data.api.SubsonicClient).serverVersion)
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { albums += it; paged.fromDisk = true }
+        }
+        0
+    }
     val nearEnd by remember { derivedStateOf { (grid.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= albums.size - 8 } }
-    LaunchedEffect(client, nearEnd, albums.size) {
-        if (client == null || end || loading || (!nearEnd && albums.isNotEmpty())) return@LaunchedEffect
+    LaunchedEffect(client, nearEnd, albums.size, paged.fromDisk) {
+        if (client == null || loading) return@LaunchedEffect
+        if (paged.fromDisk) {
+            // Refresh the page from disk; swap it only if the server's answer differs.
+            loading = true
+            val result = runCatching { client.albumList(ALBUM_SORT, size = 60, offset = 0) }
+            if (result.isFailure && client.isRemote) lost()
+            result.getOrNull()?.let { page ->
+                val first = albums.take(60)
+                if (page != first) {
+                    albums.clear()
+                    albums += page
+                }
+                end = page.size < 60
+                saveFirstPage(client, diskName, page)
+            }
+            paged.fromDisk = false
+            loading = false
+            return@LaunchedEffect
+        }
+        if (end || (!nearEnd && albums.isNotEmpty())) return@LaunchedEffect
         loading = true
-        val result = runCatching { client.albumList(size = 60, offset = albums.size) }
+        val offset = albums.size
+        val result = runCatching { client.albumList(ALBUM_SORT, size = 60, offset = offset) }
         failed = result.isFailure && albums.isEmpty()
         if (result.isFailure && client.isRemote) lost()
         val page = result.getOrNull().orEmpty()
         if (page.size < 60) end = true
         albums += page
+        if (offset == 0 && result.isSuccess) saveFirstPage(client, diskName, page)
         loading = false
     }
     LaunchedEffect(albums.size) { sel?.setVisible?.invoke(albums.toList()) }
+    // Startup is "fully drawn" once the first page is in and every cover on screen has loaded
+    // (Activity.reportFullyDrawn, read by the startup benchmark). Reported once per activity.
+    var coversLoaded by remember { mutableStateOf(0) }
+    val coverLoaded = remember { { coversLoaded++; Unit } }
+    androidx.activity.compose.ReportDrawnWhen {
+        val visible = grid.layoutInfo.visibleItemsInfo.size
+        albums.isNotEmpty() && visible > 0 && coversLoaded >= minOf(visible, albums.size)
+    }
     if (failed) return OfflineState(onDownloads)
     if (albums.isEmpty() && end) return EmptyState(R.drawable.ic_disc_3, "No albums yet")
     LazyVerticalGrid(
@@ -313,15 +364,30 @@ fun AlbumsTab(pad: PaddingValues, sel: AlbumSelection? = null, onDownloads: () -
         verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.fillMaxSize().dragSelect(grid, albums, sel),
     ) {
-        items(albums, key = { it.id }) { SelectableAlbum(it, sel, gridHandlesLongPress = sel != null) }
-        if (loading) item(span = { GridItemSpan(maxLineSpan) }) { LoadBox<Unit>(com.tonihk00.clearplay.ui.Load.Loading) {} }
+        items(albums, key = { it.id }) {
+            androidx.compose.runtime.CompositionLocalProvider(com.tonihk00.clearplay.ui.components.LocalCoverLoaded provides coverLoaded) {
+                SelectableAlbum(it, sel, gridHandlesLongPress = sel != null)
+            }
+        }
+        if (loading && !paged.fromDisk) item(span = { GridItemSpan(maxLineSpan) }) { LoadBox<Unit>(com.tonihk00.clearplay.ui.Load.Loading) {} }
+    }
+}
+
+/** The Albums grid's order (Navidrome's getAlbumList2 type); the only one the grid offers. */
+const val ALBUM_SORT = "alphabeticalByName"
+
+/** Keeps a server's first page of albums on disk (LibraryCache). */
+private suspend fun saveFirstPage(library: com.tonihk00.clearplay.data.api.MusicLibrary, name: String, page: List<Album>) {
+    val c = library as? com.tonihk00.clearplay.data.api.SubsonicClient ?: return
+    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        com.tonihk00.clearplay.ui.libraryCache()?.write(c.server, name, kotlinx.serialization.builtins.ListSerializer(Album.serializer()), page, c.serverVersion)
     }
 }
 
 @Composable
 fun ArtistsTab(pad: PaddingValues) {
     val actions = LocalActions.current
-    val state by rememberLoad("artists") { artists() }
+    val state by rememberLoad("artists", disk = com.tonihk00.clearplay.ui.DiskCached("artists", kotlinx.serialization.builtins.ListSerializer(Artist.serializer()))) { artists() }
     LoadBox(state) { list: List<Artist> ->
         if (list.isEmpty()) return@LoadBox EmptyState(R.drawable.ic_user, "No artists yet")
         LazyColumn(Modifier.fillMaxSize(), contentPadding = pad) {
@@ -363,7 +429,7 @@ fun SongsTab(pad: PaddingValues, playingId: String?) {
 @Composable
 fun PlaylistsTab(pad: PaddingValues) {
     val actions = LocalActions.current
-    val state by rememberLoad("playlists") { playlists() }
+    val state by rememberLoad("playlists", disk = com.tonihk00.clearplay.ui.DiskCached("playlists", kotlinx.serialization.builtins.ListSerializer(Playlist.serializer()))) { playlists() }
     LoadBox(state) { list: List<Playlist> ->
         if (list.isEmpty()) return@LoadBox EmptyState(R.drawable.ic_list_music, "No playlists yet")
         LazyColumn(Modifier.fillMaxSize(), contentPadding = pad) {
@@ -377,7 +443,7 @@ fun PlaylistsTab(pad: PaddingValues) {
 @Composable
 fun FavoritesTab(pad: PaddingValues, playingId: String?) {
     val actions = LocalActions.current
-    val state by rememberLoad("starred") { starred() }
+    val state by rememberLoad("starred", disk = com.tonihk00.clearplay.ui.DiskCached("favorites", Starred.serializer())) { starred() }
     LoadBox(state) { s: Starred -> FavoritesContent(s, pad, playingId, actions) }
 }
 
@@ -412,7 +478,7 @@ fun FavoritesContent(s: Starred, pad: PaddingValues, playingId: String?, actions
 @Composable
 fun GenresTab(pad: PaddingValues) {
     val actions = LocalActions.current
-    val state by rememberLoad("genres") { genres() }
+    val state by rememberLoad("genres", disk = com.tonihk00.clearplay.ui.DiskCached("genres", kotlinx.serialization.builtins.ListSerializer(Genre.serializer()))) { genres() }
     LoadBox(state) { list: List<Genre> ->
         if (list.isEmpty()) return@LoadBox EmptyState(R.drawable.ic_tag, "No genres yet")
         LazyColumn(Modifier.fillMaxSize(), contentPadding = pad) {

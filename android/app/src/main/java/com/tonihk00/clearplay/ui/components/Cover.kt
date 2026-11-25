@@ -26,6 +26,12 @@ import com.tonihk00.clearplay.ui.theme.Cp
 /** The active server's client, for cover URLs. Null in previews and screenshot tests. */
 val LocalClient = compositionLocalOf<SubsonicClient?> { null }
 
+/**
+ * Told each time a cover finishes loading. The Albums grid uses it to report the app fully
+ * drawn (Activity.reportFullyDrawn) once its first covers are on screen, for startup metrics.
+ */
+val LocalCoverLoaded = compositionLocalOf<(() -> Unit)?> { null }
+
 /** Screenshot tests paint covers with gradients instead of loading them. */
 val LocalFakeCovers = compositionLocalOf<((String) -> Brush)?> { null }
 
@@ -77,6 +83,7 @@ fun Cover(
     val client = LocalClient.current
     val fake = LocalFakeCovers.current
     val context = LocalContext.current
+    val loaded = LocalCoverLoaded.current
     val request = remember(coverArt, sizePx, client) { coverArt?.let { coverRequest(context, client, it, sizePx) } }
     Box(
         modifier
@@ -92,6 +99,7 @@ fun Cover(
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
+                onSuccess = loaded?.let { l -> { l() } },
             )
             else -> CpIcon(R.drawable.ic_disc_3, size = 28.dp, tint = Cp.TextFaint)
         }

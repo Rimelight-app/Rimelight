@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "ClearPlay"
 include(":app")
+include(":benchmark")

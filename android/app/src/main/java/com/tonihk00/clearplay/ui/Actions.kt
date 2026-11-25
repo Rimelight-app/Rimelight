@@ -126,6 +126,8 @@ class Paged<T> {
     val items = androidx.compose.runtime.mutableStateListOf<T>()
     var end by androidx.compose.runtime.mutableStateOf(false)
     var failed by androidx.compose.runtime.mutableStateOf(false)
+    /** The first page on screen came from disk and is being loaded again. */
+    var fromDisk by androidx.compose.runtime.mutableStateOf(false)
 }
 
 @Composable
@@ -136,9 +138,16 @@ fun <T> rememberPaged(name: String): Paged<T> {
     return remember(library, name) { cache.map.getOrPut("$name@${System.identityHashCode(library)}") { Paged<T>() } as Paged<T> }
 }
 
-/** Loads once per key (and again when the library switches between online and offline). */
+/** A list kept on disk by [com.tonihk00.clearplay.data.LibraryCache] under [name]. */
+class DiskCached<T>(val name: String, val serializer: kotlinx.serialization.KSerializer<T>)
+
+/**
+ * Loads once per key (and again when the library switches between online and offline). With
+ * [disk], the server's last answer is shown at once from disk (no spinner) while it loads again
+ * in the background; the new answer replaces it only if it differs, so lists keep their place.
+ */
 @Composable
-fun <T> rememberLoad(vararg keys: Any?, block: suspend MusicLibrary.() -> T): State<Load<T>> {
+fun <T> rememberLoad(vararg keys: Any?, disk: DiskCached<T>? = null, block: suspend MusicLibrary.() -> T): State<Load<T>> {
     val library = LocalLibrary.current ?: LocalClient.current
     val lost = LocalConnectionLost.current
     val cache = screenCache()
@@ -148,18 +157,36 @@ fun <T> rememberLoad(vararg keys: Any?, block: suspend MusicLibrary.() -> T): St
     val cacheKey = "load@${System.identityHashCode(library)}@$site:${keys.joinToString("|")}"
     @Suppress("UNCHECKED_CAST")
     val cached = cache.map[cacheKey] as Load.Done<T>?
-    return produceState<Load<T>>(cached ?: Load.Loading, library, *keys) {
+    val server = (library as? SubsonicClient)?.server
+    val fromDisk: T? = remember(cacheKey) {
+        if (cached != null || disk == null || server == null) null
+        else libraryCache()?.read(server, disk.name, disk.serializer, (library as SubsonicClient).serverVersion)
+    }
+    return produceState<Load<T>>(cached ?: fromDisk?.let { Load.Done(it) } ?: Load.Loading, library, *keys) {
         if (cached != null) return@produceState
-        value = if (library == null) {
-            Load.Failed("Not connected")
-        } else {
-            runCatching { library.block() }.fold({ Load.Done(it).also { d -> cache.map[cacheKey] = d } }, {
-                if (library.isRemote && it !is com.tonihk00.clearplay.data.api.SubsonicException) lost()
-                Load.Failed(com.tonihk00.clearplay.ui.login.friendlyError(it))
-            })
+        if (library == null) {
+            value = Load.Failed("Not connected")
+            return@produceState
         }
+        runCatching { library.block() }.fold({ fresh ->
+            val done = Load.Done(fresh)
+            cache.map[cacheKey] = done
+            if (fromDisk == null || fresh != fromDisk) value = done
+            if (disk != null && server != null) {
+                val version = (library as SubsonicClient).serverVersion
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { libraryCache()?.write(server, disk.name, disk.serializer, fresh, version) }
+            }
+        }, {
+            if (library.isRemote && it !is com.tonihk00.clearplay.data.api.SubsonicException) lost()
+            // With the list from disk on screen, keep showing it.
+            if (fromDisk == null) value = Load.Failed(com.tonihk00.clearplay.ui.login.friendlyError(it))
+        })
     }
 }
+
+/** The app's library cache (null in previews where the app isn't running). */
+fun libraryCache(): com.tonihk00.clearplay.data.LibraryCache? =
+    runCatching { com.tonihk00.clearplay.ClearPlayApp.instance.libraryCache }.getOrNull()
 
 @Composable
 fun <T> LoadBox(state: Load<T>, modifier: Modifier = Modifier, content: @Composable (T) -> Unit) {
