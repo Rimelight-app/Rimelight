@@ -36,6 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -79,12 +81,7 @@ fun StatsScreen(bottomPadding: Dp, preset: LibraryStats? = null, presetSyncedAt:
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = bottomPadding + 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item {
-            Column(Modifier.statusBarsPadding().padding(start = 4.dp, top = 12.dp)) {
-                Text("Statistics", style = MaterialTheme.typography.headlineMedium)
-                Text(view.subtitle, style = MaterialTheme.typography.bodyMedium, color = Cp.TextFaint, modifier = Modifier.padding(top = 2.dp))
-            }
-        }
+        item { StatsHeader(view.subtitle, view.refresh) }
         val s = view.stats
         when {
             s == null && view.empty != null -> item { EmptyState(view.empty.first, view.empty.second, view.empty.third) }
@@ -116,6 +113,43 @@ fun StatsScreen(bottomPadding: Dp, preset: LibraryStats? = null, presetSyncedAt:
 private const val SERVER_SUBTITLE = "Your listening, from Navidrome's play counts"
 private const val OFFLINE_SUBTITLE = "Saved from Navidrome · you're offline"
 
+/** The refresh button's state: [running] turns the icon; disabled offline. */
+data class StatsRefresh(val enabled: Boolean, val running: Boolean, val onClick: () -> Unit)
+
+/**
+ * "Statistics" with the subtitle, and the refresh button on the title row, pushed to the right
+ * (same place and style as Shuffle library on Library). The icon turns while a refresh runs
+ * (not with Reduce motion).
+ */
+@Composable
+fun StatsHeader(subtitle: String, refresh: StatsRefresh?) {
+    Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text("Statistics", style = MaterialTheme.typography.headlineMedium)
+            Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Cp.TextFaint, modifier = Modifier.padding(top = 2.dp))
+        }
+        if (refresh != null) {
+            val reduce = LocalReduceMotion.current
+            val turn = remember { Animatable(0f) }
+            LaunchedEffect(refresh.running, reduce) {
+                if (refresh.running && !reduce) {
+                    while (true) {
+                        turn.animateTo(turn.value + 360f, tween(900, easing = androidx.compose.animation.core.LinearEasing))
+                    }
+                } else if (turn.value % 360f != 0f) {
+                    turn.animateTo((turn.value / 360f).toInt() * 360f + 360f, tween(if (reduce) 0 else 300, easing = Cp.EaseOutSoft))
+                }
+            }
+            com.tonihk00.clearplay.ui.components.IconButtonCp(
+                R.drawable.ic_refresh_cw, "Refresh statistics", refresh.onClick,
+                modifier = Modifier.padding(start = 8.dp).graphicsLayer { rotationZ = turn.value },
+                outlined = true,
+                enabled = refresh.enabled && !refresh.running,
+            )
+        }
+    }
+}
+
 /** What the page shows: the numbers, or a progress count / empty state; [syncedAt] adds "Last synced". */
 private data class StatsView(
     val stats: LibraryStats?,
@@ -124,6 +158,7 @@ private data class StatsView(
     val updating: Boolean = false,
     val loaded: Int = 0,
     val empty: Triple<Int, String, String?>? = null,
+    val refresh: StatsRefresh? = null,
 )
 
 /**
@@ -137,6 +172,8 @@ private fun serverStats(client: com.tonihk00.clearplay.data.api.SubsonicClient, 
     val key = remember(client) { com.tonihk00.clearplay.data.stats.StatsStore.keyOf(client.server) }
     val snapshots by repo.snapshots.collectAsState()
     val progress by repo.progress.collectAsState()
+    val toast = com.tonihk00.clearplay.ui.LocalToast.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     var failed by remember(client) { mutableStateOf(false) }
     var diskChecked by remember(client) { mutableStateOf(false) }
     LaunchedEffect(client, online) {
@@ -154,6 +191,23 @@ private fun serverStats(client: com.tonihk00.clearplay.data.api.SubsonicClient, 
     }
     val snap = snapshots[key]
     val updating = key in progress
+    // The refresh button: fetch now, however fresh the snapshot (joins a fetch that is running).
+    // A failure keeps the numbers shown and says so.
+    val refresh = StatsRefresh(enabled = online, running = updating) {
+        if (!online) return@StatsRefresh
+        val job = repo.refresh(client.server) { offset -> client.songs(STATS_PAGE, offset) }
+        scope.launch {
+            try {
+                job.await()
+                failed = false
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (snapshots[key] == null) failed = true
+                toast("Couldn't refresh statistics")
+            }
+        }
+    }
     return when {
         snap != null -> StatsView(
             snap.stats,
@@ -161,13 +215,15 @@ private fun serverStats(client: com.tonihk00.clearplay.data.api.SubsonicClient, 
             // Offline, or online but the refresh failed or is still running: say how old the numbers are.
             syncedAt = snap.fetchedAt.takeIf { !online || failed || updating },
             updating = online && updating,
+            refresh = refresh,
         )
         !online && diskChecked -> StatsView(
             null, OFFLINE_SUBTITLE,
             empty = Triple(R.drawable.ic_chart_line, "No statistics saved yet", "Open Statistics once while connected to your server; they stay here for offline."),
+            refresh = refresh,
         )
-        failed -> StatsView(null, SERVER_SUBTITLE, empty = Triple(R.drawable.ic_circle_alert, "Couldn't read your library", null))
-        else -> StatsView(null, SERVER_SUBTITLE, loaded = progress[key] ?: 0)
+        failed -> StatsView(null, SERVER_SUBTITLE, empty = Triple(R.drawable.ic_circle_alert, "Couldn't read your library", null), refresh = refresh)
+        else -> StatsView(null, SERVER_SUBTITLE, loaded = progress[key] ?: 0, refresh = refresh)
     }
 }
 
@@ -180,18 +236,33 @@ private fun localStats(): StatsView {
     var stats by remember(library) { mutableStateOf(cache.map[cacheKey] as LibraryStats?) }
     var loaded by remember(library) { mutableIntStateOf(0) }
     var failed by remember(library) { mutableStateOf(false) }
-    LaunchedEffect(library) {
+    var running by remember(library) { mutableStateOf(false) }
+    // Refresh: forget the cached numbers and count again.
+    var generation by remember(library) { mutableIntStateOf(0) }
+    LaunchedEffect(library, generation) {
         if (stats != null || library == null) return@LaunchedEffect
-        runCatching { library.allSongs { loaded = it } }
-            .onSuccess { songs ->
-                stats = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { computeStats(songs) }
-                cache.map[cacheKey] = stats
-            }
-            .onFailure { failed = true }
+        running = true
+        failed = false
+        try {
+            runCatching { library.allSongs { loaded = it } }
+                .onSuccess { songs ->
+                    stats = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { computeStats(songs) }
+                    cache.map[cacheKey] = stats
+                }
+                .onFailure { failed = true }
+        } finally {
+            running = false
+        }
     }
     return StatsView(
         stats, "From your downloads and phone music", loaded = loaded,
         empty = if (failed) Triple(R.drawable.ic_circle_alert, "Couldn't read your library", null) else null,
+        refresh = StatsRefresh(enabled = library != null, running = running) {
+            cache.map.remove(cacheKey)
+            stats = null
+            loaded = 0
+            generation++
+        },
     )
 }
 

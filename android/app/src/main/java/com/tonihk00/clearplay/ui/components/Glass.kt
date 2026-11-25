@@ -70,6 +70,7 @@ fun IconButtonCp(
     active: Boolean = false,
     outlined: Boolean = false,
     tint: Color = if (active) Cp.TextStrong else Cp.TextSoft,
+    enabled: Boolean = true,
 ) {
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
@@ -91,10 +92,11 @@ fun IconButtonCp(
             .clip(CircleShape)
             .background(bg)
             .then(if (outlined) Modifier.border(1.dp, Cp.GlassStroke, CircleShape) else Modifier)
-            .clickable(source, null, role = Role.Button) {
+            .clickable(source, null, enabled = enabled, role = Role.Button) {
                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                 onClick()
-            },
+            }
+            .then(if (enabled) Modifier else Modifier.graphicsLayer { alpha = 0.4f }),
         contentAlignment = Alignment.Center,
     ) {
         CpIcon(icon, size = iconSize, tint = tint, contentDescription = contentDescription)
