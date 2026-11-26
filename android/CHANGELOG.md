@@ -1,4 +1,14 @@
-# ClearPlay for Android — changelog
+# Rimelight for Android — changelog
+
+Called ClearPlay for Android up to 1.6.0.
+
+## [1.6.1] - 2026-11-26
+
+### Changed
+- **ClearPlay for Android is now Rimelight for Android.** Same app, new name, to match Rimelight on the computer. It updates over 1.6.0 and keeps your login, queue, downloads and settings (and your statistics and home-screen shortcuts).
+- **Continue on other devices** works with Rimelight on the computer (0.6.2) at the live second again, and still works with a computer on ClearPlay 0.6.1: the pill then says "ClearPlay desktop". A queue this phone saved before the update is still recognised as its own, so it isn't offered back to you.
+- Navidrome's list of players shows the phone as "Rimelight-Android".
+- **The song menu** (hold down a song, or tap ⋯) **and the sleep timer are now frosted glass**, like the player bar: the page behind shows through, blurred. Text stays readable over a white cover. With Settings → Appearance → Live glass blur off, they are solid dark glass like the player bar.
 
 ## [1.6.0] - 2026-11-25
 
