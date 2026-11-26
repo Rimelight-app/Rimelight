@@ -1,7 +1,7 @@
 // Runs every shared case in queue-handoff-cases.json against
 // src/service/queue-handoff.ts ("Continue on other devices").
 // Usage: node tools/dev-rig/queue-handoff-unit.mjs   (Node 22.18+ runs the .ts file directly)
-// ClearPlay Android runs the same file against QueueHandoff.kt.
+// Rimelight for Android runs the same file against QueueHandoff.kt.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -47,9 +47,10 @@ function songs(list) {
   })
 }
 
-assert.equal(cases.version, 3, 'cases file version')
+assert.equal(cases.version, 4, 'cases file version')
 assert.equal(cases.thisApp.desktop, h.DESKTOP_APP)
 assert.equal(cases.thisApp.android, h.ANDROID_APP)
+assert.deepEqual(cases.legacyNames, { ...h.LEGACY_NAMES })
 
 for (const c of cases.deviceName)
   t(`deviceName: ${c.input}`, () =>

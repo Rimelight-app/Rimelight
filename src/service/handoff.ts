@@ -19,7 +19,7 @@ import { localQueue, queueSync } from './queue-sync'
 /**
  * "Continue on other devices" at run time: when to save the queue, when to
  * look at the server's, the Continue offer and "Continued on <device>". The
- * rules themselves are in queue-handoff.ts (shared with ClearPlay Android).
+ * rules themselves are in queue-handoff.ts (shared with Rimelight for Android).
  */
 
 const serverKey = () => {
@@ -292,8 +292,8 @@ export function closeLeftBehind() {
 let checking: Promise<void> | null = null
 
 /**
- * Is this device left behind? The phone app (ClearPlay for Android) plays a
- * song from this queue (Now Playing) and saved the server's queue last (read
+ * Is this device left behind? The phone app (Rimelight or, not updated
+ * yet, ClearPlay for Android) plays a song from this queue (Now Playing) and saved the server's queue last (read
  * only then).
  * Runs before a song change's save (see QueueObserver), so the device left
  * behind doesn't save first and make itself changedBy.

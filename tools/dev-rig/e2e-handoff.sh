@@ -1,6 +1,7 @@
 #!/bin/bash
 # "Continue on other devices" against the rig's Navidrome (0.64.2+) with a
-# pretend ClearPlay Android. pnpm electron:build first.
+# pretend phone app (HANDOFF_PHONE=ClearPlay-Android for one not updated
+# yet). pnpm electron:build first.
 # Usage: e2e-handoff.sh   (ENGINE=mpv for the mpv engine; needs mpv installed)
 HERE="$(cd "$(dirname "$0")" && pwd)"
 export NO_PROXY="127.0.0.1,localhost${NO_PROXY:+,$NO_PROXY}"

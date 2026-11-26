@@ -1,6 +1,7 @@
 // Usage: node e2e-handoff.mjs   (run through tools/dev-rig/e2e-handoff.sh)
 // "Continue on other devices" against the rig's real Navidrome (0.64.2+),
-// with a pretend ClearPlay Android (c=ClearPlay-Android) talking to the same
+// with a pretend phone app (c=Rimelight-Android, or c=ClearPlay-Android for a
+// phone not updated yet: HANDOFF_PHONE=ClearPlay-Android) talking to the same
 // server: phone → PC and PC → phone, the right song (also with the same song
 // twice in the queue) and the right second, saves on pause / quit / sleep /
 // lock, nothing saved while left behind or on "clear queue", 1 000-song
@@ -23,7 +24,10 @@ const ND_PORT = 4533
 const FAKE_PORT = 4542
 const FAKE = `http://127.0.0.1:${FAKE_PORT}`
 const ALBUM = 'Neon Tides' // 35-70 s songs
-const ANDROID = 'ClearPlay-Android'
+const ANDROID = process.env.HANDOFF_PHONE || 'Rimelight-Android'
+/** How the desktop names the phone in its pills (deviceName in queue-handoff.ts). */
+const PHONE_NAME =
+  ANDROID === 'ClearPlay-Android' ? 'ClearPlay Android' : 'Rimelight Android'
 
 // The shared rules, to compute what the phone would offer.
 const rules = await import(
@@ -362,11 +366,11 @@ await test('phone paused → PC offers Continue; it starts at the second copy of
     h?.kind === 'paused' &&
       h.index === 3 &&
       h.song === B &&
-      h.device === 'ClearPlay Android',
+      h.device === PHONE_NAME,
     `offer ${JSON.stringify(h)}`,
   )
   const text = await win.locator('[data-testid=handoff-pill]').innerText()
-  expect(/Paused on ClearPlay Android/.test(text), `pill says "${text}"`)
+  expect(new RegExp(`Paused on ${PHONE_NAME}`).test(text), `pill says "${text}"`)
   expect(/just now|min ago/.test(text), `pill age "${text}"`)
   const mark = Date.now()
   await win.locator('[data-testid=handoff-continue]').click()
@@ -378,7 +382,7 @@ await test('phone paused → PC offers Continue; it starts at the second copy of
   expect(p.id === B && near(p.time, 12.5, 3), `started at ${JSON.stringify(p)}`)
   const q = await until(async () => {
     const x = await phone.queue()
-    return x.changedBy === 'ClearPlay' ? x : null
+    return x.changedBy === 'Rimelight' ? x : null
   }, 5000)
   expect(q, 'not saved back: changedBy is still the phone')
   expect(
@@ -397,8 +401,8 @@ await test('phone paused → PC offers Continue; it starts at the second copy of
     `save calls ${JSON.stringify(s.map((c) => ({ m: c.method, urlIds: c.q.getAll('id').length, bodyIds: c.body.getAll('id').length })))}`,
   )
   expect(
-    s.every((c) => c.q.get('c') === 'ClearPlay'),
-    'not sent as c=ClearPlay',
+    s.every((c) => c.q.get('c') === 'Rimelight'),
+    'not sent as c=Rimelight',
   )
   expect(!(await handoff()).offer, 'offer still showing')
 })
@@ -421,7 +425,7 @@ await test('phone still playing → "Continue here" starts at its song (first ma
     `offer ${JSON.stringify(h)}`,
   )
   const text = await win.locator('[data-testid=handoff-pill]').innerText()
-  expect(/Playing on ClearPlay Android/.test(text), `pill says "${text}"`)
+  expect(new RegExp(`Playing on ${PHONE_NAME}`).test(text), `pill says "${text}"`)
   expect(/Continue here/.test(text), `button "${text}"`)
   await win.locator('[data-testid=handoff-continue]').click()
   const p = await until(async () => {
@@ -436,7 +440,7 @@ await test('phone still playing → "Continue here" starts at its song (first ma
   )
   const q = await until(async () => {
     const x = await phone.queue()
-    return x.changedBy === 'ClearPlay' ? x : null
+    return x.changedBy === 'Rimelight' ? x : null
   }, 5000)
   expect(
     q?.currentIndex === 3,
@@ -473,7 +477,7 @@ await test("v3: PC takes over from a still-playing phone → no pill on the PC; 
   )
   const phoneSees = rules.leftBehind({ ...input, serverChangedBy: q.changedBy })
   expect(
-    phoneSees?.device === 'ClearPlay desktop',
+    phoneSees?.device === 'Rimelight desktop',
     `phone's check: ${JSON.stringify(phoneSees)} (changedBy ${q.changedBy})`,
   )
   await phone.report(B, 'stopped', 26000)
@@ -496,7 +500,7 @@ await test('PC pause → server has the right copy of the song and second; the p
   const q = await until(async () => {
     const x = await phone.queue()
     // Stored by Navidrome (not only sent): its `changed` moved on.
-    return x.changed !== before && x.changedBy === 'ClearPlay' ? x : null
+    return x.changed !== before && x.changedBy === 'Rimelight' ? x : null
   }, 4000)
   expect(q, 'no save within 4 s of the pause')
   const firstSave = saves(mark)[0].at - mark
@@ -525,13 +529,13 @@ await test('PC pause → server has the right copy of the song and second; the p
   expect(
     o?.kind === 'paused' &&
       o.index === 3 &&
-      o.device === 'ClearPlay desktop' &&
+      o.device === 'Rimelight desktop' &&
       near(o.positionMs, at * 1000, 1500),
     `phone's offer ${JSON.stringify(o && { ...o, song: o.song.id })}`,
   )
 })
 
-await test('PC playing → the phone would offer "Playing on ClearPlay desktop" at the live second', async () => {
+await test('PC playing → the phone would offer "Playing on Rimelight desktop" at the live second', async () => {
   await playPause()
   await until(async () => (await player()).playing)
   await sleep(4000)
@@ -561,7 +565,7 @@ await test('PC playing → the phone would offer "Playing on ClearPlay desktop" 
 })
 
 // ======================= left behind =======================
-await test('phone continues → "Continued on ClearPlay Android"; nothing saved while it shows; Pause here saves nothing', async () => {
+await test('phone continues → "Continued on <phone>"; nothing saved while it shows; Pause here saves nothing', async () => {
   await win.evaluate(() =>
     window.__cp.handoff.setState({ leftBehindShown: false }),
   )
@@ -571,13 +575,13 @@ await test('phone continues → "Continued on ClearPlay Android"; nothing saved 
   await win.locator('[data-testid=player-button-next]').click()
   const lb = await until(async () => (await handoff()).leftBehind, 6000)
   expect(
-    lb?.device === 'ClearPlay Android',
+    lb?.device === PHONE_NAME,
     `left behind ${JSON.stringify(lb)}`,
   )
   const text = await win
     .locator('[data-testid=handoff-left-behind]')
     .innerText()
-  expect(/Continued on ClearPlay Android/.test(text), `pill "${text}"`)
+  expect(new RegExp(`Continued on ${PHONE_NAME}`).test(text), `pill "${text}"`)
   await sleep(6000)
   expect(
     saves(mark).length === 0,
@@ -858,7 +862,7 @@ await test('past song 1 000 (2 500-song queue with local songs): 100 before, 899
   const q = await until(async () => {
     const x = await phone.queue()
     // Stored by Navidrome (not only sent): its `changed` moved on.
-    return x.changed !== before && x.changedBy === 'ClearPlay' ? x : null
+    return x.changed !== before && x.changedBy === 'Rimelight' ? x : null
   }, 9000)
   expect(q, 'not saved')
   expect(q.entry.length === 1000, `saved ${q.entry.length} songs`)
@@ -887,7 +891,7 @@ await test('system sleep and screen lock save right away', async () => {
     )
     const q = await until(async () => {
       const x = await phone.queue()
-      return x.changedBy === 'ClearPlay' ? x : null
+      return x.changedBy === 'Rimelight' ? x : null
     }, 3000)
     expect(q, `${event}: not saved`)
     const pc = await player()
@@ -910,7 +914,7 @@ await test('quit while playing saves first (inside the quit handshake)', async (
   await quit()
   const q = await phone.queue()
   expect(
-    q.changedBy === 'ClearPlay',
+    q.changedBy === 'Rimelight',
     `server changedBy ${q.changedBy} after quit`,
   )
   expect(

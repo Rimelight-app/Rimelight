@@ -1067,7 +1067,7 @@
       "description": "Continue on other devices and keep the music going.",
       "sync": {
         "label": "Continue on other devices",
-        "info": "Saves your queue and position to Navidrome when the song changes or you pause, so ClearPlay for Android on your phone (or another app such as Symfonium) can continue it. Shuffle library and similar-music refills don't carry over."
+        "info": "Saves your queue and position to Navidrome when the song changes or you pause, so Rimelight on your phone (or another app such as Symfonium) can continue it. Shuffle library and similar-music refills don't carry over."
       },
       "autoDj": {
         "label": "Keep playing similar music",

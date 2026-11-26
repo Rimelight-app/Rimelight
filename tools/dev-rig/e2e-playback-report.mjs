@@ -100,7 +100,7 @@ async function nd(endpoint, params = {}) {
 /** Rimelight's entry in Navidrome's Now Playing (what its web UI shows). */
 const nowPlaying = async () =>
   ((await nd('getNowPlaying')).nowPlaying?.entry || []).find(
-    (e) => e.playerName === 'ClearPlay',
+    (e) => e.playerName === 'Rimelight',
   ) || null
 const playCount = async (id) =>
   (await nd('getSong', { id })).song.playCount || 0

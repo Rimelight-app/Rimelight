@@ -17,7 +17,7 @@ Linux · Windows · works with any OpenSubsonic server
 <!-- SCREENSHOT TO ADD (near the top, below the album shot or replacing it):
      docs/screenshots/continue.mp4 (or .gif), at most 10 s and 5 MB.
      Shot: 1280×800 window, a real album playing in the fullscreen player with synced lyrics
-     scrolling for ~5 s; OR the Continue flow: the "Paused on ClearPlay Android · <song> · 2 min ago"
+     scrolling for ~5 s; OR the Continue flow: the "Paused on Rimelight Android · <song> · 2 min ago"
      pill above the player bar, click Continue, the song starts at the same second.
      Alt text: "Rimelight continuing a song from the phone at the same second" (or
      "Synced lyrics gliding in Rimelight's fullscreen player"). -->
@@ -34,7 +34,7 @@ You host your own music. Your player should feel as good as the streaming apps, 
 - **Lyrics that glide.** Time-synced lyrics from your own files, with the current line large and bright and the rest gently fading. They are available full screen or in a side panel on any page.
 - **Built for a home server.** Save your home and Tailscale addresses and switch with one click, or let Rimelight pick the fastest one at start. Cap the streaming bitrate when you're away.
 - **Knows your listening.** A Now Playing page with the album, the artist and their discography, plus statistics: hours listened, top artists, genres, songs and decades.
-- **Continue on other devices.** Pause on one device, tap Continue on the other, and it picks up at the same song and second, through your server. Works with ClearPlay for Android 1.6.0 and with other apps such as Symfonium.
+- **Continue on other devices.** Pause on one device, tap Continue on the other, and it picks up at the same song and second, through your server. Works with Rimelight for Android 1.6.1 and with other apps such as Symfonium. A phone still on ClearPlay for Android 1.6.0 works too: it continues from the saved position instead of the live second until you update it.
 - **Plays well with your other apps.** Plays go to Navidrome (and on to Last.fm/ListenBrainz), queued and retried if you're offline.
 
 ## Screenshots
@@ -46,20 +46,20 @@ You host your own music. Your player should feel as good as the streaming apps, 
 | <img src="docs/screenshots/side-lyrics.jpg" alt="Artist page with the lyrics side panel"> | <img src="docs/screenshots/stats.jpg" alt="Listening statistics with the queue panel"> |
 | **Artist page.** Biography, with lyrics in the side panel | **Statistics.** Hours, plays, top artists and genres, with the queue |
 
-### ClearPlay for Android
+### Rimelight for Android
 
 | | | | | |
 |---|---|---|---|---|
 | <img src="docs/screenshots/android-album.jpg" alt="Android album page" width="170"> | <img src="docs/screenshots/android-now-playing.jpg" alt="Android now playing" width="170"> | <img src="docs/screenshots/android-lyrics.jpg" alt="Android synced lyrics" width="170"> | <img src="docs/screenshots/android-stats.jpg" alt="Android statistics" width="170"> | <img src="docs/screenshots/android-settings.jpg" alt="Android settings" width="170"> |
 | **Album** | **Now playing** | **Lyrics** | **Statistics** | **Settings** |
 
-**ClearPlay for Android** is the same frosted-glass player for your server on your phone, with synced lyrics, statistics and Continue on other devices. Get it from [its releases](https://github.com/Rimelight-app/Rimelight/releases/tag/android-v1.6.0).
+**Rimelight for Android** is the same frosted-glass player for your server on your phone, with synced lyrics, statistics and Continue on other devices. Get it from [its releases](https://github.com/Rimelight-app/Rimelight/releases/tag/android-v1.6.0). Up to 1.6.0 it was called ClearPlay for Android; 1.6.1 brings the new name.
 
 <!-- SCREENSHOTS TO ADD (desktop, real library, 1440×900 window):
      1. docs/screenshots/settings.jpg — Settings → Player & Audio, the frosted cards (changed in 0.5.2),
         Audio engine and Sound groups visible. Alt: "Rimelight settings: audio engine and sound".
      2. docs/screenshots/continue-pill.jpg — any page with the pill above the player bar:
-        "Paused on ClearPlay Android · <song> · 2 min ago" with the Continue button.
+        "Paused on Rimelight Android · <song> · 2 min ago" with the Continue button.
         Alt: "The Continue pill offering the queue paused on the phone".
      3. docs/screenshots/start-radio.jpg — an album page, a song right-clicked, the menu open
         with "Start radio" under "Add last". Alt: "Start radio in a song's menu". -->
@@ -143,7 +143,7 @@ Not (yet): macOS, gapless playback with the bit-perfect engine, a code-signed Wi
 
 **Is playback bit-perfect?** With the optional mpv engine, yes: each song reaches your DAC unchanged, at its own rate and bit depth. The default engine mixes at the system rate.
 
-**Can I continue on my phone?** Yes. Turn on Continue on other devices and pause here; ClearPlay for Android 1.6.0 (or another app that reads Navidrome's saved queue, such as Symfonium) continues at the same song and second, and back.
+**Can I continue on my phone?** Yes. Turn on Continue on other devices and pause here; Rimelight for Android 1.6.1 (or another app that reads Navidrome's saved queue, such as Symfonium) continues at the same song and second, and back.
 
 **Does it work without a server?** Yes: choose "Use music on this computer" and add your music folders.
 
