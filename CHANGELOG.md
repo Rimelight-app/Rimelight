@@ -7,6 +7,9 @@ All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 ### Security
 - Fixed a security issue: text in music file tags could run code inside ClearPlay. Updating is recommended.
 
+### Fixed
+- **Big playlists and albums froze the app**: opening a playlist with thousands of songs could freeze ClearPlay for a minute or more and use gigabytes of memory, and a 500-song album took seconds to open. ClearPlay drew every row once before it switched to drawing only the rows on screen; now it draws only those from the start. Coming back to a playlist also no longer swaps it for the loading placeholder while it refreshes.
+
 ## [0.6.0] - 2026-11-24
 
 ### Added

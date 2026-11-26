@@ -21,7 +21,7 @@ import {
   memo,
   TouchEvent,
   useCallback,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -211,9 +211,16 @@ export function DataTable<TData, TValue>({
   const discNumberIndexes = discIndexes.uniqueIndices
 
   const tableContainerRef = useRef<HTMLDivElement>(null)
-  const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null)
+  // The scroll area the virtual rows follow. undefined: not looked up yet
+  // (first render); null: the table isn't inside a scroll area. It is looked
+  // up in a layout effect, which re-renders before the first paint, so the
+  // first render draws no rows instead of every row (a 10 000-song playlist
+  // used to freeze the app for minutes).
+  const [scrollElement, setScrollElement] = useState<
+    HTMLElement | null | undefined
+  >(undefined)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (enableVirtualization && tableContainerRef.current) {
       const parent = tableContainerRef.current.closest(
         '[data-radix-scroll-area-viewport]',
@@ -222,9 +229,18 @@ export function DataTable<TData, TValue>({
     }
   }, [enableVirtualization])
 
+  // 'none' only for the render before the scroll area is known.
+  const rowMode = !enableVirtualization
+    ? 'all'
+    : scrollElement === undefined
+      ? 'none'
+      : scrollElement
+        ? 'virtual'
+        : 'all'
+
   const virtualizer = useVirtualizer({
     count: enableVirtualization ? rows.length : 0,
-    getScrollElement: () => scrollElement,
+    getScrollElement: () => scrollElement ?? null,
     estimateSize: (index) => {
       if (
         showDiscNumber &&
@@ -472,7 +488,7 @@ export function DataTable<TData, TValue>({
           <div className="[&_div:last-child]:border-0" ref={tableContainerRef}>
             <div className="w-full h-full overflow-hidden">
               {rows?.length ? (
-                enableVirtualization && scrollElement ? (
+                rowMode === 'none' ? null : rowMode === 'virtual' ? (
                   <div
                     style={{
                       height: `${virtualizer.getTotalSize()}px`,

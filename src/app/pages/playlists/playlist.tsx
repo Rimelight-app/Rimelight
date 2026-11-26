@@ -25,16 +25,14 @@ export default function Playlist() {
   const { setSongList } = usePlayerActions()
   const [searchActive, setSearchActive] = useState(false)
 
-  const {
-    data: playlist,
-    isLoading,
-    isFetching,
-  } = useQuery({
+  const { data: playlist, isLoading } = useQuery({
     queryKey: [queryKeys.playlist.single, playlistId],
     queryFn: () => subsonic.playlists.getOne(playlistId),
   })
 
-  if (isFetching || isLoading) return <PlaylistFallback />
+  // Only while there is nothing to show yet: a background refetch keeps the
+  // table (and its scroll position) instead of swapping in the skeleton.
+  if (isLoading) return <PlaylistFallback />
   if (!playlist) return <ErrorPage status={404} statusText="Not Found" />
 
   const columnsToShow: ColumnFilter[] = [
