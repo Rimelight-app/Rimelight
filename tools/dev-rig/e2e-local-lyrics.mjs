@@ -13,7 +13,7 @@ const app = path.resolve(
   path.dirname(new URL(import.meta.url).pathname),
   '../..',
 )
-const rig = process.env.RIG || '/tmp/clearplay-rig'
+const rig = process.env.RIG || '/tmp/rimelight-rig'
 const music = path.join(rig, 'local-lyrics-music')
 const userData = path.join(rig, 'userdata-local-lyrics')
 fs.rmSync(music, { recursive: true, force: true })
@@ -118,7 +118,7 @@ const electronApp = await electron.launch({
     `--user-data-dir=${userData}`,
   ],
   cwd: app,
-  env: { ...process.env, CLEARPLAY_E2E: '1' },
+  env: { ...process.env, RIMELIGHT_E2E: '1' },
   timeout: 60000,
 })
 const win = await electronApp.firstWindow()

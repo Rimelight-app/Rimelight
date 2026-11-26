@@ -24,7 +24,7 @@ const isLocalSongId = (id: string) => /^tr-[0-9a-f]{16}$/.test(id)
 
 /**
  * The request for a seed, or null when Start radio isn't offered: songs
- * from "Music on this computer", or while ClearPlay is connected to it (it
+ * from "Music on this computer", or while Rimelight is connected to it (it
  * has no similar-songs data).
  * Navidrome 0.64.2 takes song, album and artist ids in getSimilarSongs; an
  * artist uses getSimilarSongs2 (the artist's songs and similar artists').

@@ -12,8 +12,8 @@ import {
 } from '@/service/library-shuffle'
 import { isNaturalEnd, isQueueCleared } from '@/service/queue-handoff'
 import { queueSync } from '@/service/queue-sync'
-import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { usePlayerStore } from '@/store/player.store'
+import { useRimelightSettings } from '@/store/rimelight-settings.store'
 import { logger } from '@/utils/logger'
 
 /**
@@ -30,7 +30,7 @@ export function QueueObserver() {
     let autoEdits = 0
 
     const unsub = usePlayerStore.subscribe((state, prev) => {
-      const { autoDj } = useClearPlaySettings.getState()
+      const { autoDj } = useRimelightSettings.getState()
       const song = state.songlist.currentSong
       const list = state.songlist.currentList
       const prevList = prev.songlist.currentList

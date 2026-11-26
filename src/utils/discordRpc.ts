@@ -1,4 +1,4 @@
-// Discord Rich Presence was removed in ClearPlay. These no-ops keep the
+// Discord Rich Presence was removed in Rimelight. These no-ops keep the
 // existing player/app store call sites unchanged.
 import { ISong } from '@/types/responses/song'
 

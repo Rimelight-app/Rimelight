@@ -4,9 +4,9 @@ import path from 'node:path'
 import { is } from '@electron-toolkit/utils'
 import { app } from 'electron'
 import { AudioEngine, MpvEngineStatus } from '../../../preload/types'
-import { ClearPlayStore } from '../store'
+import { RimelightStore } from '../store'
 
-const engineStore = new ClearPlayStore<{ engine: AudioEngine }>({
+const engineStore = new RimelightStore<{ engine: AudioEngine }>({
   name: 'audio-engine',
   defaults: { engine: 'builtin' },
 })
@@ -22,7 +22,7 @@ export function saveEngine(engine: AudioEngine) {
 
 /** Where mpv is: bundled on Windows, the user's own on Linux. */
 export function findMpvBinary(): string | null {
-  const override = process.env.CLEARPLAY_MPV
+  const override = process.env.RIMELIGHT_MPV
   if (override) return existsSync(override) ? override : null
 
   if (process.platform === 'win32') {
@@ -52,8 +52,8 @@ function missing(): Probe {
     version: null,
     problem:
       process.platform === 'win32'
-        ? 'mpv is missing from this installation. Reinstall ClearPlay.'
-        : 'mpv is not installed. Install it (Fedora: sudo dnf install mpv) and restart ClearPlay.',
+        ? 'mpv is missing from this installation. Reinstall Rimelight.'
+        : 'mpv is not installed. Install it (Fedora: sudo dnf install mpv) and restart Rimelight.',
   }
 }
 

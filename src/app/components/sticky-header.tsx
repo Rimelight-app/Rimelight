@@ -84,7 +84,7 @@ export function StickyHeader({
   }, [])
 
   const isHidden = opacity === 0
-  // ClearPlay: ignore the cover-colour background some callers pass and
+  // Rimelight: ignore the cover-colour background some callers pass and
   // render a floating frosted bar instead.
   const { backgroundColor: _ignored, ...restStyle } = style ?? {}
 

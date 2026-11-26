@@ -9,7 +9,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const app = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..')
-const rig = process.env.RIG || '/tmp/clearplay-rig'
+const rig = process.env.RIG || '/tmp/rimelight-rig'
 const music = path.join(rig, 'local-music')
 const userData = path.join(rig, 'userdata-local')
 fs.rmSync(music, { recursive: true, force: true })
@@ -29,7 +29,7 @@ async function launch() {
     executablePath: path.join(app, 'node_modules/electron/dist/electron'),
     args: [app, '--no-sandbox', '--disable-gpu-sandbox', `--user-data-dir=${userData}`],
     cwd: app,
-    env: { ...process.env, CLEARPLAY_E2E: '1' },
+    env: { ...process.env, RIMELIGHT_E2E: '1' },
     timeout: 60000,
   })
   win = await electronApp.firstWindow()

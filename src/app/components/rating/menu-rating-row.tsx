@@ -26,7 +26,7 @@ export function MenuRatingRow({ songs }: { songs: ISong[] }) {
     >
       <span className="flex items-center">
         <Star className="mr-2 h-4 w-4" />
-        {t('clearplay.rating.label')}
+        {t('rimelight.rating.label')}
       </span>
       <StarRating
         value={value}

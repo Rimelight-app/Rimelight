@@ -53,7 +53,7 @@ function LatencyBadge({ ms }: { ms: number | null | undefined }) {
                 : 'bg-orange-400',
         )}
       />
-      {ms === null ? t('clearplay.servers.offline') : `${ms} ms`}
+      {ms === null ? t('rimelight.servers.offline') : `${ms} ms`}
     </span>
   )
 }
@@ -109,12 +109,12 @@ function ServerRow({
         {testing ? (
           <Loader2 className="size-3.5 animate-spin" />
         ) : (
-          t('clearplay.servers.test')
+          t('rimelight.servers.test')
         )}
       </button>
       {active ? (
         <span className="inline-flex h-8 items-center rounded-full bg-white px-3 text-[12px] font-semibold text-[#121216]">
-          {t('clearplay.servers.active')}
+          {t('rimelight.servers.active')}
         </span>
       ) : (
         <>
@@ -123,13 +123,13 @@ function ServerRow({
             onClick={() => switchToServer(server)}
             className={pill}
           >
-            {t('clearplay.servers.use')}
+            {t('rimelight.servers.use')}
           </button>
           <button
             type="button"
             onClick={() => remove(server.id)}
             className="flex size-8 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
-            aria-label={t('clearplay.servers.remove')}
+            aria-label={t('rimelight.servers.remove')}
           >
             <Trash2 className="size-4" />
           </button>
@@ -177,7 +177,7 @@ function AddServer({ onDone }: { onDone: () => void }) {
     >
       <input
         className={input}
-        placeholder={t('clearplay.servers.name')}
+        placeholder={t('rimelight.servers.name')}
         value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
       />
@@ -214,14 +214,14 @@ function AddServer({ onDone }: { onDone: () => void }) {
           {state === 'checking' && (
             <Loader2 className="size-3.5 animate-spin" />
           )}
-          {t('clearplay.servers.save')}
+          {t('rimelight.servers.save')}
         </button>
         <button type="button" onClick={onDone} className={pill}>
-          {t('clearplay.servers.cancel')}
+          {t('rimelight.servers.cancel')}
         </button>
         {state === 'failed' && (
           <span className="text-[12px] text-rose-300">
-            {t('clearplay.servers.failed')}
+            {t('rimelight.servers.failed')}
           </span>
         )}
       </div>
@@ -243,9 +243,9 @@ export function ServersSettings() {
     <div className="space-y-4">
       <Root>
         <Header>
-          <HeaderTitle>{t('clearplay.servers.group')}</HeaderTitle>
+          <HeaderTitle>{t('rimelight.servers.group')}</HeaderTitle>
           <HeaderDescription>
-            {t('clearplay.servers.description')}
+            {t('rimelight.servers.description')}
           </HeaderDescription>
         </Header>
         <Content>
@@ -267,12 +267,12 @@ export function ServersSettings() {
               className={pill}
             >
               <Plus className="size-3.5" />
-              {t('clearplay.servers.add')}
+              {t('rimelight.servers.add')}
             </button>
           )}
           <ContentItem>
-            <ContentItemTitle info={t('clearplay.servers.fastest.info')}>
-              {t('clearplay.servers.fastest.label')}
+            <ContentItemTitle info={t('rimelight.servers.fastest.info')}>
+              {t('rimelight.servers.fastest.label')}
             </ContentItemTitle>
             <ContentItemForm>
               <Switch

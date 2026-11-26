@@ -1,6 +1,9 @@
 /**
- * "Continue on other devices": the rules shared by ClearPlay desktop 0.6.0
- * and ClearPlay Android 1.6.0 (version 3, 2026-11-24).
+ * "Continue on other devices": the rules shared by Rimelight desktop and
+ * Rimelight for Android (version 4, 2026-11-26). Up to desktop 0.6.1 and
+ * Android 1.6.0 both apps were called ClearPlay; version 4 sends the new
+ * names and still recognises the old ones, so a Rimelight app works with a
+ * ClearPlay app that hasn't been updated yet.
  *
  * Pure functions only (no stores, no network, no clock of their own), so the
  * shared cases in tools/dev-rig/queue-handoff-cases.json run against them
@@ -8,9 +11,19 @@
  * If a rule changes, change the cases file first, in both apps.
  */
 
-/** The `c` parameter each ClearPlay app sends (Navidrome's changedBy / playerName). */
-export const DESKTOP_APP = 'ClearPlay'
-export const ANDROID_APP = 'ClearPlay-Android'
+/** The `c` parameter each app sends (Navidrome's changedBy / playerName). */
+export const DESKTOP_APP = 'Rimelight'
+export const ANDROID_APP = 'Rimelight-Android'
+
+/**
+ * The names the same two apps sent before the rename (ClearPlay desktop up to
+ * 0.6.1, ClearPlay Android up to 1.6.0), with the app each one is now.
+ */
+export const LEGACY_NAMES: Readonly<Record<string, string>> = {
+  ClearPlay: DESKTOP_APP,
+  'ClearPlay-Android': ANDROID_APP,
+}
+const LEGACY_APPS = new Map(Object.entries(LEGACY_NAMES))
 
 /** At most this many songs are saved, taken around the current song. */
 export const MAX_SAVED = 1000
@@ -59,15 +72,38 @@ export interface NowPlaying {
 
 // ---------------------------------------------------------------- names
 
-/** The other ClearPlay app: the only one whose Now Playing entry is trusted. */
-export function otherApp(thisApp: string) {
-  return thisApp === DESKTOP_APP ? ANDROID_APP : DESKTOP_APP
+/**
+ * Which of the two apps a client name belongs to (DESKTOP_APP or
+ * ANDROID_APP), under its new or its old name. Null for any other app.
+ * Names are compared exactly (case and all).
+ */
+export function appOf(client: string | null | undefined) {
+  if (!client) return null
+  if (client === DESKTOP_APP || client === ANDROID_APP) return client
+  return LEGACY_APPS.get(client) ?? null
 }
 
-/** "ClearPlay desktop", "ClearPlay Android", or the client's own name. */
+/** The other app (old or new name): the only one whose Now Playing entry is trusted. */
+export function isOtherApp(thisApp: string, client: string | null | undefined) {
+  const app = appOf(client)
+  return app !== null && app !== appOf(thisApp)
+}
+
+/** This app, under its new or its old name (a queue it saved before updating). */
+export function isThisApp(thisApp: string, client: string | null | undefined) {
+  const app = appOf(client)
+  return app === null ? client === thisApp : app === appOf(thisApp)
+}
+
+/**
+ * "Rimelight desktop", "Rimelight Android", "ClearPlay desktop",
+ * "ClearPlay Android" (an app not updated yet), or the client's own name.
+ */
 export function deviceName(client: string) {
-  if (client === DESKTOP_APP) return 'ClearPlay desktop'
-  if (client === ANDROID_APP) return 'ClearPlay Android'
+  if (client === DESKTOP_APP) return 'Rimelight desktop'
+  if (client === ANDROID_APP) return 'Rimelight Android'
+  if (client === 'ClearPlay') return 'ClearPlay desktop'
+  if (client === 'ClearPlay-Android') return 'ClearPlay Android'
   return client
 }
 
@@ -204,8 +240,9 @@ export function latestChanged(
 /**
  * Where Continue starts, and what kind of offer it is.
  *
- * Saved by the other ClearPlay app: if it is in Now Playing (same user,
- * playerName = changedBy), start at that entry's song and position, playing
+ * Saved by the other app: if it is in Now Playing (same user, a playerName
+ * of the same app as changedBy, old or new name), start at that entry's song
+ * and position, playing
  * or paused. The song is looked up in the saved queue: the first match at or
  * after the saved index, else the first match anywhere. This also finds the
  * right song when the server's index moved (a song before it was deleted).
@@ -224,11 +261,12 @@ export function startPoint(
   const last = queue.entries.length - 1
   const saved = Math.min(Math.max(0, queue.currentIndex), last)
   const savedPosition = Math.max(0, queue.positionMs)
-  if (queue.changedBy !== otherApp(thisApp)) {
+  if (!isOtherApp(thisApp, queue.changedBy)) {
     return { kind: 'saved' as const, index: saved, positionMs: savedPosition }
   }
+  const savedBy = appOf(queue.changedBy)
   const mine = nowPlaying.filter(
-    (e) => e.username === username && e.playerName === queue.changedBy,
+    (e) => e.username === username && appOf(e.playerName) === savedBy,
   )
   const live =
     mine.find((e) => e.state === 'playing') ??
@@ -280,7 +318,7 @@ export function offer<S extends { id: string }>(
 ): Offer<S> | null {
   const { queue } = input
   if (!queue || queue.entries.length === 0) return null
-  if (queue.changedBy === input.thisApp) return null
+  if (isThisApp(input.thisApp, queue.changedBy)) return null
   if (!isLater(queue.changed, input.handledChanged)) return null
   if (input.playingHere) return null
 
@@ -321,33 +359,32 @@ export interface LeftBehindInput extends LeftBehindCandidateInput {
 }
 
 /**
- * The other ClearPlay app is playing a song from this queue. Only then is
- * the server's queue read, to finish the check with leftBehind.
+ * The other app (old or new name) is playing a song from this queue. Only
+ * then is the server's queue read, to finish the check with leftBehind.
  */
 export function leftBehindCandidate(input: LeftBehindCandidateInput) {
   if (!input.publishing || !input.playingHere || input.alreadyShown) return null
-  const other = otherApp(input.thisApp)
   const ids = new Set(input.queueIds)
   const entry = input.nowPlaying.find(
     (e) =>
       e.username === input.username &&
-      e.playerName === other &&
+      isOtherApp(input.thisApp, e.playerName) &&
       e.state === 'playing' &&
       ids.has(e.id),
   )
   if (!entry) return null
-  return { device: deviceName(other), song: entry.id }
+  return { device: deviceName(entry.playerName), song: entry.id }
 }
 
 /**
- * "Continued on <device>": a candidate, and the other ClearPlay app saved
- * the server's queue last (it continued). If this device saved last, it is
+ * "Continued on <device>": a candidate, and the other app (old or new name)
+ * saved the server's queue last (it continued). If this device saved last, it is
  * the one that took over, and the other device is the one left behind.
  */
 export function leftBehind(input: LeftBehindInput) {
   const found = leftBehindCandidate(input)
   if (!found) return null
-  if (input.serverChangedBy !== otherApp(input.thisApp)) return null
+  if (!isOtherApp(input.thisApp, input.serverChangedBy)) return null
   return found
 }
 

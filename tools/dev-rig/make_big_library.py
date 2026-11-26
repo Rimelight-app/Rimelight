@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Big test library for performance and breakage checks (ClearPlay desktop
-0.6.1 audit, reused by ClearPlay for Android).
+0.6.1 audit, reused by Rimelight for Android).
 
 Usage:
     python3 make_big_library.py MUSIC_DIR [LOCAL_DIR] [--artists N] [--albums N]

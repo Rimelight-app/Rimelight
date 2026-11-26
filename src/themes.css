@@ -559,7 +559,7 @@
 }
 
 /*
- * ClearPlay "glass" theme.
+ * Rimelight "glass" theme.
  * Every colour token can carry its own alpha (--<token>-a), so surfaces and
  * text can stay translucent over the blurred cover backdrop.
  * Defined after .dark on purpose: the root carries both classes.

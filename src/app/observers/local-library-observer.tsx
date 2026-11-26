@@ -10,7 +10,7 @@ import {
 import { useAppStore } from '@/store/app.store'
 
 /** Fired by the settings page when folders change, to watch the scan. */
-export const LOCAL_SCAN_EVENT = 'clearplay:local-scan'
+export const LOCAL_SCAN_EVENT = 'rimelight:local-scan'
 
 /**
  * While the local library is the active server: makes sure it is running

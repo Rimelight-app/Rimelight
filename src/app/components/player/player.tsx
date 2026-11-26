@@ -8,7 +8,6 @@ import { notePlaybackProgress } from '@/service/playback-errors'
 import { podcasts } from '@/service/podcasts'
 import { useAppMediaCache, useAppStore } from '@/store/app.store'
 import { useIsMpvSession } from '@/store/bitperfect.store'
-import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import {
   getVolume,
   usePlayerActions,
@@ -20,6 +19,7 @@ import {
   usePlayerStore,
   useReplayGainState,
 } from '@/store/player.store'
+import { useRimelightSettings } from '@/store/rimelight-settings.store'
 import { LoopState } from '@/types/playerContext'
 import { ensureSupportForAlac } from '@/utils/alac'
 import { hasPiPSupport } from '@/utils/browser'
@@ -88,8 +88,8 @@ export function Player() {
   const mediaCacheEnabled = useAppMediaCache()
   const songId = song?.id
 
-  const maxBitRate = useClearPlaySettings((s) => s.maxBitRate)
-  const streamFormat = useClearPlaySettings((s) => s.streamFormat)
+  const maxBitRate = useRimelightSettings((s) => s.maxBitRate)
+  const streamFormat = useRimelightSettings((s) => s.streamFormat)
   // mpv engine: always the original file (bit-perfect needs it untouched).
   const mpv = useIsMpvSession()
 

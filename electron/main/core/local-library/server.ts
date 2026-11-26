@@ -354,7 +354,7 @@ export function createLocalServer(
           current: pq.current,
           position: pq.position,
           changed: pq.changed,
-          changedBy: 'ClearPlay',
+          changedBy: 'Rimelight',
           username: LOCAL_USER,
           entry: pq.ids
             .map((id) => library.tracks.get(id))

@@ -1,15 +1,15 @@
 # mpv (Windows builds only)
 
-The Windows installer of ClearPlay includes **mpv v0.41.0**, the official
+The Windows installer of Rimelight includes **mpv v0.41.0**, the official
 `mpv-v0.41.0-x86_64-w64-mingw32.zip` build from
 https://github.com/mpv-player/mpv/releases/tag/v0.41.0
 (SHA-256 of the download: `a49811c0752c108b8260636f9c6f6fcb97406641c98b30f1e7b500dfb20177de`).
 It is downloaded unchanged by `tools/fetch-mpv-windows.ps1` and installed in
-`resources/resources/mpv/`. The Linux packages do not include mpv; ClearPlay
+`resources/resources/mpv/`. The Linux packages do not include mpv; Rimelight
 uses the mpv installed on the system.
 
-ClearPlay runs mpv as a separate program and talks to it through mpv's JSON
-IPC interface. ClearPlay's own code does not use, copy or link any mpv code.
+Rimelight runs mpv as a separate program and talks to it through mpv's JSON
+IPC interface. Rimelight's own code does not use, copy or link any mpv code.
 
 ## Licence
 
@@ -20,9 +20,11 @@ configured with `--enable-gpl`.
 
 ## Source code
 
-Every ClearPlay release on GitHub has an archive
-`ClearPlay-vX.Y.Z-mpv-source.tar.gz` next to the installer, at
-https://github.com/tonihk00/ClearPlay/releases . It holds the exact source of
+Every Rimelight release on GitHub has an archive
+`Rimelight-vX.Y.Z-mpv-source.tar.gz` next to the installer, at
+https://github.com/Rimelight-app/Rimelight/releases (releases up to 0.6.1,
+made under the earlier name ClearPlay, carry it as
+`ClearPlay-vX.Y.Z-mpv-source.tar.gz`). It holds the exact source of
 this build: mpv, FFmpeg and the LGPL libraries (FriBidi, libiconv,
 libplacebo), plus `SOURCES.txt` with where each part came from. The archive
 is made by `tools/fetch-mpv-source.sh`, which also checks that the shipped

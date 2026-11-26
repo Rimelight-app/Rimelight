@@ -8,7 +8,7 @@ import {
   PageErrorKind,
 } from '@/service/playback-errors-rules'
 import { AuthType } from '@/types/serverConfig'
-import { appName } from '@/utils/appName'
+import { subsonicClient } from '@/utils/appName'
 import { saltWord } from '@/utils/salt'
 
 export type QueryType = Record<string, string | number | undefined>
@@ -46,7 +46,7 @@ function queryParams() {
   return {
     ...authQueryParams(username, password, authType),
     v: protocolVersion || '1.16.0',
-    c: appName,
+    c: subsonicClient,
     f: 'json',
   }
 }

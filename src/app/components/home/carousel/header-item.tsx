@@ -80,7 +80,7 @@ export function HeaderItem({ song }: { song: ISong }) {
                 </div>
                 <div className="flex flex-1 h-full flex-col justify-end gap-1 pb-1">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50 mb-1">
-                    {t('clearplay.featured')}
+                    {t('rimelight.featured')}
                   </p>
                   <div className="flex items-center gap-2">
                     {isAlbumPlaying && (

@@ -379,7 +379,7 @@ div[data-test-id="table-row"]:hover {
   }
 }
 
-/* ClearPlay glass surfaces */
+/* Rimelight glass surfaces */
 @layer components {
   /* Panels sit on an already-blurred backdrop, so they need no live
      backdrop-filter (the main scrolling cost). Use .glass-blur only where

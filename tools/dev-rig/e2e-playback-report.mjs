@@ -13,7 +13,7 @@ import { _electron as electron } from 'playwright-core'
 
 const here = path.dirname(new URL(import.meta.url).pathname)
 const app = path.resolve(here, '../..')
-const rig = process.env.RIG || '/tmp/clearplay-rig'
+const rig = process.env.RIG || '/tmp/rimelight-rig'
 const ENGINE = process.env.ENGINE || 'builtin'
 const ND_PORT = 4533
 const FAKE_PORT = 4540
@@ -97,10 +97,10 @@ async function nd(endpoint, params = {}) {
   const res = await fetch(`http://127.0.0.1:${ND_PORT}/rest/${endpoint}?${q}`)
   return (await res.json())['subsonic-response']
 }
-/** ClearPlay's entry in Navidrome's Now Playing (what its web UI shows). */
+/** Rimelight's entry in Navidrome's Now Playing (what its web UI shows). */
 const nowPlaying = async () =>
   ((await nd('getNowPlaying')).nowPlaying?.entry || []).find(
-    (e) => e.playerName === 'ClearPlay',
+    (e) => e.playerName === 'Rimelight',
   ) || null
 const playCount = async (id) =>
   (await nd('getSong', { id })).song.playCount || 0
@@ -120,10 +120,10 @@ async function launch(userData) {
   const mpvEnv =
     ENGINE === 'mpv'
       ? {
-          CLEARPLAY_ASOUND_ROOT: path.join(fakeAudio, 'asound'),
+          RIMELIGHT_ASOUND_ROOT: path.join(fakeAudio, 'asound'),
           FAKE_AUDIO_STATE: fs.mkdtempSync('/tmp/cp-fake-audio-'),
           PATH: `${path.join(fakeAudio, 'bin')}:${process.env.PATH}`,
-          CLEARPLAY_MPV_DEVICE_MAP: 'alsa/hw:CARD=SIMGOT,DEV=0=null;auto=null',
+          RIMELIGHT_MPV_DEVICE_MAP: 'alsa/hw:CARD=SIMGOT,DEV=0=null;auto=null',
         }
       : {}
   electronApp = await electron.launch({
@@ -135,7 +135,7 @@ async function launch(userData) {
       `--user-data-dir=${userData}`,
     ],
     cwd: app,
-    env: { ...process.env, CLEARPLAY_E2E: '1', ...mpvEnv },
+    env: { ...process.env, RIMELIGHT_E2E: '1', ...mpvEnv },
     timeout: 60000,
   })
   win = await electronApp.firstWindow()
@@ -391,7 +391,7 @@ await test('one finished song counts one play; no paused at its end', async () =
   )
 })
 
-await test('quit while playing: stopped is sent and Navidrome stops showing ClearPlay', async () => {
+await test('quit while playing: stopped is sent and Navidrome stops showing Rimelight', async () => {
   await until(() => states(reports(t0, next.id)).includes('playing'))
   const mark = Date.now()
   await quit()
@@ -401,7 +401,7 @@ await test('quit while playing: stopped is sent and Navidrome stops showing Clea
     `reports while quitting: ${s.join(',') || 'none'}`,
   )
   const np = await until(async () => !(await nowPlaying()), 3000)
-  expect(np === true, 'Navidrome still shows ClearPlay')
+  expect(np === true, 'Navidrome still shows Rimelight')
 })
 
 // ======================= server without playbackReport =======================

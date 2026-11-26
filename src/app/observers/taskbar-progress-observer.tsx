@@ -4,8 +4,8 @@ import {
   TaskbarInput,
   taskbarProgress,
 } from '@/service/taskbar-progress-rules'
-import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { usePlayerStore } from '@/store/player.store'
+import { useRimelightSettings } from '@/store/rimelight-settings.store'
 import { isWindows } from '@/utils/desktop'
 
 type PlayerState = ReturnType<typeof usePlayerStore.getState>
@@ -31,7 +31,7 @@ function inputOf(s: PlayerState): TaskbarInput & { songId: string | null } {
  * channel rebuilds the tray menu and writes to disk on every call.
  */
 export function TaskbarProgressObserver() {
-  const enabled = useClearPlaySettings((s) => s.taskbarProgress)
+  const enabled = useRimelightSettings((s) => s.taskbarProgress)
 
   useEffect(() => {
     if (!isWindows || !window.api?.setTaskbarProgress) return

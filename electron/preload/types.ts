@@ -85,7 +85,7 @@ export type MpvEngineStatus = {
 }
 
 /**
- * exclusive: ClearPlay can hold the device alone (ALSA hw on Linux, WASAPI
+ * exclusive: Rimelight can hold the device alone (ALSA hw on Linux, WASAPI
  * exclusive on Windows). bluetooth: re-encoded by Bluetooth. shared: the
  * system mixer.
  */
@@ -145,7 +145,7 @@ export type MpvAudioParams = {
 export type MpvOutputState = {
   deviceKey: string
   deviceName: string
-  /** ClearPlay holds the device alone. */
+  /** Rimelight holds the device alone. */
   exclusive: boolean
   /** Why it fell back to normal (shared) playback. */
   fallback: null | 'busy' | 'refused'
@@ -154,7 +154,7 @@ export type MpvOutputState = {
   source: MpvAudioParams | null
   /** What the device receives. */
   output: MpvAudioParams | null
-  /** The rate ClearPlay asked for (0 = the song's own). */
+  /** The rate Rimelight asked for (0 = the song's own). */
   requestedRate: number
   softVolume: number
   /** The device has a hardware volume control (null = unknown). */
@@ -215,7 +215,7 @@ export type PlayerStateListenerActions =
   | 'toggleShuffle'
   | 'toggleRepeat'
 
-export interface IClearPlayAPI {
+export interface IRimelightAPI {
   enterFullScreen: () => void
   exitFullScreen: () => void
   isFullScreen: () => Promise<boolean>

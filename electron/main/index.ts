@@ -1,3 +1,6 @@
+// Must stay the first import: it moves the ClearPlay data folder before any
+// store or the single-instance lock reads it.
+import './core/migrate-user-data'
 import { electronApp, optimizer, platform } from '@electron-toolkit/utils'
 import { app } from 'electron'
 import { initLocalLibrary } from './core/local-library'
@@ -39,6 +42,8 @@ if (!instanceLock) {
   })
 
   app.whenReady().then(() => {
+    // Same ID as ClearPlay (electron-builder appId): keeps taskbar pins,
+    // notifications and the Windows installer's update-in-place working.
     electronApp.setAppUserModelId('com.tonihk00.clearplay')
 
     initAutoUpdater()

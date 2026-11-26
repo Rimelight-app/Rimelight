@@ -5,7 +5,7 @@ import {
   screen,
 } from 'electron'
 import { electron } from '../../../package.json'
-import { ClearPlayStore } from './store'
+import { RimelightStore } from './store'
 
 interface ExtraOptions {
   /** Should we automatically maximize the window, if it was last closed maximized. Defaults to `true`. */
@@ -28,7 +28,7 @@ interface State {
 
 const { defaultWidth, defaultHeight } = electron.window
 
-const windowStore = new ClearPlayStore<State>({
+const windowStore = new RimelightStore<State>({
   name: 'window',
   defaults: {
     width: defaultWidth,

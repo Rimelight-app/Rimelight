@@ -7,9 +7,9 @@ import {
   scrollAreaViewportSelector,
 } from '@/app/components/ui/scroll-area'
 import { subsonic } from '@/service/subsonic'
-import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { useLang } from '@/store/lang.store'
 import { usePlayerRef, usePlayerSonglist } from '@/store/player.store'
+import { useRimelightSettings } from '@/store/rimelight-settings.store'
 import { ILyric } from '@/types/responses/song'
 import { queryKeys } from '@/utils/queryKeys'
 import { SmoothLyrics } from './smooth-lyrics'
@@ -70,7 +70,7 @@ const LYRICS_SIZES = {
 }
 
 function SyncedLyrics({ lyrics, compact }: LyricProps) {
-  const lyricsSize = useClearPlaySettings((s) => s.lyricsSize)
+  const lyricsSize = useRimelightSettings((s) => s.lyricsSize)
   const playerRef = usePlayerRef()
   const { langCode } = useLang()
   const resolvedLang = resolveLyricsLang(lyrics.lang, langCode)

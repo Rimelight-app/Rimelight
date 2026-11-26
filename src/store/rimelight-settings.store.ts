@@ -6,7 +6,7 @@ export type LyricsSize = 's' | 'm' | 'l'
 export type BackdropMode = 'off' | 'dim' | 'normal' | 'vivid'
 export type StartPage = '/' | '/library/albums' | '/search' | '/stats'
 
-interface ClearPlaySettings {
+interface RimelightSettings {
   /** '0' = original quality, otherwise a kbps cap the server transcodes to. */
   maxBitRate: string
   streamFormat: StreamFormat
@@ -15,7 +15,7 @@ interface ClearPlaySettings {
   backdrop: BackdropMode
   startPage: StartPage
   /**
-   * "Continue on other devices": save the queue to the server so ClearPlay on
+   * "Continue on other devices": save the queue to the server so Rimelight on
    * the phone (or another app, e.g. Symfonium) can continue it.
    */
   syncQueue: boolean
@@ -31,10 +31,10 @@ interface ClearPlaySettings {
   visualizer: boolean
   /** Song progress on the taskbar button (Windows). */
   taskbarProgress: boolean
-  set: (patch: Partial<Omit<ClearPlaySettings, 'set'>>) => void
+  set: (patch: Partial<Omit<RimelightSettings, 'set'>>) => void
 }
 
-export const useClearPlaySettings = create<ClearPlaySettings>()(
+export const useRimelightSettings = create<RimelightSettings>()(
   persist(
     (set) => ({
       maxBitRate: '0',

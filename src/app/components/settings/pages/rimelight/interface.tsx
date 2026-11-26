@@ -16,16 +16,16 @@ import {
   BackdropMode,
   LyricsSize,
   StartPage,
-  useClearPlaySettings,
-} from '@/store/clearplay-settings.store'
+  useRimelightSettings,
+} from '@/store/rimelight-settings.store'
 import { SettingSelect } from './controls'
 
 export function InterfaceSettings() {
   const { t } = useTranslation()
   const mpv = useIsMpvSession()
   const { showQuality, lyricsSize, backdrop, startPage, visualizer, set } =
-    useClearPlaySettings()
-  const k = 'clearplay.settings.interface'
+    useRimelightSettings()
+  const k = 'rimelight.settings.interface'
 
   return (
     <Root>
@@ -47,7 +47,7 @@ export function InterfaceSettings() {
                   value: '/search',
                   label: t('sidebar.search').replace('…', ''),
                 },
-                { value: '/stats', label: t('clearplay.statsNav') },
+                { value: '/stats', label: t('rimelight.statsNav') },
               ]}
             />
           </ContentItemForm>
@@ -109,7 +109,7 @@ export function InterfaceSettings() {
         </ContentItem>
         {mpv && (
           <p className="px-1 text-[12px] text-white/60">
-            {t('clearplay.sound.visualizerOff')}
+            {t('rimelight.sound.visualizerOff')}
           </p>
         )}
       </Content>

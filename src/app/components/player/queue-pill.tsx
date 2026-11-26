@@ -40,7 +40,7 @@ export function showQueuePill(kind: 'next' | 'last', count: number) {
 export async function continueWithMessage() {
   const ok = await continueOffer().catch(() => false)
   if (!ok && useHandoffStore.getState().offer) {
-    showMessagePill(i18n.t('clearplay.handoff.continueFailed'), {
+    showMessagePill(i18n.t('rimelight.handoff.continueFailed'), {
       kind: 'error',
     })
   }
@@ -112,7 +112,7 @@ export function QueuePill() {
           <span>
             {'text' in shown
               ? shown.text
-              : t(`clearplay.queuePill.${shown.kind}`, { count: shown.count })}
+              : t(`rimelight.queuePill.${shown.kind}`, { count: shown.count })}
           </span>
         </div>
       )}
@@ -139,7 +139,7 @@ function useAge(changed: string | undefined) {
   }, [changed])
   if (!changed) return ''
   const age = ageText(changed, now)
-  const k = 'clearplay.handoff.age'
+  const k = 'rimelight.handoff.age'
   switch (age.unit) {
     case 'justNow':
       return t(`${k}.justNow`)
@@ -168,7 +168,7 @@ function HandoffPill() {
       ? current.offer.changed
       : undefined,
   )
-  const k = 'clearplay.handoff'
+  const k = 'rimelight.handoff'
 
   if (!current && !left) return null
 
@@ -274,8 +274,8 @@ function OfflinePill() {
       <span>
         {t(
           unreachable.reason === 'startup'
-            ? 'clearplay.playbackErrors.retrying'
-            : 'clearplay.playbackErrors.serverUnreachable',
+            ? 'rimelight.playbackErrors.retrying'
+            : 'rimelight.playbackErrors.serverUnreachable',
           { server: serverName() },
         )}
       </span>

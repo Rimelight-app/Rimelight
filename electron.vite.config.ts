@@ -26,7 +26,7 @@ const CSP = [
 
 function contentSecurityPolicy(): Plugin {
   return {
-    name: 'clearplay-csp',
+    name: 'rimelight-csp',
     apply: 'build',
     transformIndexHtml: {
       order: 'post',

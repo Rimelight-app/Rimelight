@@ -139,7 +139,7 @@ export function initLocalLibrary() {
 
   // Used by the automated tests (no file dialog there).
   ipcMain.handle(IpcChannels.LocalLibraryAddPath, async (_, folder: string) => {
-    if (process.env.CLEARPLAY_E2E !== '1') return state()
+    if (process.env.RIMELIGHT_E2E !== '1') return state()
     const cfg = await loadConfig()
     if (typeof folder === 'string' && folder && !cfg.folders.includes(folder)) {
       cfg.folders.push(folder)

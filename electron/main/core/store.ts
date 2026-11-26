@@ -1,6 +1,6 @@
 import Store, { type Options } from 'electron-store'
 
-export class ClearPlayStore<
+export class RimelightStore<
   // biome-ignore lint/suspicious/noExplicitAny: generic record
   T extends Record<string, any> = Record<string, unknown>,
 > extends Store<T> {

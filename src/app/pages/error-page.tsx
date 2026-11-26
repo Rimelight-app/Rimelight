@@ -62,7 +62,7 @@ export function PageLoadError({
     return <ErrorPage status={404} statusText="Not Found" />
   }
 
-  const k = 'clearplay.pageErrors'
+  const k = 'rimelight.pageErrors'
   const auth = kind === 'auth'
 
   return (

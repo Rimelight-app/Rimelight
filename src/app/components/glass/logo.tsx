@@ -1,9 +1,9 @@
 import { ComponentPropsWithoutRef } from 'react'
 
-/** ClearPlay logo (white rounded square, grooved disc). Source: build/icon.svg */
-export function ClearPlayLogo(props: ComponentPropsWithoutRef<'svg'>) {
+/** Rimelight logo (white rounded square, grooved disc). Source: build/icon.svg */
+export function RimelightLogo(props: ComponentPropsWithoutRef<'svg'>) {
   return (
-    <svg viewBox="0 0 100 100" aria-label="ClearPlay" {...props}>
+    <svg viewBox="0 0 100 100" aria-label="Rimelight" {...props}>
       <rect x="2" y="2" width="96" height="96" rx="22" fill="#F4F4F5" />
       <circle cx="50" cy="50" r="31" fill="#0B0B0E" />
       <circle

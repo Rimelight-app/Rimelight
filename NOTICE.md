@@ -1,6 +1,6 @@
 # Notice
 
-ClearPlay is a fork of **Aonsoku** (https://github.com/victoralvesf/aonsoku),
+Rimelight (called ClearPlay up to 0.6.1) is a fork of **Aonsoku** (https://github.com/victoralvesf/aonsoku),
 Copyright (c) 2026 Victor Alves, released under the MIT licence.
 The original licence text is kept unchanged in `LICENSE.txt` and must stay with
 every copy or substantial portion of this software.
@@ -9,7 +9,7 @@ The fork was started from upstream commit `13343e3` (v0.15.0).
 
 ## Design
 
-ClearPlay's visual design (frosted-glass look, layout, icons, copy) is original
+Rimelight's visual design (frosted-glass look, layout, icons, copy) is original
 work. No code, assets or design files from the Liner player (tryliner/desktop)
 are used.
 
@@ -29,13 +29,13 @@ Dependencies are installed from npm and keep their own licences; see
 
 - **mpv** (Windows installer only), GPL 2 or later, run as a separate program
   for bit-perfect playback. The official v0.41.0 build from the mpv project is
-  bundled unchanged; ClearPlay talks to it over mpv's JSON IPC and uses no mpv
+  bundled unchanged; Rimelight talks to it over mpv's JSON IPC and uses no mpv
   code (nor Feishin's). Licence texts and the list of libraries in that build
   are in `licenses/mpv/` (also installed next to mpv.exe). The exact source of
   the build (mpv, FFmpeg, FriBidi, libiconv, libplacebo) is attached to every
-  GitHub release as `ClearPlay-vX.Y.Z-mpv-source.tar.gz`
-  (https://github.com/tonihk00/ClearPlay/releases). On Linux ClearPlay uses
+  GitHub release as `Rimelight-vX.Y.Z-mpv-source.tar.gz` (`ClearPlay-vX.Y.Z-mpv-source.tar.gz` for releases up to 0.6.1)
+  (https://github.com/Rimelight-app/Rimelight/releases). On Linux Rimelight uses
   the mpv installed on the system.
 
-The ClearPlay logo (`build/icon.svg`, `src/app/components/glass/logo.tsx`) was supplied by the project owner.
+The Rimelight logo (`build/icon.svg`, `src/app/components/glass/logo.tsx`) was supplied by the project owner.
 

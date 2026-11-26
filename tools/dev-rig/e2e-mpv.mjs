@@ -3,7 +3,7 @@
 // pretend sound card: tools/dev-rig/fake-audio holds /proc/asound files of a
 // SIMGOT EW200 DSP (44.1/48/96 kHz, 16/24-bit, USB full speed) and a laptop
 // HDA card, plus a fake `amixer` with a "Speaker" control. The fake devices
-// play on mpv's null output (real time) via CLEARPLAY_MPV_DEVICE_MAP.
+// play on mpv's null output (real time) via RIMELIGHT_MPV_DEVICE_MAP.
 import { _electron as electron } from 'playwright-core'
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -11,7 +11,7 @@ import path from 'node:path'
 
 const here = path.dirname(new URL(import.meta.url).pathname)
 const app = path.resolve(here, '../..')
-const rig = process.env.RIG || '/tmp/clearplay-rig'
+const rig = process.env.RIG || '/tmp/rimelight-rig'
 const filter = process.argv[2] ? new RegExp(process.argv[2], 'i') : null
 const ND = 'http://127.0.0.1:4533'
 const fake = path.join(here, 'fake-audio')
@@ -28,11 +28,11 @@ const electronApp = await electron.launch({
   cwd: app,
   env: {
     ...process.env,
-    CLEARPLAY_E2E: '1',
-    CLEARPLAY_ASOUND_ROOT: path.join(fake, 'asound'),
+    RIMELIGHT_E2E: '1',
+    RIMELIGHT_ASOUND_ROOT: path.join(fake, 'asound'),
     FAKE_AUDIO_STATE: state,
     PATH: `${path.join(fake, 'bin')}:${process.env.PATH}`,
-    CLEARPLAY_MPV_DEVICE_MAP: [
+    RIMELIGHT_MPV_DEVICE_MAP: [
       'alsa/hw:CARD=SIMGOT,DEV=0=null',
       'auto=null',
       ...(process.env.EXTRA_MAP ? [process.env.EXTRA_MAP] : []),
@@ -210,7 +210,7 @@ await test('settings: choose the EW200 by name; info shows what it supports', as
   expect(/SIMGOT EW200 DSP \(USB · full speed\)/.test(text), `device row: ${text}`)
   expect(/44\.1, 48, 96 kHz · 16, 24-bit · reported by the device/.test(text), `supports row: ${text}`)
   expect(/Hardware volume\s+Yes \(Speaker\)/.test(text), `hw row: ${text}`)
-  expect(/Exclusive: ClearPlay has the device to itself/.test(text), `access row: ${text}`)
+  expect(/Exclusive: Rimelight has the device to itself/.test(text), `access row: ${text}`)
   eq((await snap()).device, EW200, 'saved device')
   await win.screenshot({ path: '/tmp/mpv-settings-2.png' })
   await closeSettings()
@@ -367,7 +367,7 @@ await test('copy button copies the output details', async () => {
   await win.locator('[data-testid=output-info-copy]').click()
   await sleep(400)
   const clip = await electronApp.evaluate(({ clipboard }) => clipboard.readText())
-  expect(/^ClearPlay output \(mpv engine\)\nDevice: SIMGOT EW200 DSP/.test(clip), clip)
+  expect(/^Rimelight output \(mpv engine\)\nDevice: SIMGOT EW200 DSP/.test(clip), clip)
   expect(/Now: Bit-perfect · 96 kHz · 24-bit/.test(clip), clip)
   await closeSettings()
 })

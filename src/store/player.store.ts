@@ -99,7 +99,7 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
           settings: {
             privacy: {
               lrclib: {
-                // ClearPlay: lyrics come from your server; online lookup is opt-in.
+                // Rimelight: lyrics come from your server; online lookup is opt-in.
                 enabled: false,
                 setEnabled(value) {
                   set((state) => {

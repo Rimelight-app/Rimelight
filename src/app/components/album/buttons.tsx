@@ -98,7 +98,7 @@ export function AlbumButtons({
         tooltip={buttonsTooltips.play}
         buttonStyle="primary"
         onClick={handlePlayButton}
-        label={isAlbumPlaying ? t('clearplay.pause') : t('clearplay.playAll')}
+        label={isAlbumPlaying ? t('rimelight.pause') : t('rimelight.playAll')}
       >
         {isAlbumPlaying ? <Actions.PauseIcon /> : <Actions.PlayIcon />}
       </Actions.Button>
@@ -114,7 +114,7 @@ export function AlbumButtons({
       )}
 
       <Actions.Button
-        tooltip={t('clearplay.addToQueue')}
+        tooltip={t('rimelight.addToQueue')}
         onClick={() => {
           setLastOnQueue(album.song)
           showQueuePill('last', album.song.length)
@@ -125,7 +125,7 @@ export function AlbumButtons({
 
       {onToggleSearch && album.song.length > 1 && (
         <Actions.Button
-          tooltip={t('clearplay.searchInAlbum')}
+          tooltip={t('rimelight.searchInAlbum')}
           onClick={onToggleSearch}
           className={searchActive ? 'bg-white/[0.2] text-white' : undefined}
         >

@@ -1,5 +1,8 @@
+# The app ID is ClearPlay's on purpose: the Windows installer finds the
+# installed copy by it and updates it in place (same taskbar pins too).
+# Don't change it. main/index.ts sets the same ID as AppUserModelId.
 appId: com.tonihk00.clearplay
-productName: ClearPlay
+productName: Rimelight
 copyright: Copyright © 2026 tonihk00. Based on Aonsoku, Copyright © 2026 Victor Alves (MIT)
 icon: ./build/icon.ico
 artifactName: '${productName}-v${version}-${os}-${arch}.${ext}'
@@ -21,7 +24,7 @@ extraResources:
     to: resources
 
 win:
-  executableName: ClearPlay
+  executableName: Rimelight
   target:
     - target: nsis
       arch:
@@ -51,22 +54,30 @@ linux:
   maintainer: tonihk00
   category: AudioVideo
   synopsis: 'A frosted-glass desktop player for Navidrome (OpenSubsonic) servers.'
-  description: 'ClearPlay is a minimal desktop music player for self-hosted Navidrome and OpenSubsonic servers.'
-  executableName: clearplay
+  description: 'Rimelight is a minimal desktop music player for self-hosted Navidrome and OpenSubsonic servers.'
+  executableName: rimelight
   desktop:
     entry:
-      Name: ClearPlay
-      StartupWMClass: ClearPlay
+      Name: Rimelight
+      StartupWMClass: Rimelight
       Keywords: music;player;navidrome;subsonic;
+
+# Up to 0.6.1 the package was called clearplay. Installing rimelight
+# replaces it instead of installing a second copy next to it.
+deb:
+  fpm:
+    - '--replaces=clearplay'
+    - '--conflicts=clearplay'
 
 rpm:
   fpm:
     - '--rpm-rpmbuild-define=_build_id_links none'
+    - '--replaces=clearplay'
 
 npmRebuild: true
 nativeRebuilder: legacy
 
 publish:
   provider: github
-  owner: tonihk00
-  repo: ClearPlay
+  owner: Rimelight-app
+  repo: Rimelight

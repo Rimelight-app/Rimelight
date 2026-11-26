@@ -8,7 +8,7 @@ import { ping } from './ping'
 
 /**
  * Whether the signed-in server answers. When it doesn't (at start, or when a
- * song can't load), a pill says so and ClearPlay asks again after 5 s, 15 s,
+ * song can't load), a pill says so and Rimelight asks again after 5 s, 15 s,
  * 30 s, then every 60 s, and right away when the system comes back online.
  * Once it answers, the pill goes and the current page loads again. No
  * offline mode: local songs and the queue simply keep working meanwhile.

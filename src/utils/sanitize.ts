@@ -1,7 +1,7 @@
 import DOMPurify from 'dompurify'
 
 /**
- * The one sanitizer for HTML that ClearPlay didn't write itself: comments in
+ * The one sanitizer for HTML that Rimelight didn't write itself: comments in
  * music files, artist and album bios from the server, podcast descriptions and
  * release notes. Only a few formatting tags survive; every other tag is
  * dropped and its text kept. Links keep only http, https and mailto targets

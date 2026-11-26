@@ -1,12 +1,12 @@
 // Usage: node shoot.mjs <outdir> <step...>
-// Launches the built ClearPlay (out/main) under the current DISPLAY, logs in to the
+// Launches the built Rimelight (out/main) under the current DISPLAY, logs in to the
 // local Navidrome if needed, and runs named steps that each save a screenshot.
 import { _electron as electron } from 'playwright-core'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const app = process.env.CLEARPLAY_APP || path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..')
-const rig = process.env.RIG || '/tmp/clearplay-rig'
+const app = process.env.RIMELIGHT_APP || path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..')
+const rig = process.env.RIG || '/tmp/rimelight-rig'
 const out = process.argv[2]
 const steps = process.argv.slice(3)
 fs.mkdirSync(out, { recursive: true })

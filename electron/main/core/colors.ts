@@ -1,11 +1,11 @@
 import { electron } from '../../../package.json'
-import { ClearPlayStore } from './store'
+import { RimelightStore } from './store'
 
 interface State {
   bgColor: string
 }
 
-const colorsStore = new ClearPlayStore<State>({
+const colorsStore = new RimelightStore<State>({
   name: 'colors',
   defaults: {
     bgColor: electron.window.defaultBgColor,

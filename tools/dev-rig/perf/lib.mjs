@@ -2,10 +2,10 @@
 // Each script launches the built app (pnpm electron:build first) against the
 // rig's Navidrome, under Xvfb (see xrun.sh). Settings come from the
 // environment:
-//   RIG=/tmp/clearplay-rig   ND=http://127.0.0.1:4533   (server the app logs in to)
+//   RIG=/tmp/rimelight-rig   ND=http://127.0.0.1:4533   (server the app logs in to)
 //   PROFILE=normal|cpu4|nogpu   ENGINE=html|mpv   SIZE=1920x1080
 //   USERDATA=<dir>  FRESH=1 (start from an empty profile)
-//   CLEARPLAY_APP=<app dir> (another build, e.g. a worktree of an older tag)
+//   RIMELIGHT_APP=<app dir> (another build, e.g. a worktree of an older tag)
 //   ELECTRON_BIN=<electron binary> (default: this repo's node_modules)
 import { spawn } from 'node:child_process'
 import { _electron as electron } from 'playwright-core'
@@ -15,14 +15,14 @@ import path from 'node:path'
 
 export const here = path.dirname(new URL(import.meta.url).pathname)
 export const repo = path.resolve(here, '../../..')
-export const RIG = process.env.RIG || '/tmp/clearplay-rig'
+export const RIG = process.env.RIG || '/tmp/rimelight-rig'
 export const ND = process.env.ND || 'http://127.0.0.1:4533'
 export const PROFILE = process.env.PROFILE || 'normal'
 export const ENGINE = process.env.ENGINE || 'html'
 export const [WIDTH, HEIGHT] = (process.env.SIZE || '1920x1080')
   .split('x')
   .map(Number)
-const appDir = process.env.CLEARPLAY_APP || repo
+const appDir = process.env.RIMELIGHT_APP || repo
 const fakeAudio = path.join(repo, 'tools/dev-rig/fake-audio')
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -61,7 +61,7 @@ export async function findPlaylist(name) {
 
 // ---------------------------------------------------------------- app
 /**
- * Starts ClearPlay. Returns { app, win, cdp, errors, csp, close }.
+ * Starts Rimelight. Returns { app, win, cdp, errors, csp, close }.
  * opts: { userData, fresh, engine, size:[w,h], env, args, login }
  */
 export async function launch(opts = {}) {
@@ -95,12 +95,12 @@ export async function launch(opts = {}) {
     cwd: appDir,
     env: {
       ...process.env,
-      CLEARPLAY_E2E: '1',
+      RIMELIGHT_E2E: '1',
       // mpv plays on its null output in real time (no sound card here).
-      CLEARPLAY_ASOUND_ROOT: path.join(fakeAudio, 'asound'),
+      RIMELIGHT_ASOUND_ROOT: path.join(fakeAudio, 'asound'),
       FAKE_AUDIO_STATE: fakeState,
       PATH: `${path.join(fakeAudio, 'bin')}:${process.env.PATH}`,
-      CLEARPLAY_MPV_DEVICE_MAP: 'alsa/hw:CARD=SIMGOT,DEV=0=null;auto=null',
+      RIMELIGHT_MPV_DEVICE_MAP: 'alsa/hw:CARD=SIMGOT,DEV=0=null;auto=null',
       ...(opts.env ?? {}),
     },
     timeout: 60000,

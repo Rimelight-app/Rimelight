@@ -46,6 +46,6 @@ export async function rateSong(song: NonNullable<RatedSong>, value: number) {
   const ok = await subsonic.rating.setRating(song.id, value)
   if (!ok) {
     setOverride(song.id, previous)
-    toast.error(i18n.t('clearplay.rating.failed'))
+    toast.error(i18n.t('rimelight.rating.failed'))
   }
 }

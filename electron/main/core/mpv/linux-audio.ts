@@ -16,7 +16,7 @@ import {
   pickVolumeControl,
 } from './linux-parse'
 
-const ASOUND = process.env.CLEARPLAY_ASOUND_ROOT || '/proc/asound'
+const ASOUND = process.env.RIMELIGHT_ASOUND_ROOT || '/proc/asound'
 
 function run(cmd: string, args: string[], timeout = 3000): Promise<string> {
   return new Promise((resolve, reject) => {

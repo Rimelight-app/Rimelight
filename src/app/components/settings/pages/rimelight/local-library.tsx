@@ -32,7 +32,7 @@ export function LocalLibrarySettings() {
   const [busy, setBusy] = useState(false)
   const { url, username } = useAppStore((s) => s.data)
   const inUse = isLocalServer(url, username)
-  const k = 'clearplay.local'
+  const k = 'rimelight.local'
 
   const refresh = useCallback(async () => {
     const next = await localLibraryState().catch(() => null)

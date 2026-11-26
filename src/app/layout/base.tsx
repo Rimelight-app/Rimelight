@@ -15,13 +15,13 @@ import {
 } from '@/app/components/ui/main-sidebar'
 import { Header } from '@/app/layout/header'
 import { cn } from '@/lib/utils'
-import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import {
   useLyricsState,
   useMainDrawerState,
   usePlayerFullscreen,
   useQueueState,
 } from '@/store/player.store'
+import { useRimelightSettings } from '@/store/rimelight-settings.store'
 import { MainRoutes } from './main'
 
 const MemoHeader = memo(Header)
@@ -36,7 +36,7 @@ let startPageApplied = false
 function useStartPage() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const startPage = useClearPlaySettings((s) => s.startPage)
+  const startPage = useRimelightSettings((s) => s.startPage)
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: only on first mount
   useEffect(() => {

@@ -16,7 +16,7 @@ function source(): PlaybackSource {
   return {
     type: 'songs',
     id: LIBRARY_SHUFFLE_ID,
-    name: i18n.t('clearplay.shuffleLibrary.label'),
+    name: i18n.t('rimelight.shuffleLibrary.label'),
   }
 }
 
@@ -36,14 +36,14 @@ export async function shuffleLibrary() {
   try {
     const songs = await randomSongs(FIRST_BATCH)
     if (!songs.length) {
-      toast.error(i18n.t('clearplay.shuffleLibrary.failed'))
+      toast.error(i18n.t('rimelight.shuffleLibrary.failed'))
       return false
     }
     usePlayerStore.getState().actions.setSongList(songs, 0, false, source())
     return true
   } catch (error) {
     logger.error('shuffleLibrary', error)
-    toast.error(i18n.t('clearplay.shuffleLibrary.failed'))
+    toast.error(i18n.t('rimelight.shuffleLibrary.failed'))
     return false
   }
 }

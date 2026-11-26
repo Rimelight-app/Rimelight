@@ -108,7 +108,7 @@ export default function SearchPage() {
   }, [query, setParams])
 
   const { data, isFetching } = useQuery({
-    queryKey: ['clearplay-search', query],
+    queryKey: ['rimelight-search', query],
     queryFn: () =>
       search.get({
         query,
@@ -139,7 +139,7 @@ export default function SearchPage() {
           ref={inputRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder={t('clearplay.search.placeholder')}
+          placeholder={t('rimelight.search.placeholder')}
           spellCheck={false}
           autoCorrect="off"
           className="h-full flex-1 bg-transparent text-[16px] outline-none placeholder:text-white/40"
@@ -152,7 +152,7 @@ export default function SearchPage() {
               inputRef.current?.focus()
             }}
             className="flex size-8 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white"
-            aria-label={t('clearplay.close')}
+            aria-label={t('rimelight.close')}
           >
             <X className="size-4" />
           </button>
@@ -161,12 +161,12 @@ export default function SearchPage() {
 
       {!query && (
         <p className="mt-16 text-center text-sm text-white/45">
-          {t('clearplay.search.hint')}
+          {t('rimelight.search.hint')}
         </p>
       )}
       {nothing && (
         <p className="mt-16 text-center text-sm text-white/45">
-          {t('clearplay.search.none', { query })}
+          {t('rimelight.search.none', { query })}
         </p>
       )}
 
@@ -217,7 +217,7 @@ export default function SearchPage() {
               className="inline-flex h-8 items-center gap-2 rounded-full bg-white/90 px-4 text-[13px] font-semibold text-[#121216] hover:bg-white"
             >
               <Play className="size-3.5 fill-current" />
-              {t('clearplay.playAll')}
+              {t('rimelight.playAll')}
             </button>
           </div>
           <div className="glass-panel grid gap-x-4 rounded-[20px] p-2 xl:grid-cols-2">

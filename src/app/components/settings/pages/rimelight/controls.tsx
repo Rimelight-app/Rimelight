@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/app/components/ui/select'
 
-/** Compact select used across ClearPlay settings. */
+/** Compact select used across Rimelight settings. */
 export function SettingSelect<T extends string>({
   value,
   options,

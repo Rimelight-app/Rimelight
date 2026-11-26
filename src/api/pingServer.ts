@@ -1,5 +1,5 @@
 import { AuthType } from '@/types/serverConfig'
-import { appName } from '@/utils/appName'
+import { subsonicClient } from '@/utils/appName'
 import { authQueryParams } from './httpClient'
 
 export async function pingServer(
@@ -13,7 +13,7 @@ export async function pingServer(
     const query = {
       ...authQueryParams(user, password, authType),
       v: protocolVersion || '1.16.0',
-      c: appName,
+      c: subsonicClient,
       f: 'json',
     }
 

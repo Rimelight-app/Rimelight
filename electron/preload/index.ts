@@ -1,15 +1,15 @@
 import { electronAPI } from '@electron-toolkit/preload'
 import { contextBridge, ipcRenderer } from 'electron'
 import {
-  IClearPlayAPI,
   IpcChannels,
+  IRimelightAPI,
   MpvEventPayload,
   PlayerStateListenerActions,
   SaveQueueReason,
 } from './types'
 
 // Custom APIs for renderer
-const api: IClearPlayAPI = {
+const api: IRimelightAPI = {
   enterFullScreen: () => ipcRenderer.send(IpcChannels.ToggleFullscreen, true),
   exitFullScreen: () => ipcRenderer.send(IpcChannels.ToggleFullscreen, false),
   isFullScreen: () => ipcRenderer.invoke(IpcChannels.IsFullScreen),

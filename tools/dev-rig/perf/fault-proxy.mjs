@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Fault proxy: sits between a client (ClearPlay desktop, ClearPlay for Android
+// Fault proxy: sits between a client (Rimelight desktop, Rimelight for Android
 // in an emulator, anything that speaks Subsonic) and a real server, and breaks
 // chosen requests on purpose. Plain Node (18+), no dependencies, no Electron.
 //

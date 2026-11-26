@@ -73,7 +73,7 @@ export function StarRating({
   return (
     <div
       role="radiogroup"
-      aria-label={t('clearplay.rating.label')}
+      aria-label={t('rimelight.rating.label')}
       aria-disabled={disabled}
       className={clsx(
         'group/rating inline-flex shrink-0 items-center',
@@ -94,8 +94,8 @@ export function StarRating({
             type="button"
             role="radio"
             aria-checked={star === value}
-            aria-label={t('clearplay.rating.star', { count: star })}
-            title={t('clearplay.rating.star', { count: star })}
+            aria-label={t('rimelight.rating.star', { count: star })}
+            title={t('rimelight.rating.star', { count: star })}
             tabIndex={star === (value || 1) ? 0 : -1}
             onMouseEnter={() => setHover(star)}
             onClick={(e) => select(e, star)}

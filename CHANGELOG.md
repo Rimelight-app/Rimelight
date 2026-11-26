@@ -1,6 +1,12 @@
 # Changelog
 
-All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
+All notable changes to Rimelight (called ClearPlay up to 0.6.1). Format loosely follows Keep a Changelog.
+
+## [Unreleased]
+
+### Changed
+- **ClearPlay is now Rimelight.** Same app, new name: ClearPlay was already the name of another company's media software. Nothing to do on your side: ClearPlay 0.6.1 offers this version as a normal update, and your servers, settings, queue and music on this computer carry over on the first start. On Windows it updates the installed app in place; on Linux the `.deb` and `.rpm` replace the `clearplay` package. Downloads and updates now come from https://github.com/Rimelight-app/Rimelight.
+- **Continue on other devices works with the ClearPlay apps too.** Rimelight now shows up on your server as "Rimelight" (in Navidrome's list of players, too) and still recognises the ClearPlay apps, so Continue works with a ClearPlay phone that isn't updated yet: the pill says "ClearPlay Android". The other way round, ClearPlay for Android 1.6.0 still offers Rimelight's queue, from the song and position Rimelight saved instead of the live second, and it doesn't notice when Rimelight takes over ("Continued on…"). Update the phone to Rimelight for Android 1.6.1 for both. The shared handoff rules are now version 4.
 
 ## [0.6.1] - 2026-11-26
 

@@ -66,8 +66,8 @@ export function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'), {
       hash: '/',
-      // The automated UI tests (tools/dev-rig/e2e.mjs) set CLEARPLAY_E2E.
-      ...(process.env.CLEARPLAY_E2E === '1' ? { query: { e2e: '1' } } : {}),
+      // The automated UI tests (tools/dev-rig/e2e.mjs) set RIMELIGHT_E2E.
+      ...(process.env.RIMELIGHT_E2E === '1' ? { query: { e2e: '1' } } : {}),
     })
   }
 }

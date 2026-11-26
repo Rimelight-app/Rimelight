@@ -35,7 +35,7 @@ export function SleepTimerButton() {
 
   return (
     <DropdownMenu>
-      <SimpleTooltip text={t('clearplay.sleep.title')}>
+      <SimpleTooltip text={t('rimelight.sleep.title')}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
@@ -53,23 +53,23 @@ export function SleepTimerButton() {
         </DropdownMenuTrigger>
       </SimpleTooltip>
       <DropdownMenuContent align="end" className="min-w-48">
-        <DropdownMenuLabel>{t('clearplay.sleep.title')}</DropdownMenuLabel>
+        <DropdownMenuLabel>{t('rimelight.sleep.title')}</DropdownMenuLabel>
         {minutes.map((m) => (
           <DropdownMenuItem
             key={m}
             onClick={() => set(Date.now() + m * 60_000)}
           >
-            {t('clearplay.sleep.minutes', { count: m })}
+            {t('rimelight.sleep.minutes', { count: m })}
           </DropdownMenuItem>
         ))}
         <DropdownMenuItem onClick={() => set('track')}>
-          {t('clearplay.sleep.endOfTrack')}
+          {t('rimelight.sleep.endOfTrack')}
         </DropdownMenuItem>
         {active && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => set(null)}>
-              {t('clearplay.sleep.off')}
+              {t('rimelight.sleep.off')}
             </DropdownMenuItem>
           </>
         )}

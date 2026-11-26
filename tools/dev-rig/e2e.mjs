@@ -2,13 +2,13 @@
 // Clicks through the built app against the rig's Navidrome and checks that
 // each control does what it should. Prints PASS/FAIL per check and exits 1 on
 // any failure. State is read through window.__cp (only present with
-// CLEARPLAY_E2E=1); every action is a real click or key press.
+// RIMELIGHT_E2E=1); every action is a real click or key press.
 import { _electron as electron } from 'playwright-core'
 import crypto from 'node:crypto'
 import path from 'node:path'
 
 const app = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..')
-const rig = process.env.RIG || '/tmp/clearplay-rig'
+const rig = process.env.RIG || '/tmp/rimelight-rig'
 const filter = process.argv[2] ? new RegExp(process.argv[2], 'i') : null
 const ND = 'http://127.0.0.1:4533'
 
@@ -33,7 +33,7 @@ const electronApp = await electron.launch({
   executablePath: path.join(app, 'node_modules/electron/dist/electron'),
   args: [app, '--no-sandbox', '--disable-gpu-sandbox', `--user-data-dir=${path.join(rig, 'userdata')}`],
   cwd: app,
-  env: { ...process.env, CLEARPLAY_E2E: '1' },
+  env: { ...process.env, RIMELIGHT_E2E: '1' },
   timeout: 60000,
 })
 const win = await electronApp.firstWindow()

@@ -105,13 +105,13 @@ export function NavRail() {
         <div className="my-1 h-px w-6 bg-white/10" />
         <RailButton
           icon={Radio}
-          label={t('clearplay.nowPlaying.nav')}
+          label={t('rimelight.nowPlaying.nav')}
           to={ROUTES.NOW_PLAYING}
           active={pathname === ROUTES.NOW_PLAYING}
         />
         <RailButton
           icon={ChartColumnBig}
-          label={t('clearplay.statsNav')}
+          label={t('rimelight.statsNav')}
           to={ROUTES.STATS}
           active={pathname === ROUTES.STATS}
         />
