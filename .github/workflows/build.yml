@@ -87,6 +87,9 @@ jobs:
       - name: Unit checks (Stats numbers)
         run: node tools/dev-rig/stats-unit.mjs
 
+      - name: Unit checks (Start radio)
+        run: node tools/dev-rig/radio-unit.mjs
+
       - name: Runtime checks (Continue on other devices, fake server)
         run: node tools/dev-rig/handoff-unit.mjs
 

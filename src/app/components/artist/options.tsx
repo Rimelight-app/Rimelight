@@ -3,6 +3,7 @@ import { DownloadOptionHandler } from '@/app/components/options/download-handler
 import { DropdownMenuGroup } from '@/app/components/ui/dropdown-menu'
 import { useOptions } from '@/app/hooks/use-options'
 import { useSongList } from '@/app/hooks/use-song-list'
+import { radioAvailable, radioOnline, startRadio } from '@/service/radio'
 import { IArtist } from '@/types/responses/artist'
 import { ISong } from '@/types/responses/song'
 
@@ -33,11 +34,23 @@ export function ArtistOptions({ artist }: ArtistOptionsProps) {
     startDownload(artist.id)
   }
 
+  const radioSeed = {
+    kind: 'artist' as const,
+    id: artist.id,
+    name: artist.name,
+  }
+
   return (
     <>
       <DropdownMenuGroup>
         <OptionsButtons.PlayNext onClick={handlePlayNext} />
         <OptionsButtons.PlayLast onClick={handlePlayLast} />
+        {radioAvailable(radioSeed) && (
+          <OptionsButtons.StartRadio
+            disabled={!radioOnline()}
+            onClick={() => startRadio(radioSeed)}
+          />
+        )}
         <DownloadOptionHandler group={false}>
           <OptionsButtons.Download onClick={handleDownload} />
         </DownloadOptionHandler>

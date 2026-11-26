@@ -5,6 +5,7 @@ import {
   MonitorSmartphone,
   Palette,
   PlusIcon,
+  Radio,
   Shuffle,
   SquareArrowOutUpRight,
 } from 'lucide-react'
@@ -18,6 +19,7 @@ type Variant =
   | 'ServerManagement'
   | 'ShuffleLibrary'
   | 'ContinueFrom'
+  | 'StartRadio'
 
 type CommandItemProps = {
   children: ReactNode
@@ -52,6 +54,10 @@ const icons = {
   ContinueFrom: {
     className: '',
     icon: <MonitorSmartphone />,
+  },
+  StartRadio: {
+    className: '',
+    icon: <Radio />,
   },
 }
 

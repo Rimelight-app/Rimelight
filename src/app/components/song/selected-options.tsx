@@ -8,6 +8,7 @@ import {
   ContextMenuSeparator,
 } from '@/app/components/ui/context-menu'
 import { useOptions } from '@/app/hooks/use-options'
+import { radioAvailable, radioOnline, startRadio } from '@/service/radio'
 import { useAppStore } from '@/store/app.store'
 import { ISong } from '@/types/responses/song'
 import { AddToPlaylistSubMenu } from './add-to-playlist'
@@ -25,6 +26,11 @@ export function SelectedSongsMenuOptions({ table }: SelectedSongsProps) {
   const isSingleSelected = rows.length === 1
   const songs = rows.map((row) => row.original)
   const firstSong = songs[0]
+  const radioSeed = {
+    kind: 'song' as const,
+    id: firstSong?.id ?? '',
+    name: firstSong?.title ?? '',
+  }
 
   function reset(action: () => void) {
     action()
@@ -85,6 +91,16 @@ export function SelectedSongsMenuOptions({ table }: SelectedSongsProps) {
           handlePlayLast()
         }}
       />
+      {isSingleSelected && radioAvailable(radioSeed) && (
+        <OptionsButtons.StartRadio
+          variant="context"
+          disabled={!radioOnline()}
+          onClick={(e) => {
+            e.stopPropagation()
+            reset(() => startRadio(radioSeed, firstSong))
+          }}
+        />
+      )}
       {!hidePlaylistsSection && (
         <>
           <ContextMenuSeparator />

@@ -3,6 +3,7 @@ import { DownloadOptionHandler } from '@/app/components/options/download-handler
 import { MenuRatingRow } from '@/app/components/rating/menu-rating-row'
 import { ContextMenuSeparator } from '@/app/components/ui/context-menu'
 import { useOptions } from '@/app/hooks/use-options'
+import { radioAvailable, radioOnline, startRadio } from '@/service/radio'
 import { useAppStore } from '@/store/app.store'
 import { ISong } from '@/types/responses/song'
 import { AddToPlaylistSubMenu } from './add-to-playlist'
@@ -30,6 +31,7 @@ export function SongMenuOptions({
   } = useOptions()
   const hidePlaylistsSection = useAppStore().pages.hidePlaylistsSection
   const songIndexes = [index.toString()]
+  const radioSeed = { kind: 'song' as const, id: song.id, name: song.title }
 
   return (
     <>
@@ -47,6 +49,16 @@ export function SongMenuOptions({
           playLast([song])
         }}
       />
+      {radioAvailable(radioSeed) && (
+        <OptionsButtons.StartRadio
+          variant={variant}
+          disabled={!radioOnline()}
+          onClick={(e) => {
+            e.stopPropagation()
+            startRadio(radioSeed, song)
+          }}
+        />
+      )}
       {!hidePlaylistsSection && (
         <>
           <ContextMenuSeparator />

@@ -1210,6 +1210,11 @@
       "authText": "Your username or password is no longer accepted.",
       "logInAgain": "Log in again",
       "home": "Back to home"
+    },
+    "radio": {
+      "start": "Start radio",
+      "startFrom": "Start radio from {{name}}",
+      "nothingFound": "No similar music found for {{name}}"
     }
   }
 }

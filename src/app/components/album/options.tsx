@@ -6,6 +6,7 @@ import {
   DropdownMenuSeparator,
 } from '@/app/components/ui/dropdown-menu'
 import { useOptions } from '@/app/hooks/use-options'
+import { radioAvailable, radioOnline, startRadio } from '@/service/radio'
 import { useAppStore } from '@/store/app.store'
 import { SingleAlbum } from '@/types/responses/album'
 
@@ -47,11 +48,19 @@ export function AlbumOptions({ album }: AlbumOptionsProps) {
     createNewPlaylist(album.name, songIdToAdd)
   }
 
+  const radioSeed = { kind: 'album' as const, id: album.id, name: album.name }
+
   return (
     <>
       <DropdownMenuGroup>
         <OptionsButtons.PlayNext onClick={handlePlayNext} />
         <OptionsButtons.PlayLast onClick={handlePlayLast} />
+        {radioAvailable(radioSeed) && (
+          <OptionsButtons.StartRadio
+            disabled={!radioOnline()}
+            onClick={() => startRadio(radioSeed)}
+          />
+        )}
       </DropdownMenuGroup>
       {!hidePlaylistsSection && (
         <>

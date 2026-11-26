@@ -9,6 +9,7 @@ import {
   PlayIcon,
   PlusIcon,
   PodcastIcon,
+  Radio,
   Trash,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -195,8 +196,23 @@ function GotoPodcast({
   )
 }
 
+function StartRadio({ variant = 'dropdown', ...props }: DropdownMenuItemProps) {
+  const { t } = useTranslation()
+
+  return (
+    <MenuItemFactory
+      variant={variant}
+      icon={<Radio className="mr-2 h-4 w-4" />}
+      label={t('clearplay.radio.start')}
+      data-testid="start-radio"
+      {...props}
+    />
+  )
+}
+
 export const OptionsButtons = {
   Play,
+  StartRadio,
   PlayNext,
   PlayLast,
   Download,
