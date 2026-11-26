@@ -34,7 +34,7 @@ You host your own music. Your player should feel as good as the streaming apps, 
 - **Lyrics that glide.** Time-synced lyrics from your own files, with the current line large and bright and the rest gently fading. They are available full screen or in a side panel on any page.
 - **Built for a home server.** Save your home and Tailscale addresses and switch with one click, or let Rimelight pick the fastest one at start. Cap the streaming bitrate when you're away.
 - **Knows your listening.** A Now Playing page with the album, the artist and their discography, plus statistics: hours listened, top artists, genres, songs and decades.
-- **Continue on other devices.** Pause on one device, tap Continue on the other, and it picks up at the same song and second, through your server. Works with Rimelight for Android 1.6.1 and with other apps such as Symfonium. A phone still on ClearPlay for Android 1.6.0 works too: it continues from the saved position instead of the live second until you update it.
+- **Continue on other devices.** Pause on one device, tap Continue on the other, and it picks up at the same song and second, through your server. Works with the phone app and with other apps such as Symfonium. With ClearPlay for Android 1.6.0 the phone continues from the saved position instead of the live second; Rimelight for Android 1.6.1, coming next, brings the live second back.
 - **Plays well with your other apps.** Plays go to Navidrome (and on to Last.fm/ListenBrainz), queued and retried if you're offline.
 
 ## Screenshots
@@ -53,7 +53,7 @@ You host your own music. Your player should feel as good as the streaming apps, 
 | <img src="docs/screenshots/android-album.jpg" alt="Android album page" width="170"> | <img src="docs/screenshots/android-now-playing.jpg" alt="Android now playing" width="170"> | <img src="docs/screenshots/android-lyrics.jpg" alt="Android synced lyrics" width="170"> | <img src="docs/screenshots/android-stats.jpg" alt="Android statistics" width="170"> | <img src="docs/screenshots/android-settings.jpg" alt="Android settings" width="170"> |
 | **Album** | **Now playing** | **Lyrics** | **Statistics** | **Settings** |
 
-**Rimelight for Android** is the same frosted-glass player for your server on your phone, with synced lyrics, statistics and Continue on other devices. Get it from [its releases](https://github.com/Rimelight-app/Rimelight/releases/tag/android-v1.6.0). Up to 1.6.0 it was called ClearPlay for Android; 1.6.1 brings the new name.
+**Rimelight for Android** is the same frosted-glass player for your server on your phone, with synced lyrics, statistics and Continue on other devices. Get it from [its releases](https://github.com/Rimelight-app/Rimelight/releases/tag/android-v1.6.0). The current version, 1.6.0, is still called ClearPlay for Android; the next one brings the new name.
 
 <!-- SCREENSHOTS TO ADD (desktop, real library, 1440×900 window):
      1. docs/screenshots/settings.jpg — Settings → Player & Audio, the frosted cards (changed in 0.5.2),
@@ -143,7 +143,7 @@ Not (yet): macOS, gapless playback with the bit-perfect engine, a code-signed Wi
 
 **Is playback bit-perfect?** With the optional mpv engine, yes: each song reaches your DAC unchanged, at its own rate and bit depth. The default engine mixes at the system rate.
 
-**Can I continue on my phone?** Yes. Turn on Continue on other devices and pause here; Rimelight for Android 1.6.1 (or another app that reads Navidrome's saved queue, such as Symfonium) continues at the same song and second, and back.
+**Can I continue on my phone?** Yes. Turn on Continue on other devices and pause here; the phone app (or another app that reads Navidrome's saved queue, such as Symfonium) continues where you paused, and back.
 
 **Does it work without a server?** Yes: choose "Use music on this computer" and add your music folders.
 
