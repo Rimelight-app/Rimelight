@@ -19,7 +19,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 /**
  * "Continue on other devices" at run time: when to save the queue, when to look at the server's,
  * the Continue offer and "Continued on <device>". The rules themselves are in [QueueHandoff]
- * (shared with ClearPlay desktop 0.6.0, whose src/service/handoff.ts this follows).
+ * (shared with Rimelight desktop 0.6.2, whose src/service/handoff.ts this follows).
  *
  * Events come from the player service's listener ([QueueWatcher]); looking and the left-behind
  * check run in the app scope. Everything here runs on the main thread.
@@ -369,7 +369,7 @@ class Handoff(
     private var checking: Deferred<Unit>? = null
 
     /**
-     * Is this phone left behind? The other ClearPlay app plays a song from this queue (Now
+     * Is this phone left behind? The other app (old or new name) plays a song from this queue (Now
      * Playing) and saved the server's queue last (read only then). Runs before a song change's
      * save (see QueueWatcher), so the device left behind doesn't save first and make itself
      * changedBy.

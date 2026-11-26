@@ -419,7 +419,7 @@ class SubsonicClient(val server: ServerConfig, private val http: HttpClient = de
 
     companion object {
         const val API_VERSION = "1.16.1"
-        const val CLIENT = "ClearPlay-Android"
+        const val CLIENT = "Rimelight-Android"
         private const val INDEX_QUEUE = "indexBasedQueue"
 
         val json = Json {

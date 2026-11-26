@@ -1,10 +1,11 @@
-"""End-to-end "Continue on other devices" between ClearPlay Android (driven through its UI on a
-device or emulator) and a pretend ClearPlay desktop (pretend_desktop.mjs: c=ClearPlay, the
-desktop's own queue-handoff.ts rules from tag v0.6.0) against a real Navidrome 0.64.2.
+"""End-to-end "Continue on other devices" between Rimelight for Android (driven through its UI on
+a device or emulator) and a pretend desktop (pretend_desktop.mjs: c=Rimelight, the desktop's own
+queue-handoff.ts rules from tag v0.6.2) against a real Navidrome 0.64.2.
 
 Usage: ANDROID_SERIAL=emulator-5554 python3 handoff_e2e.py [case numbers...]
 Env: ND (rig URL as seen from this machine), ND_DEVICE (as seen from the device), RULES, NODE,
-     APP (package), RESULTS (JSON file to write).
+     APP (package), RESULTS (JSON file to write),
+     DESKTOP_CLIENT (Rimelight, the default, or ClearPlay: a desktop still on ClearPlay 0.6.1).
 """
 import hashlib, json, os, random, re, string, subprocess, sys, tempfile, time, urllib.parse, urllib.request
 import ui
@@ -13,12 +14,17 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ND = os.environ.get("ND", "http://127.0.0.1:4544")
 ND_DEVICE = os.environ.get("ND_DEVICE", "10.0.2.2:4544")
 NODE = os.environ.get("NODE", os.path.expanduser("~/clearplay-rig/node/current/bin/node"))
-RULES = os.environ.get("RULES", os.path.expanduser("~/clearplay-rig/desktop-rules/queue-handoff.ts"))
+RULES = os.environ.get("RULES", os.path.expanduser("~/clearplay-rig/desktop-rules/queue-handoff-v0.6.2.ts"))
 APP = os.environ.get("APP", "com.tonihk00.clearplay.debug")
 ACTIVITY = f"{APP}/com.tonihk00.clearplay.MainActivity"
 MUSIC = os.environ.get("MUSIC", os.path.expanduser("~/clearplay-rig/music064"))
 ND_DATA = os.environ.get("ND_DATA", os.path.expanduser("~/clearplay-rig/nd064"))
-ANDROID = "ClearPlay-Android"
+ANDROID = "Rimelight-Android"
+# The pretend desktop's c, and the device name the phone's pills must show for it.
+DESKTOP_CLIENT = os.environ.get("DESKTOP_CLIENT", "Rimelight")
+DESKTOP = {"Rimelight": "Rimelight desktop", "ClearPlay": "ClearPlay desktop"}[DESKTOP_CLIENT]
+# How the desktop names this phone (always the updated app).
+PHONE = "Rimelight Android"
 SHOTS = os.environ.get("SHOTS", tempfile.gettempdir())
 log_lines = []
 
@@ -46,7 +52,7 @@ def nd(endpoint, params=None, client="e2e", post=None):
 
 def desktop(cmd, args=None):
     out = subprocess.run([NODE, os.path.join(HERE, "pretend_desktop.mjs"), cmd, json.dumps(args or {})],
-                         capture_output=True, text=True, timeout=60, env={**os.environ, "RULES": RULES, "ND": ND})
+                         capture_output=True, text=True, timeout=60, env={**os.environ, "RULES": RULES, "ND": ND, "DESKTOP_CLIENT": DESKTOP_CLIENT})
     if out.returncode != 0:
         raise RuntimeError(out.stderr)
     return json.loads(out.stdout.strip().splitlines()[-1])
@@ -220,7 +226,7 @@ def case1():
     desktop("report", {"id": s[1]["id"], "state": "paused", "positionMs": 20000})
     start_fresh()
     text = pill(15)
-    want = f"Paused on ClearPlay desktop · {s[1]['title']} · just now"
+    want = f"Paused on {DESKTOP} · {s[1]['title']} · just now"
     assert text == want, f"pill {text!r}, want {want!r}"
     before = changed_now()
     tap_pill_button("Continue")
@@ -248,7 +254,7 @@ def case2():
     t_report = time.time()
     start_fresh()
     text = pill(15)
-    want = f"Playing on ClearPlay desktop · {s[1]['title']}"
+    want = f"Playing on {DESKTOP} · {s[1]['title']}"
     assert text == want, f"pill {text!r}, want {want!r}"
     tap_pill_button("Continue here")
     t0 = time.time()
@@ -293,7 +299,7 @@ def case4():
     desktop("save", {"ids": ids, "index": 0, "position": 5000})
     desktop("report", {"id": s[0]["id"], "state": "playing", "positionMs": 5000})
     start_fresh()
-    assert (pill(15) or "").startswith("Playing on ClearPlay desktop"), "no offer"
+    assert (pill(15) or "").startswith(f"Playing on {DESKTOP}"), "no offer"
     tap_pill_button("Continue here")
     wait_state("PLAYING", 20)
     q = wait_changed("", 10)
@@ -307,7 +313,7 @@ def case4():
         time.sleep(4)
         desktop("report", {"id": s[0]["id"], "state": "playing", "positionMs": 20000})
     lb = desktop("leftBehind", {"queueIds": ids})
-    assert lb["leftBehind"] and lb["leftBehind"]["device"] == "ClearPlay Android", lb
+    assert lb["leftBehind"] and lb["leftBehind"]["device"] == PHONE, lb
     return f"no pill on the phone for 75 s; desktop's leftBehind → {lb['leftBehind']}"
 
 
@@ -327,7 +333,7 @@ def case5():
     while time.time() < end and not t:
         desktop("report", {"id": cur, "state": "playing", "positionMs": 1000})
         t = pill(5)
-    assert t == "Continued on ClearPlay desktop", f"pill {t!r}"
+    assert t == f"Continued on {DESKTOP}", f"pill {t!r}"
     stored = changed_now()
     # Over 6 s, and across a natural song change, the phone makes no save and keeps playing.
     first_item = ui.media_state(APP)["item"]
@@ -344,7 +350,7 @@ def case5():
             break
         time.sleep(2)
     assert saw_change, "no natural song change seen"
-    assert pill(2) == "Continued on ClearPlay desktop", "the pill closed on a natural song change"
+    assert pill(2) == f"Continued on {DESKTOP}", "the pill closed on a natural song change"
     tap_pill_button("Pause here")
     wait_state("PAUSED", 5)
     time.sleep(3)
@@ -409,7 +415,7 @@ def case7():
         desktop("report", {"id": ids[2], "state": "paused", "positionMs": 12000})
         start_fresh()
         text = pill(15)
-        want = f"Paused on ClearPlay desktop · {s[2]['title']} · just now"
+        want = f"Paused on {DESKTOP} · {s[2]['title']} · just now"
         assert text == want, f"pill {text!r}, want {want!r}"
         tap_pill_button("Continue")
         t0 = time.time()
@@ -472,7 +478,7 @@ def case9():
             desktop("report", {"id": ids[1], "state": "paused", "positionMs": 8000})
             start_fresh()
             text = pill(15)
-            want = f"Paused on ClearPlay desktop · {s[1]['title']} · {age}"
+            want = f"Paused on {DESKTOP} · {s[1]['title']} · {age}"
             assert text == want, f"clock {offset:+} s: pill {text!r}, want {want!r}"
             tap_pill_button("Continue")
             wait_state("PLAYING", 20)

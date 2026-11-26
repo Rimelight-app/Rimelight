@@ -60,7 +60,7 @@ fun ageLabel(age: QueueHandoff.Age, nowMs: Long, zone: ZoneId = ZoneId.systemDef
 }
 
 /**
- * The Continue offer's words (the same in ClearPlay desktop 0.6.0). `<song>` is always the song
+ * The Continue offer's words (the same in Rimelight desktop 0.6.2). `<song>` is always the song
  * Continue starts; `<age>` is this phone's clock minus the server's `changed`, for display only.
  */
 fun offerText(offer: QueueHandoff.Offer<com.tonihk00.clearplay.data.api.Song>, nowMs: Long): HandoffPillText {

@@ -1,11 +1,15 @@
 {
-  "version": 3,
-  "date": "2026-11-24",
-  "about": "Shared rules for \"Continue on other devices\" (ClearPlay desktop 0.6.0, ClearPlay Android 1.6.0). Desktop runs these in tools/dev-rig/queue-handoff-unit.mjs against src/service/queue-handoff.ts; Android copies this file unchanged and runs the same cases against QueueHandoff.kt. Change this file first, in both apps, when a rule changes. Times are server times (ISO 8601) except nowMs (this device clock, epoch ms). Long lists are written as {\"generate\":{\"prefix\":\"s\",\"from\":A,\"to\":B,\"step\":K}}: the ids s<i> for i = A, A+K, ... while i < B. As songs, each is {\"id\":\"s<i>\",\"local\":false}, except with \"localEvery\":N, where i % N == N-1 is local.",
+  "version": 4,
+  "date": "2026-11-26",
+  "about": "Shared rules for \"Continue on other devices\" (Rimelight desktop 0.6.2, Rimelight for Android 1.6.1; up to desktop 0.6.1 and Android 1.6.0 the apps were called ClearPlay). Desktop runs these in tools/dev-rig/queue-handoff-unit.mjs against src/service/queue-handoff.ts; Android copies this file unchanged and runs the same cases against QueueHandoff.kt. Change this file first, in both apps, when a rule changes. Times are server times (ISO 8601) except nowMs (this device clock, epoch ms). Long lists are written as {\"generate\":{\"prefix\":\"s\",\"from\":A,\"to\":B,\"step\":K}}: the ids s<i> for i = A, A+K, ... while i < B. As songs, each is {\"id\":\"s<i>\",\"local\":false}, except with \"localEvery\":N, where i % N == N-1 is local.",
   "notes": [
-    "v3: Live position (Now Playing) is trusted only from the other ClearPlay app, playing or paused. Any other app: the saved song and position, kind \"saved\" (\"Saved by <app> · <song> · <age>\").",
+    "v4: The apps send Rimelight (desktop) and Rimelight-Android. ClearPlay and ClearPlay-Android (legacyNames) are the same two apps before the rename, not updated yet: a name counts as the app it maps to everywhere (\"the other app\", \"this app\"). Names are compared exactly, case and all.",
+    "v4: A queue saved under this app's old name (by this device before it updated) is this app's own queue: no offer.",
+    "v4: The live position is taken from a Now Playing entry of the same app as changedBy, under either name (the phone may have updated between saving and playing).",
+    "v4: The device name shows the name the other app sent: \"ClearPlay Android\" for a phone not updated yet, \"Rimelight Android\" after.",
+    "v3: Live position (Now Playing) is trusted only from the other app, playing or paused. Any other app: the saved song and position, kind \"saved\" (\"Saved by <app> · <song> · <age>\").",
     "v3: <song> in every pill is the song Continue starts (offer.song), never the Now Playing song when that one is not in the saved queue.",
-    "v3: Left behind needs a candidate Now Playing entry (leftBehindCandidate) AND the server queue changedBy = the other ClearPlay app (leftBehind). Read the queue only when there is a candidate.",
+    "v3: Left behind needs a candidate Now Playing entry (leftBehindCandidate) AND the server queue changedBy = the other app (leftBehind). Read the queue only when there is a candidate.",
     "v3: On a song change, run the left-behind check first, then schedule that change's save (otherwise the device left behind could save first and make itself changedBy).",
     "Left behind shows once per period away: alreadyShown is set when it shows and cleared when this device saves successfully.",
     "Server times (changed, handledChanged) are compared as instants, never as strings and never with this device's clock.",
@@ -16,10 +20,22 @@
     "Clearing the queue = only the playing song is left (isQueueCleared); it is not saved."
   ],
   "thisApp": {
-    "desktop": "ClearPlay",
-    "android": "ClearPlay-Android"
+    "desktop": "Rimelight",
+    "android": "Rimelight-Android"
+  },
+  "legacyNames": {
+    "ClearPlay": "Rimelight",
+    "ClearPlay-Android": "Rimelight-Android"
   },
   "deviceName": [
+    {
+      "input": "Rimelight",
+      "expected": "Rimelight desktop"
+    },
+    {
+      "input": "Rimelight-Android",
+      "expected": "Rimelight Android"
+    },
     {
       "input": "ClearPlay",
       "expected": "ClearPlay desktop"
@@ -27,6 +43,10 @@
     {
       "input": "ClearPlay-Android",
       "expected": "ClearPlay Android"
+    },
+    {
+      "input": "clearplay-android",
+      "expected": "clearplay-android"
     },
     {
       "input": "Symfonium",
@@ -483,7 +503,7 @@
     {
       "name": "no handledChanged yet, phone gone from Now Playing: offered (paused, saved song and position)",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -506,7 +526,7 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
@@ -514,7 +534,7 @@
       },
       "expected": {
         "kind": "paused",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "b"
         },
@@ -526,7 +546,7 @@
     {
       "name": "saved by this app: nothing",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -549,7 +569,7 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay"
+          "changedBy": "Rimelight"
         },
         "handledChanged": null,
         "playingHere": false,
@@ -560,7 +580,7 @@
     {
       "name": "Android sees its own queue: nothing",
       "input": {
-        "thisApp": "ClearPlay-Android",
+        "thisApp": "Rimelight-Android",
         "username": "toni",
         "queue": {
           "entries": [
@@ -583,7 +603,7 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
@@ -594,7 +614,7 @@
     {
       "name": "Android sees the desktop queue",
       "input": {
-        "thisApp": "ClearPlay-Android",
+        "thisApp": "Rimelight-Android",
         "username": "toni",
         "queue": {
           "entries": [
@@ -617,7 +637,7 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay"
+          "changedBy": "Rimelight"
         },
         "handledChanged": null,
         "playingHere": false,
@@ -625,7 +645,7 @@
       },
       "expected": {
         "kind": "paused",
-        "device": "ClearPlay desktop",
+        "device": "Rimelight desktop",
         "song": {
           "id": "b"
         },
@@ -637,7 +657,7 @@
     {
       "name": "changed older than handledChanged: nothing",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -660,7 +680,7 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": "2026-11-24T18:10:00Z",
         "playingHere": false,
@@ -671,7 +691,7 @@
     {
       "name": "changed equal to handledChanged: nothing",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -694,7 +714,7 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": "2026-11-24T18:05:00.250Z",
         "playingHere": false,
@@ -705,7 +725,7 @@
     {
       "name": "equal instant written differently: nothing",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -728,7 +748,7 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": "2026-11-24T20:05:00.25+02:00",
         "playingHere": false,
@@ -739,7 +759,7 @@
     {
       "name": "changed newer than handledChanged: offered",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -762,7 +782,7 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": "2026-11-24T18:00:00Z",
         "playingHere": false,
@@ -770,7 +790,7 @@
       },
       "expected": {
         "kind": "paused",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "b"
         },
@@ -782,7 +802,7 @@
     {
       "name": "something is playing here: nothing",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -805,7 +825,7 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": true,
@@ -816,14 +836,14 @@
     {
       "name": "empty server queue: nothing",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [],
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
@@ -834,7 +854,7 @@
     {
       "name": "no server queue: nothing",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": null,
         "handledChanged": null,
@@ -844,9 +864,9 @@
       "expected": null
     },
     {
-      "name": "other ClearPlay app still playing: its song and live position",
+      "name": "other Rimelight app still playing: its song and live position",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -869,14 +889,14 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "c"
@@ -885,7 +905,7 @@
       },
       "expected": {
         "kind": "playing",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "c"
         },
@@ -895,9 +915,9 @@
       }
     },
     {
-      "name": "v3: other ClearPlay app paused in Now Playing: its song and position",
+      "name": "v3: other Rimelight app paused in Now Playing: its song and position",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -920,14 +940,14 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "paused",
             "positionMs": 33000,
             "id": "c"
@@ -936,7 +956,7 @@
       },
       "expected": {
         "kind": "paused",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "c"
         },
@@ -948,7 +968,7 @@
     {
       "name": "v3: a song before the current one was deleted (server index now points one too far): the paused entry finds the right song",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -968,14 +988,14 @@
           "currentIndex": 2,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "paused",
             "positionMs": 61000,
             "id": "c"
@@ -984,7 +1004,7 @@
       },
       "expected": {
         "kind": "paused",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "c"
         },
@@ -996,7 +1016,7 @@
     {
       "name": "v3: playing and paused entries of the other app: the playing one wins",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -1019,21 +1039,21 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "paused",
             "positionMs": 1000,
             "id": "a"
           },
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 2000,
             "id": "d"
@@ -1042,7 +1062,7 @@
       },
       "expected": {
         "kind": "playing",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "d"
         },
@@ -1054,7 +1074,7 @@
     {
       "name": "playing song twice in the queue: the first match at or after the saved index",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -1077,14 +1097,14 @@
           "currentIndex": 2,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "b"
@@ -1093,7 +1113,7 @@
       },
       "expected": {
         "kind": "playing",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "b"
         },
@@ -1105,7 +1125,7 @@
     {
       "name": "playing song only before the saved index: the first match anywhere",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -1128,14 +1148,14 @@
           "currentIndex": 3,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "a"
@@ -1144,7 +1164,7 @@
       },
       "expected": {
         "kind": "playing",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "a"
         },
@@ -1156,7 +1176,7 @@
     {
       "name": "v3: playing song not in the saved queue: kind \"playing\", but song, index and position are the saved ones (the pill names the saved song)",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -1179,14 +1199,14 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "zz"
@@ -1195,7 +1215,7 @@
       },
       "expected": {
         "kind": "playing",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "b"
         },
@@ -1207,7 +1227,7 @@
     {
       "name": "another user playing: ignored",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -1230,14 +1250,14 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
         "nowPlaying": [
           {
             "username": "guest",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "c"
@@ -1246,7 +1266,7 @@
       },
       "expected": {
         "kind": "paused",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "b"
         },
@@ -1258,7 +1278,7 @@
     {
       "name": "another player of the same user playing: ignored",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -1281,7 +1301,7 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
@@ -1297,7 +1317,7 @@
       },
       "expected": {
         "kind": "paused",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "b"
         },
@@ -1309,7 +1329,7 @@
     {
       "name": "v3: saved by Symfonium, nothing in Now Playing: \"saved\", saved song and position",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -1352,7 +1372,7 @@
     {
       "name": "v3: saved by Symfonium and it shows as playing: not trusted, saved song and position",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -1403,7 +1423,7 @@
     {
       "name": "v3: saved by Symfonium and it shows as paused: not trusted either",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -1454,7 +1474,7 @@
     {
       "name": "v3: Android sees a Symfonium queue: \"saved\"",
       "input": {
-        "thisApp": "ClearPlay-Android",
+        "thisApp": "Rimelight-Android",
         "username": "toni",
         "queue": {
           "entries": [
@@ -1505,7 +1525,7 @@
     {
       "name": "saved current index out of range: clamped to the last song",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -1528,7 +1548,7 @@
           "currentIndex": 9,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": null,
         "playingHere": false,
@@ -1536,7 +1556,7 @@
       },
       "expected": {
         "kind": "paused",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "d"
         },
@@ -1548,7 +1568,7 @@
     {
       "name": "a clock 10 min off changes nothing (no clock in the rules)",
       "input": {
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "queue": {
           "entries": [
@@ -1571,7 +1591,7 @@
           "currentIndex": 1,
           "positionMs": 61000,
           "changed": "2026-11-24T18:05:00.250Z",
-          "changedBy": "ClearPlay-Android"
+          "changedBy": "Rimelight-Android"
         },
         "handledChanged": "2026-11-24T18:00:00Z",
         "playingHere": false,
@@ -1580,7 +1600,7 @@
       "nowMs": 1795544100250,
       "expected": {
         "kind": "paused",
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": {
           "id": "b"
         },
@@ -1588,20 +1608,343 @@
         "positionMs": 61000,
         "changed": "2026-11-24T18:05:00.250Z"
       }
-    }
-  ],
-  "leftBehindCandidate": [
+    },
     {
-      "name": "the other ClearPlay app plays a song from this queue: read the server queue",
+      "name": "v4: desktop, saved by ClearPlay Android 1.6.0 (old name) and still playing there: its song and live position",
       "input": {
-        "publishing": true,
-        "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
+        "queue": {
+          "entries": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "c"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "d"
+            }
+          ],
+          "currentIndex": 1,
+          "positionMs": 61000,
+          "changed": "2026-11-26T18:05:00.250Z",
+          "changedBy": "ClearPlay-Android"
+        },
+        "handledChanged": null,
+        "playingHere": false,
         "nowPlaying": [
           {
             "username": "toni",
             "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 125000,
+            "id": "c"
+          }
+        ]
+      },
+      "expected": {
+        "kind": "playing",
+        "device": "ClearPlay Android",
+        "song": {
+          "id": "c"
+        },
+        "index": 2,
+        "positionMs": 125000,
+        "changed": "2026-11-26T18:05:00.250Z"
+      }
+    },
+    {
+      "name": "v4: Android, saved by ClearPlay desktop 0.6.1 (old name) and paused there: its song and position",
+      "input": {
+        "thisApp": "Rimelight-Android",
+        "username": "toni",
+        "queue": {
+          "entries": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "c"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "d"
+            }
+          ],
+          "currentIndex": 1,
+          "positionMs": 61000,
+          "changed": "2026-11-26T18:05:00.250Z",
+          "changedBy": "ClearPlay"
+        },
+        "handledChanged": null,
+        "playingHere": false,
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay",
+            "state": "paused",
+            "positionMs": 30000,
+            "id": "b"
+          }
+        ]
+      },
+      "expected": {
+        "kind": "paused",
+        "device": "ClearPlay desktop",
+        "song": {
+          "id": "b"
+        },
+        "index": 1,
+        "positionMs": 30000,
+        "changed": "2026-11-26T18:05:00.250Z"
+      }
+    },
+    {
+      "name": "v4: desktop sees the queue it saved as ClearPlay before it updated: nothing",
+      "input": {
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "queue": {
+          "entries": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "c"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "d"
+            }
+          ],
+          "currentIndex": 1,
+          "positionMs": 61000,
+          "changed": "2026-11-26T18:05:00.250Z",
+          "changedBy": "ClearPlay"
+        },
+        "handledChanged": null,
+        "playingHere": false,
+        "nowPlaying": []
+      },
+      "expected": null
+    },
+    {
+      "name": "v4: Android sees the queue it saved as ClearPlay-Android before it updated: nothing",
+      "input": {
+        "thisApp": "Rimelight-Android",
+        "username": "toni",
+        "queue": {
+          "entries": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "c"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "d"
+            }
+          ],
+          "currentIndex": 1,
+          "positionMs": 61000,
+          "changed": "2026-11-26T18:05:00.250Z",
+          "changedBy": "ClearPlay-Android"
+        },
+        "handledChanged": null,
+        "playingHere": false,
+        "nowPlaying": []
+      },
+      "expected": null
+    },
+    {
+      "name": "v4: saved as ClearPlay-Android, the phone has updated and now plays as Rimelight-Android: still trusted",
+      "input": {
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "queue": {
+          "entries": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "c"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "d"
+            }
+          ],
+          "currentIndex": 1,
+          "positionMs": 61000,
+          "changed": "2026-11-26T18:05:00.250Z",
+          "changedBy": "ClearPlay-Android"
+        },
+        "handledChanged": null,
+        "playingHere": false,
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "Rimelight-Android",
+            "state": "playing",
+            "positionMs": 5000,
+            "id": "d"
+          }
+        ]
+      },
+      "expected": {
+        "kind": "playing",
+        "device": "ClearPlay Android",
+        "song": {
+          "id": "d"
+        },
+        "index": 4,
+        "positionMs": 5000,
+        "changed": "2026-11-26T18:05:00.250Z"
+      }
+    },
+    {
+      "name": "v4: names are exact: \"clearplay-android\" is another app, \"saved\"",
+      "input": {
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "queue": {
+          "entries": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "c"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "d"
+            }
+          ],
+          "currentIndex": 1,
+          "positionMs": 61000,
+          "changed": "2026-11-26T18:05:00.250Z",
+          "changedBy": "clearplay-android"
+        },
+        "handledChanged": null,
+        "playingHere": false,
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "clearplay-android",
+            "state": "playing",
+            "positionMs": 5000,
+            "id": "d"
+          }
+        ]
+      },
+      "expected": {
+        "kind": "saved",
+        "device": "clearplay-android",
+        "song": {
+          "id": "b"
+        },
+        "index": 1,
+        "positionMs": 61000,
+        "changed": "2026-11-26T18:05:00.250Z"
+      }
+    },
+    {
+      "name": "v4: saved by the phone, but the Now Playing entry is an old desktop (this app's kind): not trusted, saved song and position",
+      "input": {
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "queue": {
+          "entries": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "c"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "d"
+            }
+          ],
+          "currentIndex": 1,
+          "positionMs": 61000,
+          "changed": "2026-11-26T18:05:00.250Z",
+          "changedBy": "ClearPlay-Android"
+        },
+        "handledChanged": null,
+        "playingHere": false,
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay",
+            "state": "playing",
+            "positionMs": 5000,
+            "id": "c"
+          }
+        ]
+      },
+      "expected": {
+        "kind": "paused",
+        "device": "ClearPlay Android",
+        "song": {
+          "id": "b"
+        },
+        "index": 1,
+        "positionMs": 61000,
+        "changed": "2026-11-26T18:05:00.250Z"
+      }
+    }
+  ],
+  "leftBehindCandidate": [
+    {
+      "name": "the other Rimelight app plays a song from this queue: read the server queue",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "b"
@@ -1611,7 +1954,7 @@
         "alreadyShown": false
       },
       "expected": {
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": "b"
       }
     },
@@ -1620,7 +1963,7 @@
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [],
         "queueIds": ["a", "b", "c"],
@@ -1633,7 +1976,7 @@
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [
           {
@@ -1654,12 +1997,81 @@
       "input": {
         "publishing": false,
         "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "Rimelight-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false
+      },
+      "expected": null
+    },
+    {
+      "name": "v4: ClearPlay Android 1.6.0 (old name) plays a song from this queue: read the server queue",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [
           {
             "username": "toni",
             "playerName": "ClearPlay-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false
+      },
+      "expected": {
+        "device": "ClearPlay Android",
+        "song": "b"
+      }
+    },
+    {
+      "name": "v4: ClearPlay desktop 0.6.1 seen from Rimelight Android",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "Rimelight-Android",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false
+      },
+      "expected": {
+        "device": "ClearPlay desktop",
+        "song": "b"
+      }
+    },
+    {
+      "name": "v4: this app under its old name (another copy not updated): nothing",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "ClearPlay",
             "state": "playing",
             "positionMs": 90500,
             "id": "b"
@@ -1677,12 +2089,12 @@
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "b"
@@ -1690,10 +2102,10 @@
         ],
         "queueIds": ["a", "b", "c"],
         "alreadyShown": false,
-        "serverChangedBy": "ClearPlay-Android"
+        "serverChangedBy": "Rimelight-Android"
       },
       "expected": {
-        "device": "ClearPlay Android",
+        "device": "Rimelight Android",
         "song": "b"
       }
     },
@@ -1702,12 +2114,12 @@
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay-Android",
+        "thisApp": "Rimelight-Android",
         "username": "toni",
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay",
+            "playerName": "Rimelight",
             "state": "playing",
             "positionMs": 90500,
             "id": "c"
@@ -1715,10 +2127,10 @@
         ],
         "queueIds": ["a", "b", "c"],
         "alreadyShown": false,
-        "serverChangedBy": "ClearPlay"
+        "serverChangedBy": "Rimelight"
       },
       "expected": {
-        "device": "ClearPlay desktop",
+        "device": "Rimelight desktop",
         "song": "c"
       }
     },
@@ -1727,12 +2139,12 @@
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "b"
@@ -1740,7 +2152,7 @@
         ],
         "queueIds": ["a", "b", "c"],
         "alreadyShown": false,
-        "serverChangedBy": "ClearPlay"
+        "serverChangedBy": "Rimelight"
       },
       "expected": null
     },
@@ -1749,12 +2161,12 @@
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "b"
@@ -1771,12 +2183,12 @@
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "b"
@@ -1793,12 +2205,12 @@
       "input": {
         "publishing": false,
         "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "b"
@@ -1806,7 +2218,7 @@
         ],
         "queueIds": ["a", "b", "c"],
         "alreadyShown": false,
-        "serverChangedBy": "ClearPlay-Android"
+        "serverChangedBy": "Rimelight-Android"
       },
       "expected": null
     },
@@ -1815,12 +2227,12 @@
       "input": {
         "publishing": true,
         "playingHere": false,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "b"
@@ -1828,7 +2240,7 @@
         ],
         "queueIds": ["a", "b", "c"],
         "alreadyShown": false,
-        "serverChangedBy": "ClearPlay-Android"
+        "serverChangedBy": "Rimelight-Android"
       },
       "expected": null
     },
@@ -1837,12 +2249,12 @@
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "ClearPlay-Android",
+            "playerName": "Rimelight-Android",
             "state": "playing",
             "positionMs": 90500,
             "id": "b"
@@ -1850,7 +2262,7 @@
         ],
         "queueIds": ["a", "b", "c"],
         "alreadyShown": true,
-        "serverChangedBy": "ClearPlay-Android"
+        "serverChangedBy": "Rimelight-Android"
       },
       "expected": null
     },
@@ -1859,7 +2271,142 @@
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "Rimelight-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "Rimelight-Android"
+      },
+      "expected": {
+        "device": "Rimelight Android",
+        "song": "b"
+      }
+    },
+    {
+      "name": "other device paused: nothing",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "Rimelight-Android",
+            "state": "paused",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "Rimelight-Android"
+      },
+      "expected": null
+    },
+    {
+      "name": "song not in this queue: nothing",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "Rimelight-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "zz"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "Rimelight-Android"
+      },
+      "expected": null
+    },
+    {
+      "name": "another user: nothing",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "guest",
+            "playerName": "Rimelight-Android",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "Rimelight-Android"
+      },
+      "expected": null
+    },
+    {
+      "name": "Symfonium playing: nothing (only the other Rimelight app)",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "Symfonium",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "Rimelight-Android"
+      },
+      "expected": null
+    },
+    {
+      "name": "this app itself: nothing",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "Rimelight",
+        "username": "toni",
+        "nowPlaying": [
+          {
+            "username": "toni",
+            "playerName": "Rimelight",
+            "state": "playing",
+            "positionMs": 90500,
+            "id": "b"
+          }
+        ],
+        "queueIds": ["a", "b", "c"],
+        "alreadyShown": false,
+        "serverChangedBy": "Rimelight-Android"
+      },
+      "expected": null
+    },
+    {
+      "name": "v4: ClearPlay Android 1.6.0 continued (saved last as ClearPlay-Android)",
+      "input": {
+        "publishing": true,
+        "playingHere": true,
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [
           {
@@ -1880,33 +2427,11 @@
       }
     },
     {
-      "name": "other device paused: nothing",
+      "name": "v4: this desktop saved last as ClearPlay, before it updated: nothing",
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay",
-        "username": "toni",
-        "nowPlaying": [
-          {
-            "username": "toni",
-            "playerName": "ClearPlay-Android",
-            "state": "paused",
-            "positionMs": 90500,
-            "id": "b"
-          }
-        ],
-        "queueIds": ["a", "b", "c"],
-        "alreadyShown": false,
-        "serverChangedBy": "ClearPlay-Android"
-      },
-      "expected": null
-    },
-    {
-      "name": "song not in this queue: nothing",
-      "input": {
-        "publishing": true,
-        "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [
           {
@@ -1914,25 +2439,25 @@
             "playerName": "ClearPlay-Android",
             "state": "playing",
             "positionMs": 90500,
-            "id": "zz"
+            "id": "b"
           }
         ],
         "queueIds": ["a", "b", "c"],
         "alreadyShown": false,
-        "serverChangedBy": "ClearPlay-Android"
+        "serverChangedBy": "ClearPlay"
       },
       "expected": null
     },
     {
-      "name": "another user: nothing",
+      "name": "v4: the phone plays under its old name and saved last under its new one: found",
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight",
         "username": "toni",
         "nowPlaying": [
           {
-            "username": "guest",
+            "username": "toni",
             "playerName": "ClearPlay-Android",
             "state": "playing",
             "positionMs": 90500,
@@ -1941,21 +2466,24 @@
         ],
         "queueIds": ["a", "b", "c"],
         "alreadyShown": false,
-        "serverChangedBy": "ClearPlay-Android"
+        "serverChangedBy": "Rimelight-Android"
       },
-      "expected": null
+      "expected": {
+        "device": "ClearPlay Android",
+        "song": "b"
+      }
     },
     {
-      "name": "Symfonium playing: nothing (only the other ClearPlay app)",
+      "name": "v4: Rimelight desktop seen from Android, saved last as ClearPlay before it updated",
       "input": {
         "publishing": true,
         "playingHere": true,
-        "thisApp": "ClearPlay",
+        "thisApp": "Rimelight-Android",
         "username": "toni",
         "nowPlaying": [
           {
             "username": "toni",
-            "playerName": "Symfonium",
+            "playerName": "Rimelight",
             "state": "playing",
             "positionMs": 90500,
             "id": "b"
@@ -1963,31 +2491,12 @@
         ],
         "queueIds": ["a", "b", "c"],
         "alreadyShown": false,
-        "serverChangedBy": "ClearPlay-Android"
+        "serverChangedBy": "ClearPlay"
       },
-      "expected": null
-    },
-    {
-      "name": "this app itself: nothing",
-      "input": {
-        "publishing": true,
-        "playingHere": true,
-        "thisApp": "ClearPlay",
-        "username": "toni",
-        "nowPlaying": [
-          {
-            "username": "toni",
-            "playerName": "ClearPlay",
-            "state": "playing",
-            "positionMs": 90500,
-            "id": "b"
-          }
-        ],
-        "queueIds": ["a", "b", "c"],
-        "alreadyShown": false,
-        "serverChangedBy": "ClearPlay-Android"
-      },
-      "expected": null
+      "expected": {
+        "device": "Rimelight desktop",
+        "song": "b"
+      }
     }
   ],
   "isNaturalEnd": [

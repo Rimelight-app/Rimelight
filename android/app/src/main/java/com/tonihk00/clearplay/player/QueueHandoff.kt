@@ -7,18 +7,30 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
- * "Continue on other devices": the rules shared by ClearPlay desktop 0.6.0
- * and ClearPlay Android 1.6.0 (version 3, 2026-11-24).
+ * "Continue on other devices": the rules shared by Rimelight desktop and
+ * Rimelight for Android (version 4, 2026-11-26). Up to desktop 0.6.1 and
+ * Android 1.6.0 both apps were called ClearPlay; version 4 sends the new
+ * names and still recognises the old ones, so a Rimelight app works with a
+ * ClearPlay app that hasn't been updated yet.
  *
- * A line-by-line port of the desktop's src/service/queue-handoff.ts (tag v0.6.0), with the same
+ * A line-by-line port of the desktop's src/service/queue-handoff.ts (tag v0.6.2), with the same
  * names. Pure functions only (no stores, no network, no clock of their own), so the shared cases
  * in queue-handoff-cases.json (copied unchanged into the unit-test resources) run against them
  * directly. If a rule changes, change the cases file first, in both apps.
  */
 object QueueHandoff {
-    /** The `c` parameter each ClearPlay app sends (Navidrome's changedBy / playerName). */
-    const val DESKTOP_APP = "ClearPlay"
-    const val ANDROID_APP = "ClearPlay-Android"
+    /** The `c` parameter each app sends (Navidrome's changedBy / playerName). */
+    const val DESKTOP_APP = "Rimelight"
+    const val ANDROID_APP = "Rimelight-Android"
+
+    /**
+     * The names the same two apps sent before the rename (ClearPlay desktop up to
+     * 0.6.1, ClearPlay Android up to 1.6.0), with the app each one is now.
+     */
+    val LEGACY_NAMES: Map<String, String> = mapOf(
+        "ClearPlay" to DESKTOP_APP,
+        "ClearPlay-Android" to ANDROID_APP,
+    )
 
     /** At most this many songs are saved, taken around the current song. */
     const val MAX_SAVED = 1000
@@ -69,13 +81,38 @@ object QueueHandoff {
 
     // ---------------------------------------------------------------- names
 
-    /** The other ClearPlay app: the only one whose Now Playing entry is trusted. */
-    fun otherApp(thisApp: String) = if (thisApp == DESKTOP_APP) ANDROID_APP else DESKTOP_APP
+    /**
+     * Which of the two apps a client name belongs to (DESKTOP_APP or
+     * ANDROID_APP), under its new or its old name. Null for any other app.
+     * Names are compared exactly (case and all).
+     */
+    fun appOf(client: String?): String? {
+        if (client.isNullOrEmpty()) return null
+        if (client == DESKTOP_APP || client == ANDROID_APP) return client
+        return LEGACY_NAMES[client]
+    }
 
-    /** "ClearPlay desktop", "ClearPlay Android", or the client's own name. */
+    /** The other app (old or new name): the only one whose Now Playing entry is trusted. */
+    fun isOtherApp(thisApp: String, client: String?): Boolean {
+        val app = appOf(client)
+        return app != null && app != appOf(thisApp)
+    }
+
+    /** This app, under its new or its old name (a queue it saved before updating). */
+    fun isThisApp(thisApp: String, client: String?): Boolean {
+        val app = appOf(client)
+        return if (app == null) client == thisApp else app == appOf(thisApp)
+    }
+
+    /**
+     * "Rimelight desktop", "Rimelight Android", "ClearPlay desktop",
+     * "ClearPlay Android" (an app not updated yet), or the client's own name.
+     */
     fun deviceName(client: String): String {
-        if (client == DESKTOP_APP) return "ClearPlay desktop"
-        if (client == ANDROID_APP) return "ClearPlay Android"
+        if (client == DESKTOP_APP) return "Rimelight desktop"
+        if (client == ANDROID_APP) return "Rimelight Android"
+        if (client == "ClearPlay") return "ClearPlay desktop"
+        if (client == "ClearPlay-Android") return "ClearPlay Android"
         return client
     }
 
@@ -217,8 +254,9 @@ object QueueHandoff {
     /**
      * Where Continue starts, and what kind of offer it is.
      *
-     * Saved by the other ClearPlay app: if it is in Now Playing (same user,
-     * playerName = changedBy), start at that entry's song and position, playing
+     * Saved by the other app: if it is in Now Playing (same user, a playerName
+     * of the same app as changedBy, old or new name), start at that entry's song
+     * and position, playing
      * or paused. The song is looked up in the saved queue: the first match at or
      * after the saved index, else the first match anywhere. This also finds the
      * right song when the server's index moved (a song before it was deleted).
@@ -232,10 +270,11 @@ object QueueHandoff {
         val last = queue.entries.size - 1
         val saved = minOf(maxOf(0, queue.currentIndex), last)
         val savedPosition = maxOf(0L, queue.positionMs)
-        if (queue.changedBy != otherApp(thisApp)) {
+        if (!isOtherApp(thisApp, queue.changedBy)) {
             return Start(Kind.saved, saved, savedPosition)
         }
-        val mine = nowPlaying.filter { e -> e.username == username && e.playerName == queue.changedBy }
+        val savedBy = appOf(queue.changedBy)
+        val mine = nowPlaying.filter { e -> e.username == username && appOf(e.playerName) == savedBy }
         val live = mine.find { it.state == "playing" } ?: mine.find { it.state == "paused" }
             ?: return Start(Kind.paused, saved, savedPosition)
         val kind = if (live.state == "playing") Kind.playing else Kind.paused
@@ -281,7 +320,7 @@ object QueueHandoff {
     fun <S : HasId> offer(input: OfferInput<S>): Offer<S>? {
         val queue = input.queue
         if (queue == null || queue.entries.isEmpty()) return null
-        if (queue.changedBy == input.thisApp) return null
+        if (isThisApp(input.thisApp, queue.changedBy)) return null
         if (!isLater(queue.changed, input.handledChanged)) return null
         if (input.playingHere) return null
 
@@ -320,30 +359,29 @@ object QueueHandoff {
     data class LeftBehind(val device: String, val song: String)
 
     /**
-     * The other ClearPlay app is playing a song from this queue. Only then is
-     * the server's queue read, to finish the check with leftBehind.
+     * The other app (old or new name) is playing a song from this queue. Only
+     * then is the server's queue read, to finish the check with leftBehind.
      */
     fun leftBehindCandidate(input: LeftBehindCandidateInput): LeftBehind? {
         if (!input.publishing || !input.playingHere || input.alreadyShown) return null
-        val other = otherApp(input.thisApp)
         val ids = input.queueIds.toHashSet()
         val entry = input.nowPlaying.find { e ->
             e.username == input.username &&
-                e.playerName == other &&
+                isOtherApp(input.thisApp, e.playerName) &&
                 e.state == "playing" &&
                 e.id in ids
         } ?: return null
-        return LeftBehind(deviceName(other), entry.id)
+        return LeftBehind(deviceName(entry.playerName), entry.id)
     }
 
     /**
-     * "Continued on <device>": a candidate, and the other ClearPlay app saved
-     * the server's queue last (it continued). If this device saved last, it is
+     * "Continued on <device>": a candidate, and the other app (old or new name)
+     * saved the server's queue last (it continued). If this device saved last, it is
      * the one that took over, and the other device is the one left behind.
      */
     fun leftBehind(input: LeftBehindInput): LeftBehind? {
         val found = leftBehindCandidate(input.candidate) ?: return null
-        if (input.serverChangedBy != otherApp(input.candidate.thisApp)) return null
+        if (!isOtherApp(input.candidate.thisApp, input.serverChangedBy)) return null
         return found
     }
 
