@@ -6,12 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,11 +16,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.tonihk00.clearplay.R
 import com.tonihk00.clearplay.player.PlayerConnection
 import com.tonihk00.clearplay.ui.components.CpIcon
+import com.tonihk00.clearplay.ui.components.GlassSheet
 import com.tonihk00.clearplay.ui.theme.Cp
 import kotlinx.coroutines.delay
 
@@ -47,17 +43,10 @@ fun sleepLabel(sleep: PlayerConnection.Sleep?): String? {
 
 val SleepChoices = listOf(15, 30, 45, 60, 90)
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** The sleep timer's choices: frosted glass over the app (GlassSheet), like the song menu. */
 @Composable
 fun SleepSheet(sleep: PlayerConnection.Sleep?, onSet: (Int?, Boolean) -> Unit, onDismiss: () -> Unit) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Color(0xFF16161C).copy(alpha = 0.97f),
-        scrimColor = Color.Black.copy(alpha = 0.45f),
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        dragHandle = null,
-    ) {
+    GlassSheet("Sleep timer", onDismiss) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 12.dp)) {
             Text("Sleep timer", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp))
             sleepLabel(sleep)?.let {

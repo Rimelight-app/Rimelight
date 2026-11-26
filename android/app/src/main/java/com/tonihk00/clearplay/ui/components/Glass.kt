@@ -216,8 +216,10 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 /**
  * Live frosted glass (Haze) over whatever scrolls behind: the mini player and the tab bar.
  * With [haze] null (blur turned off in Settings, or in tests) it is a solid dark glass.
+ * [dim]: extra black under the tint (the sheets: text must stay readable over a white cover,
+ * and with blur off nothing sharp may show through under it); 0 for the bars.
  */
-fun Modifier.liveGlass(haze: dev.chrisbanes.haze.HazeState?, shape: Shape): Modifier =
+fun Modifier.liveGlass(haze: dev.chrisbanes.haze.HazeState?, shape: Shape, dim: Float = 0f): Modifier =
     this.clip(shape)
         .then(
             if (haze != null) {
@@ -233,6 +235,7 @@ fun Modifier.liveGlass(haze: dev.chrisbanes.haze.HazeState?, shape: Shape): Modi
                 Modifier
             },
         )
+        .then(if (dim > 0f) Modifier.background(Color.Black.copy(alpha = dim)) else Modifier)
         .background(if (haze != null) Color(20, 20, 28).copy(alpha = 0.35f) else Color(20, 20, 28).copy(alpha = 0.72f))
         .background(if (haze != null) Cp.GlassFill else Cp.GlassFillStrong)
         .border(1.dp, Cp.GlassStroke, shape)

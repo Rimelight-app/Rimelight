@@ -211,6 +211,9 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
     var libraryTab by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableIntStateOf(0) }
     val settings by app.settings.state.collectAsState()
     val haze = if (settings.liveBlur) hazeState else null
+    // The song menu and sleep timer draw here, above the page, dock and full player (GlassSheet).
+    val sheetHost = remember { com.tonihk00.clearplay.ui.components.SheetHost() }
+    sheetHost.haze = haze
     val dlStates by app.downloads.states.collectAsState()
     val dlSongsRaw by app.downloads.songs.collectAsState()
     val lastUrl by app.lastServerUrl.collectAsState()
@@ -361,11 +364,16 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
         LocalOnline provides (client == null || online),
         LocalToast provides toast::show,
         LocalConnectionLost provides { app.connection.recheck() },
+        com.tonihk00.clearplay.ui.components.LocalSheetHost provides sheetHost,
     ) {
         Box(Modifier.fillMaxSize()) {
-            // Everything under the dock is a Haze source, so the bars can blur it.
-            // While the fullscreen player covers them, the page and dock are hidden from TalkBack.
-            val hidden = if (fullOpen) Modifier.clearAndSetSemantics {} else Modifier
+            // Everything under the dock is a Haze source, so the bars can blur it. The dock (and
+            // the toast / pills above it) and the full player are sources too, on higher layers:
+            // the bars blur only the page (zIndex 0), a sheet blurs everything under it.
+            // While the fullscreen player covers them, the page and dock are hidden from TalkBack;
+            // while a sheet shows, everything under it is (it is a dialog).
+            val sheetShowing = sheetHost.showing
+            val hidden = if (fullOpen || sheetShowing) Modifier.clearAndSetSemantics {} else Modifier
             // While the player fully covers the app, don't draw the page or the blurred bars at
             // all (they redrew on every progress tick behind an opaque screen). They come back
             // the moment the player starts moving.
@@ -384,7 +392,7 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
             // with it the NavHost) every frame, which left a page transition unfinished: Back and
             // the tabs then did nothing.
             Column(
-                Modifier.align(Alignment.BottomCenter).then(skipDraw).then(hidden).padding(bottom = dockHeight),
+                Modifier.align(Alignment.BottomCenter).then(skipDraw).hazeSource(hazeState, zIndex = 1f).then(hidden).padding(bottom = dockHeight),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 ToastHost(toast, haze, Modifier.padding(bottom = 8.dp))
@@ -395,7 +403,7 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
                     )
                 }
             }
-            Box(Modifier.align(Alignment.BottomCenter).then(skipDraw).then(hidden).onSizeChanged { dockHeight = with(density) { it.height.toDp() } }) {
+            Box(Modifier.align(Alignment.BottomCenter).then(skipDraw).hazeSource(hazeState, zIndex = 1f).then(hidden).onSizeChanged { dockHeight = with(density) { it.height.toDp() } }) {
                 Dock(nav, state, controls, haze, onOpen = { fullOpen = true })
             }
             AnimatedVisibility(
@@ -403,9 +411,12 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
                 enter = slideInVertically(tween(if (reduce) 0 else Cp.ScreenMs, easing = Cp.EaseOutSoft)) { it } + fadeIn(tween(if (reduce) 0 else 200)),
                 exit = slideOutVertically(tween(if (reduce) 0 else Cp.ScreenMs, easing = Cp.EaseOutSoft)) { it } + fadeOut(tween(if (reduce) 0 else 250)),
             ) {
-                FullPlayer(state, controls, lyrics, onClose = { fullOpen = false }, sleep = sleep, streamCap = streamCap, onReveal = { revealing = it })
+                Box(Modifier.hazeSource(hazeState, zIndex = 2f).then(if (sheetShowing) Modifier.clearAndSetSemantics {} else Modifier)) {
+                    FullPlayer(state, controls, lyrics, onClose = { fullOpen = false }, sleep = sleep, streamCap = streamCap, onReveal = { revealing = it })
+                }
             }
             menuSong?.let { SongMenu(it) { menuSong = null } }
+            sheetHost.Overlay()
             if (addingServer) {
                 BackHandler { addingServer = false }
                 Box(Modifier.fillMaxSize()) {

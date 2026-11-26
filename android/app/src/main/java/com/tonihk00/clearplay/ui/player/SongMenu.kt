@@ -10,16 +10,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tonihk00.clearplay.R
@@ -27,22 +23,18 @@ import com.tonihk00.clearplay.data.api.Song
 import com.tonihk00.clearplay.ui.LocalActions
 import com.tonihk00.clearplay.ui.edited
 import com.tonihk00.clearplay.ui.components.Cover
+import com.tonihk00.clearplay.ui.components.GlassSheet
 import com.tonihk00.clearplay.ui.components.CpIcon
 import com.tonihk00.clearplay.ui.components.StarRating
 import com.tonihk00.clearplay.ui.theme.Cp
 
-/** Long-press / ⋯ menu for a song: queue actions, like, 1–5 stars, go to album/artist. */
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Long-press / ⋯ menu for a song: queue actions, like, 1–5 stars, go to album/artist.
+ * Frosted glass over the app (GlassSheet), like the mini player and the tab bar.
+ */
 @Composable
 fun SongMenu(song: Song, onDismiss: () -> Unit) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Color(0xFF16161C).copy(alpha = 0.97f),
-        scrimColor = Color.Black.copy(alpha = 0.45f),
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        dragHandle = null,
-    ) {
+    GlassSheet("Song menu", onDismiss) {
         SongMenuContent(song, onDismiss)
     }
 }
