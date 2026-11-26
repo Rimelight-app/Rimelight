@@ -113,6 +113,7 @@ const api: IClearPlayAPI = {
     devices: () => ipcRenderer.invoke(IpcChannels.MpvDevices),
     caps: (key, force) => ipcRenderer.invoke(IpcChannels.MpvCaps, key, force),
     load: (request) => ipcRenderer.invoke(IpcChannels.MpvLoad, request),
+    setServerUrl: (url) => ipcRenderer.send(IpcChannels.MpvSetServerUrl, url),
     setPause: (paused) => ipcRenderer.invoke(IpcChannels.MpvSetPause, paused),
     seek: (seconds) => ipcRenderer.invoke(IpcChannels.MpvSeek, seconds),
     stop: () => ipcRenderer.invoke(IpcChannels.MpvStop),

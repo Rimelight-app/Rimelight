@@ -1,3 +1,4 @@
+import { useAppStore } from '@/store/app.store'
 import {
   isMpvSession,
   useBitPerfect,
@@ -79,6 +80,12 @@ export async function initMpvEngine() {
   if (bp.builtinVolume === null) {
     bp.set({ builtinVolume: usePlayerStore.getState().playerState.volume })
   }
+  // mpv plays songs only from this server (or the local library server).
+  useAppStore.subscribe(
+    (state) => state.data.url,
+    (url) => api().setServerUrl(url ?? ''),
+    { fireImmediately: true },
+  )
   api().onEvent(onEvent)
   refreshDevices().then(() => syncSliderToDevice())
 }
@@ -176,6 +183,7 @@ async function buildRequest(o: LoadOptions): Promise<MpvLoadRequest> {
 
   return {
     url: o.url,
+    kind: o.song ? 'song' : 'stream',
     start: o.start,
     paused: o.paused,
     deviceKey: key,

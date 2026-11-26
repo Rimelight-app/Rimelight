@@ -1,13 +1,8 @@
 import { is, platform } from '@electron-toolkit/utils'
-import {
-  app,
-  Menu,
-  MenuItem,
-  MenuItemConstructorOptions,
-  shell,
-} from 'electron'
+import { app, Menu, MenuItem, MenuItemConstructorOptions } from 'electron'
 import { repository } from '../../../package.json'
 import { aboutDialog } from './about'
+import { openExternalIfSafe } from './external'
 
 export function createAppMenu() {
   if (!platform.isMacOS) return
@@ -86,8 +81,8 @@ export function createAppMenu() {
       submenu: [
         {
           label: 'Github',
-          click: async () => {
-            await shell.openExternal(repository.url)
+          click: () => {
+            openExternalIfSafe(repository.url)
           },
         },
       ],

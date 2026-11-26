@@ -3,7 +3,7 @@ import LastFmIcon from '@/app/components/icons/last-fm'
 import MusicbrainzIcon from '@/app/components/icons/musicbrainz'
 import { SimpleTooltip } from '@/app/components/ui/simple-tooltip'
 import { Skeleton } from '@/app/components/ui/skeleton'
-import { sanitizeLinks } from '@/utils/parseTexts'
+import { sanitizeHtml } from '@/utils/sanitize'
 
 interface InfoPanelProps {
   title: string
@@ -32,7 +32,7 @@ export default function InfoPanel({
       </h3>
       <p
         className="html leading-6 text-muted-foreground"
-        dangerouslySetInnerHTML={{ __html: sanitizeLinks(bio) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(bio) }}
       />
 
       <div className="flex w-full mt-2 gap-2">

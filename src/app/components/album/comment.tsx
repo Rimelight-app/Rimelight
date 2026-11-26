@@ -1,7 +1,9 @@
 import { linkifyText } from '@/utils/parseTexts'
+import { sanitizeHtml } from '@/utils/sanitize'
 
 export function AlbumComment({ comment }: { comment: string }) {
-  const parsedComment = linkifyText(comment)
+  // The comment tag comes from the music file: never trusted as HTML.
+  const parsedComment = sanitizeHtml(linkifyText(comment))
 
   return (
     <div className="mt-8 text-sm text-muted-foreground p-4 bg-muted rounded-md border border-border">

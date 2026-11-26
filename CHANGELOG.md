@@ -2,6 +2,11 @@
 
 All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
+## [0.6.1] - 2026-11-26
+
+### Security
+- Fixed a security issue: text in music file tags could run code inside ClearPlay. Updating is recommended.
+
 ## [0.6.0] - 2026-11-24
 
 ### Added

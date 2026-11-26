@@ -44,6 +44,7 @@ export enum IpcChannels {
   MpvDevices = 'mpv-devices',
   MpvCaps = 'mpv-caps',
   MpvLoad = 'mpv-load',
+  MpvSetServerUrl = 'mpv-set-server-url',
   MpvSetPause = 'mpv-set-pause',
   MpvSeek = 'mpv-seek',
   MpvStop = 'mpv-stop',
@@ -105,6 +106,11 @@ export type MpvDeviceCaps = {
 
 export type MpvLoadRequest = {
   url: string
+  /**
+   * 'song': must come from the current server or the local library server.
+   * 'stream': internet radio or a podcast episode (any http(s) host).
+   */
+  kind: 'song' | 'stream'
   /** Seconds to start at. */
   start: number
   paused: boolean
@@ -252,6 +258,8 @@ export interface IClearPlayAPI {
     caps: (key: string, force?: boolean) => Promise<MpvDeviceCaps | null>
     /** Resolves with a token that the "loaded" event repeats. */
     load: (request: MpvLoadRequest) => Promise<number>
+    /** The server songs come from; mpv refuses songs from anywhere else. */
+    setServerUrl: (url: string) => void
     setPause: (paused: boolean) => Promise<void>
     seek: (seconds: number) => Promise<void>
     stop: () => Promise<void>

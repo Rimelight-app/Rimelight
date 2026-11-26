@@ -5,7 +5,6 @@ import {
   ipcMain,
   nativeTheme,
   powerMonitor,
-  shell,
 } from 'electron'
 import {
   IpcChannels,
@@ -17,7 +16,9 @@ import { isQuitting } from '../index'
 import { tray, updateTray } from '../tray'
 import { colorsState } from './colors'
 import { updateDockMenu } from './dockMenu'
+import { appEntryUrl, openExternalIfSafe } from './external'
 import { playerState } from './playerState'
+import { isAppUrl } from './safe-url'
 import { getAppSetting, ISettingPayload, saveAppSettings } from './settings'
 import { setTaskbarButtons } from './taskbar'
 import { DEFAULT_TITLE_BAR_HEIGHT } from './titleBarOverlay'
@@ -45,10 +46,23 @@ export function setupEvents(window: BrowserWindow | null) {
     })
   })
 
+  // Links never open inside the app: http(s) and mailto go to the system's
+  // browser or mail app, anything else (file:, ms-settings:, …) is dropped.
   window.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    openExternalIfSafe(details.url)
     return { action: 'deny' }
   })
+
+  // The window only ever shows the app itself. A link or script that tries to
+  // load another page into it is stopped (that page would get the preload
+  // API); a safe link opens in the browser instead.
+  const stayOnApp = (event: Electron.Event, url: string) => {
+    if (isAppUrl(url, appEntryUrl())) return
+    event.preventDefault()
+    openExternalIfSafe(url)
+  }
+  window.webContents.on('will-navigate', (event) => stayOnApp(event, event.url))
+  window.webContents.on('will-redirect', (event) => stayOnApp(event, event.url))
 
   window.on('enter-full-screen', () => {
     window.webContents.send(IpcChannels.FullscreenStatus, true)

@@ -98,6 +98,11 @@ function rescan() {
   library.scan(cfg.folders).catch(() => undefined)
 }
 
+/** Origin of the local library server, '' while it isn't running. */
+export function localLibraryOrigin(): string {
+  return server && port ? `http://127.0.0.1:${port}` : ''
+}
+
 async function state(): Promise<LocalLibraryState> {
   const cfg = await loadConfig()
   const lib = await getLibrary()

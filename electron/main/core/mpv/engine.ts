@@ -9,6 +9,8 @@ import {
   MpvLoadRequest,
   MpvOutputState,
 } from '../../../preload/types'
+import { localLibraryOrigin } from '../local-library'
+import { httpOrigin, isAllowedMpvUrl } from '../safe-url'
 import { MpvClient, MpvEvent, stopLeftoverMpv } from './client'
 import { engineStatus, findMpvBinary, saveEngine } from './config'
 import {
@@ -27,6 +29,9 @@ import {
 } from './linux-audio'
 import { MixerControl, PulseSink, STANDARD_RATES } from './linux-parse'
 import { bluetoothEndpointIds, looksLikeBluetooth } from './windows-audio'
+
+/** Origin of the server the renderer is signed in to (songs come from it). */
+let serverOrigin = ''
 
 /** Quiet first level: about -40 dB. */
 const QUIET_DB = -40
@@ -508,6 +513,15 @@ class MpvEngine {
   // ---------------- playback ----------------
 
   async load(req: MpvLoadRequest): Promise<number> {
+    if (
+      !isAllowedMpvUrl(req.url, req.kind === 'stream' ? 'stream' : 'song', [
+        serverOrigin,
+        localLibraryOrigin(),
+      ])
+    ) {
+      console.warn('[mpv] refused to load', String(req.url).slice(0, 200))
+      throw new Error('mpv: source not allowed')
+    }
     const token = ++this.gen
     const client = await this.ensure()
     const spec = await this.specFor(req.deviceKey)
@@ -861,6 +875,10 @@ export function setupMpvIpc(window: BrowserWindow) {
     mpvEngine.caps(key, force),
   )
   handle(IpcChannels.MpvLoad, (req: MpvLoadRequest) => mpvEngine.load(req))
+  ipcMain.removeAllListeners(IpcChannels.MpvSetServerUrl)
+  ipcMain.on(IpcChannels.MpvSetServerUrl, (_e, url: unknown) => {
+    serverOrigin = typeof url === 'string' ? httpOrigin(url) : ''
+  })
   handle(IpcChannels.MpvSetPause, (paused: boolean) =>
     mpvEngine.setPause(paused),
   )

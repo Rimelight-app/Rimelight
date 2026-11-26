@@ -9,8 +9,9 @@ import {
   usePlayEpisode,
 } from '@/app/hooks/use-podcast-playing'
 import { podcasts } from '@/service/podcasts'
-import { linkifyText, sanitizeLinks } from '@/utils/parseTexts'
+import { linkifyText } from '@/utils/parseTexts'
 import { queryKeys } from '@/utils/queryKeys'
+import { sanitizeHtml } from '@/utils/sanitize'
 
 export default function Episode() {
   const { episodeId } = useParams() as { episodeId: string }
@@ -24,10 +25,7 @@ export default function Episode() {
   if (!episode) return <EpisodeFallback />
 
   function formatDescription(text: string) {
-    const parsed = sanitizeLinks(text)
-    const final = linkifyText(parsed)
-
-    return { __html: final }
+    return { __html: sanitizeHtml(linkifyText(text), 'rich') }
   }
 
   return (

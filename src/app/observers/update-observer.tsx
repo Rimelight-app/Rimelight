@@ -19,8 +19,8 @@ import { Button } from '@/app/components/ui/button'
 import { useAppUpdate } from '@/store/app.store'
 import { getAppInfo } from '@/utils/appName'
 import { isMacOS } from '@/utils/desktop'
-import { sanitizeLinks } from '@/utils/parseTexts'
 import { queryKeys } from '@/utils/queryKeys'
+import { sanitizeHtml } from '@/utils/sanitize'
 
 export function UpdateObserver() {
   const { t } = useTranslation()
@@ -123,7 +123,7 @@ export function UpdateObserver() {
         >
           <div className="space-y-2 text-sm">
             <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-              {sanitizeLinks(getReleaseNotes())}
+              {sanitizeHtml(getReleaseNotes(), 'rich')}
             </Markdown>
           </div>
         </div>
