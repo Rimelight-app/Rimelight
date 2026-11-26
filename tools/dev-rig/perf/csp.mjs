@@ -227,7 +227,7 @@ await visit('update dialog', async () => {
       updateInfo: {
         version: '9.9.9',
         releaseNotes:
-          '<h3>Fixed</h3><ul><li>Playback <strong>keeps going</strong> after a broken song.</li><li>See <a href="https://github.com/tonihk00/ClearPlay">the repo</a>.</li></ul><img src=x onerror="document.title=\'CP-NOTES\'">',
+          '<h3>Fixed</h3><ul><li>Playback <strong>keeps going</strong> after a broken song.</li><li>See <a href="https://github.com/Rimelight-app/Rimelight">the repo</a>.</li></ul><img src=x onerror="document.title=\'CP-NOTES\'">',
       },
       versionInfo: { version: '9.9.9' },
     }))

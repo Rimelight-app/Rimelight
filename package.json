@@ -1,5 +1,5 @@
 {
-  "name": "clearplay",
+  "name": "rimelight",
   "private": true,
   "version": "0.6.1",
   "description": "A frosted-glass desktop player for Navidrome (OpenSubsonic) servers.",
@@ -8,7 +8,7 @@
   },
   "main": "./out/main/index.js",
   "type": "module",
-  "productName": "ClearPlay",
+  "productName": "Rimelight",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -30,7 +30,7 @@
     "prepare": "husky"
   },
   "repository": {
-    "url": "https://github.com/tonihk00/ClearPlay"
+    "url": "https://github.com/Rimelight-app/Rimelight"
   },
   "dependencies": {
     "@chriscodesthings/random-css-hex-color": "^1.1.0",

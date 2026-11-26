@@ -1,7 +1,7 @@
 import { PlayerStatePayload } from '../../preload/types'
-import { ClearPlayStore } from './store'
+import { RimelightStore } from './store'
 
-const playerStore = new ClearPlayStore<PlayerStatePayload>({
+const playerStore = new RimelightStore<PlayerStatePayload>({
   name: 'player',
   defaults: {
     isPlaying: false,

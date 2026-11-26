@@ -1,10 +1,10 @@
-import { ClearPlayStore } from './store'
+import { RimelightStore } from './store'
 
 export interface ISettingPayload {
   minimizeToTray: boolean
 }
 
-const settingsStore = new ClearPlayStore<ISettingPayload>({
+const settingsStore = new RimelightStore<ISettingPayload>({
   name: 'settings',
   defaults: {
     minimizeToTray: false,

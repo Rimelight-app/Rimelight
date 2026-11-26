@@ -1,6 +1,6 @@
 {
-  "name": "ClearPlay",
-  "short_name": "ClearPlay",
+  "name": "Rimelight",
+  "short_name": "Rimelight",
   "description": "A modern desktop client for Navidrome/Subsonic servers.",
   "theme_color": "#060E23",
   "categories": ["music", "entertainment"],

@@ -63,7 +63,7 @@ unzip -q "$WORK/mpv.zip" -d "$WORK/outer"
 unzip -q "$WORK"/outer/*.zip -d "$WORK/bin"
 
 {
-  echo "Source code for the mpv build in the ClearPlay Windows installer"
+  echo "Source code for the mpv build in the Rimelight Windows installer"
   echo
   echo "Binary: $MPV_ZIP_URL"
   echo "SHA-256: $MPV_ZIP_SHA256"
@@ -99,7 +99,7 @@ done
 cat >> "$STAGE/SOURCES.txt" <<'EOF'
 
 The other libraries in the build are under permissive licences (see
-licenses/mpv/README.md in ClearPlay) and are not included here.
+licenses/mpv/README.md in Rimelight) and are not included here.
 EOF
 
 echo "Packing $OUT"

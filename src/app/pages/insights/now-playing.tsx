@@ -21,7 +21,6 @@ import { ROUTES } from '@/routes/routesList'
 import { deviceName } from '@/service/queue-handoff'
 import { stats } from '@/service/stats'
 import { useIsMpvSession } from '@/store/bitperfect.store'
-import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import {
   useLyricsState,
   usePlayerActions,
@@ -30,6 +29,7 @@ import {
   usePlayerIsPlaying,
   usePlayerSongStarred,
 } from '@/store/player.store'
+import { useRimelightSettings } from '@/store/rimelight-settings.store'
 import { getAudioQuality } from '@/utils/audioQuality'
 import {
   convertSecondsToHumanRead,
@@ -86,11 +86,11 @@ function timeAgo(iso: string | undefined, t: TFunction) {
   if (!iso) return null
   const days = (Date.now() - Date.parse(iso)) / 86_400_000
   if (Number.isNaN(days)) return null
-  if (days < 1) return t('clearplay.np.today')
-  if (days < 30) return t('clearplay.np.daysAgo', { count: Math.floor(days) })
+  if (days < 1) return t('rimelight.np.today')
+  if (days < 30) return t('rimelight.np.daysAgo', { count: Math.floor(days) })
   if (days < 365)
-    return t('clearplay.np.monthsAgo', { count: Math.floor(days / 30) })
-  return t('clearplay.np.yearsAgo', { count: Math.floor(days / 365) })
+    return t('rimelight.np.monthsAgo', { count: Math.floor(days / 30) })
+  return t('rimelight.np.yearsAgo', { count: Math.floor(days / 365) })
 }
 
 function Hero() {
@@ -129,7 +129,7 @@ function Hero() {
 
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
-          {t('clearplay.np.kicker')}
+          {t('rimelight.np.kicker')}
         </p>
         <h1 className="truncate text-4xl font-bold tracking-tight 2xl:text-5xl">
           {song.title}
@@ -165,7 +165,7 @@ function Hero() {
           ) : null}
           {added && (
             <span className="italic text-white/45">
-              · {t('clearplay.np.added', { when: added })}
+              · {t('rimelight.np.added', { when: added })}
             </span>
           )}
         </p>
@@ -196,7 +196,7 @@ function Hero() {
             type="button"
             onClick={starCurrentSong}
             className={iconBtn}
-            aria-label={t('clearplay.np.like')}
+            aria-label={t('rimelight.np.like')}
           >
             <Heart
               className={cn(
@@ -215,7 +215,7 @@ function Hero() {
           </button>
           <span className="ml-2 inline-flex items-center gap-1.5 text-[13px] text-white/55">
             <Headphones className="size-4" />
-            {t('clearplay.stats.playsCount', {
+            {t('rimelight.stats.playsCount', {
               count: song.playCount ?? 0,
               n: song.playCount ?? 0,
             })}
@@ -237,10 +237,10 @@ function FromThisAlbum() {
 
   return (
     <Panel
-      title={t('clearplay.np.fromAlbum')}
+      title={t('rimelight.np.fromAlbum')}
       action={
         <PanelLink to={ROUTES.ALBUM.PAGE(album.id)}>
-          {t('clearplay.np.viewAlbum')}
+          {t('rimelight.np.viewAlbum')}
         </PanelLink>
       }
     >
@@ -248,7 +248,7 @@ function FromThisAlbum() {
         <span className="font-semibold text-white">{album.name}</span>
         {album.year ? ` · ${album.year}` : ''}
         {index >= 0 &&
-          ` · ${t('clearplay.np.trackOf', { n: index + 1, total: album.song.length })}`}
+          ` · ${t('rimelight.np.trackOf', { n: index + 1, total: album.song.length })}`}
         {album.duration
           ? ` · ${convertSecondsToHumanRead(album.duration)}`
           : ''}
@@ -326,10 +326,10 @@ function AboutArtist() {
   return (
     <div className="space-y-4">
       <Panel
-        title={t('clearplay.np.aboutArtist')}
+        title={t('rimelight.np.aboutArtist')}
         action={
           <PanelLink to={ROUTES.ARTIST.PAGE(artist.id)}>
-            {t('clearplay.np.goToArtist')}
+            {t('rimelight.np.goToArtist')}
           </PanelLink>
         }
       >
@@ -383,13 +383,13 @@ function AboutArtist() {
                     onClick={() => setExpanded((v) => !v)}
                     className="mt-1 text-[12px] text-white/55 hover:text-white"
                   >
-                    {expanded ? t('clearplay.np.less') : t('clearplay.np.more')}
+                    {expanded ? t('rimelight.np.less') : t('rimelight.np.more')}
                   </button>
                 )}
               </>
             ) : (
               <p className="mt-1 text-[13px] text-white/45">
-                {t('clearplay.np.noBio')}
+                {t('rimelight.np.noBio')}
               </p>
             )}
           </div>
@@ -397,7 +397,7 @@ function AboutArtist() {
         {info?.similarArtist && info.similarArtist.length > 0 && (
           <div className="mt-4">
             <p className="mb-2 text-[12px] text-white/45">
-              {t('clearplay.np.similar')}
+              {t('rimelight.np.similar')}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {info.similarArtist.slice(0, 10).map((s) =>
@@ -422,10 +422,10 @@ function AboutArtist() {
 
       {albums.length > 0 && (
         <Panel
-          title={t('clearplay.np.discography')}
+          title={t('rimelight.np.discography')}
           action={
             <PanelLink to={ROUTES.ARTIST.PAGE(artist.id)}>
-              {t('clearplay.np.goToArtist')}
+              {t('rimelight.np.goToArtist')}
             </PanelLink>
           }
         >
@@ -464,17 +464,17 @@ function AboutArtist() {
 function ServerListeners() {
   const { t } = useTranslation()
   const { data } = useQuery({
-    queryKey: ['clearplay-now-playing'],
+    queryKey: ['rimelight-now-playing'],
     queryFn: stats.getNowPlaying,
     refetchInterval: 15_000,
   })
 
   return (
-    <Panel title={t('clearplay.nowPlaying.kicker')}>
+    <Panel title={t('rimelight.nowPlaying.kicker')}>
       {!data || data.length === 0 ? (
         <p className="flex items-center gap-2 text-[13px] text-white/45">
           <Radio className="size-4" />
-          {t('clearplay.nowPlaying.empty')}
+          {t('rimelight.nowPlaying.empty')}
         </p>
       ) : (
         <ul className="grid gap-2 lg:grid-cols-2">
@@ -500,8 +500,8 @@ function ServerListeners() {
                 {deviceName(e.playerName ?? '')}
                 {' · '}
                 {e.minutesAgo === 0
-                  ? t('clearplay.nowPlaying.justNow')
-                  : t('clearplay.nowPlaying.minutesAgo', {
+                  ? t('rimelight.nowPlaying.justNow')
+                  : t('rimelight.nowPlaying.minutesAgo', {
                       count: e.minutesAgo,
                     })}
               </span>
@@ -519,7 +519,7 @@ export default function NowPlayingPage() {
   const song = usePlayerCurrentSong()
   const hasSong = Boolean(song?.id)
   // The mpv engine plays outside Chromium: nothing to draw.
-  const visualizerOn = useClearPlaySettings((s) => s.visualizer)
+  const visualizerOn = useRimelightSettings((s) => s.visualizer)
   const mpv = useIsMpvSession()
   const visualizer = visualizerOn && !mpv
 
@@ -529,7 +529,7 @@ export default function NowPlayingPage() {
         <>
           <Hero />
           {visualizer && (
-            <Panel title={t('clearplay.np.visualizer')}>
+            <Panel title={t('rimelight.np.visualizer')}>
               <Visualizer />
             </Panel>
           )}
@@ -541,7 +541,7 @@ export default function NowPlayingPage() {
       ) : (
         <div className="glass-panel flex h-48 flex-col items-center justify-center gap-3 rounded-[24px] text-white/55">
           <Headphones className="size-6" />
-          <p className="text-sm">{t('clearplay.np.nothing')}</p>
+          <p className="text-sm">{t('rimelight.np.nothing')}</p>
         </div>
       )}
       <ServerListeners />

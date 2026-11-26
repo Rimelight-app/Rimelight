@@ -41,7 +41,7 @@ import { SettingSelect } from './controls'
 /** Settings → Player & Audio: engine choice, output details, where to show them. */
 export function AudioEngineSettings() {
   const { t } = useTranslation()
-  const k = 'clearplay.bitperfect'
+  const k = 'rimelight.bitperfect'
   const status = useMpvRuntime((s) => s.status)
   const setRuntime = useMpvRuntime((s) => s.set)
   const placement = useBitPerfect((s) => s.placement)
@@ -191,7 +191,7 @@ export function currentDevice(
 /** Device, what it supports, volume, access and the song's path, like Android's USB DAC details. */
 function OutputInfo() {
   const { t } = useTranslation()
-  const k = 'clearplay.bitperfect.info'
+  const k = 'rimelight.bitperfect.info'
   const status = useMpvRuntime((s) => s.status)
   const output = useMpvRuntime((s) => s.output)
   const list = useMpvRuntime((s) => s.deviceList)
@@ -275,7 +275,7 @@ function OutputInfo() {
 
   async function copy() {
     const text = [
-      'ClearPlay output (mpv engine)',
+      'Rimelight output (mpv engine)',
       ...rows.map(([a, b]) => `${a}: ${b}`),
       `mpv ${status?.version ?? '?'} · ${status?.platform ?? ''}`,
     ].join('\n')
@@ -334,7 +334,7 @@ function OutputInfo() {
 /** Rate toggles and volume mode for the selected device (mpv engine). */
 export function MpvDeviceOptions({ deviceKey }: { deviceKey: string }) {
   const { t } = useTranslation()
-  const k = 'clearplay.bitperfect.device'
+  const k = 'rimelight.bitperfect.device'
   const list = useMpvRuntime((s) => s.deviceList)
   const checking = useMpvRuntime((s) => s.checking)
   const prefs = useBitPerfect((s) => s.devices[deviceKey])

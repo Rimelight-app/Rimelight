@@ -11,7 +11,7 @@ $url = "https://github.com/mpv-player/mpv/releases/download/$version/$name"
 
 $root = Split-Path -Parent $PSScriptRoot
 $dest = Join-Path $root 'resources\mpv'
-$tmp = Join-Path ([IO.Path]::GetTempPath()) "clearplay-mpv-$PID"
+$tmp = Join-Path ([IO.Path]::GetTempPath()) "rimelight-mpv-$PID"
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 
 $zip = Join-Path $tmp $name

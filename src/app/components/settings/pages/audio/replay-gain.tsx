@@ -79,7 +79,7 @@ export function ReplayGainConfig() {
 
         {mpv && (
           <p className="px-1 text-[12px] text-white/60">
-            {t('clearplay.sound.replayGainOff')}
+            {t('rimelight.sound.replayGainOff')}
           </p>
         )}
 

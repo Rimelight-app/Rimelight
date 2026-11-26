@@ -131,7 +131,7 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
           !isLinux && !isWindows && 'pr-4',
         )}
       >
-        <TopButton label={t('clearplay.close')} onClick={onClose}>
+        <TopButton label={t('rimelight.close')} onClick={onClose}>
           <ChevronDown className="size-5" strokeWidth={1.75} />
         </TopButton>
         <div className="glass-chip electron-no-drag flex items-center gap-0.5 rounded-full p-0.5">

@@ -23,7 +23,7 @@ const pill =
 export function RescanLibrarySettings() {
   const { t } = useTranslation()
   const [scanning, setScanning] = useState(false)
-  const k = 'clearplay.rescan'
+  const k = 'rimelight.rescan'
 
   async function rescan() {
     setScanning(true)

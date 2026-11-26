@@ -62,7 +62,7 @@ type Applied = {
  * plays those devices on mpv's null output, which runs in real time.
  */
 const deviceMap = new Map(
-  (process.env.CLEARPLAY_MPV_DEVICE_MAP ?? '')
+  (process.env.RIMELIGHT_MPV_DEVICE_MAP ?? '')
     .split(';')
     .map((pair) => {
       const i = pair.lastIndexOf('=')
@@ -361,7 +361,7 @@ class MpvEngine {
     return spec ?? (this.deviceCache?.specs.get('system') as Spec)
   }
 
-  /** Where a Linux hw device plays when ClearPlay can't hold it alone. */
+  /** Where a Linux hw device plays when Rimelight can't hold it alone. */
   private async sharedDeviceFor(spec: Spec): Promise<string> {
     if (!spec.hw) return 'auto'
     const sinks = await pulseSinks()

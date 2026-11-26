@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { getSimpleCoverArtUrl } from '@/api/httpClient'
-import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { usePaletteStore } from '@/store/palette.store'
 import { usePlayerCurrentSong } from '@/store/player.store'
+import { useRimelightSettings } from '@/store/rimelight-settings.store'
 import { blurredCoverUrl, extractPalette, loadCover } from '@/utils/coverImage'
 
 type Layer = { url: string; id: number }
@@ -16,7 +16,7 @@ export function AppBackdrop() {
   const coverArt = song?.coverArt
   const setPalette = usePaletteStore((s) => s.setPalette)
   const [layers, setLayers] = useState<Layer[]>([])
-  const mode = useClearPlaySettings((s) => s.backdrop)
+  const mode = useRimelightSettings((s) => s.backdrop)
 
   useEffect(() => {
     if (!coverArt) return

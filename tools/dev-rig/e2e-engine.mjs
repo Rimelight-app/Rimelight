@@ -8,7 +8,7 @@ import path from 'node:path'
 
 const here = path.dirname(new URL(import.meta.url).pathname)
 const app = path.resolve(here, '../..')
-const rig = process.env.RIG || '/tmp/clearplay-rig'
+const rig = process.env.RIG || '/tmp/rimelight-rig'
 let failed = 0
 const check = (cond, msg) => {
   console.log(`${cond ? 'PASS' : 'FAIL'}  ${msg}`)
@@ -20,7 +20,7 @@ async function launch(userData, env = {}) {
     executablePath: path.join(app, 'node_modules/electron/dist/electron'),
     args: [app, '--no-sandbox', '--disable-gpu-sandbox', `--user-data-dir=${userData}`],
     cwd: app,
-    env: { ...process.env, CLEARPLAY_E2E: '1', ...env },
+    env: { ...process.env, RIMELIGHT_E2E: '1', ...env },
     timeout: 60000,
   })
   const win = await ea.firstWindow()
@@ -76,7 +76,7 @@ async function openAudio(win) {
 // 2. mpv chosen but missing: built-in engine, clear message.
 {
   const dir = path.join(rig, 'userdata-engine')
-  const { ea, win } = await launch(dir, { CLEARPLAY_MPV: '/nonexistent/mpv' })
+  const { ea, win } = await launch(dir, { RIMELIGHT_MPV: '/nonexistent/mpv' })
   const status = await win.evaluate(() => window.__cp.mpv.getState().status)
   check(status.savedEngine === 'mpv' && status.sessionEngine === 'builtin' && !status.available, 'missing mpv: falls back to built-in')
   await openAudio(win)

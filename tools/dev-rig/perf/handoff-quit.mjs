@@ -1,5 +1,5 @@
 // Section 7 E2E against Navidrome 0.64.2: the desktop saves its queue, then a
-// fake ClearPlay for Android (c=ClearPlay-Android) saves after it, then the
+// fake Rimelight for Android (c=ClearPlay-Android) saves after it, then the
 // desktop quits without anything happening here. The server's queue must
 // still be the phone's (changedBy ClearPlay-Android).
 // Usage (from tools/dev-rig): perf/xrun.sh node perf/handoff-quit.mjs

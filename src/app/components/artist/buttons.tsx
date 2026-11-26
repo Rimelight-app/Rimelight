@@ -104,7 +104,7 @@ export function ArtistButtons({
         tooltip={buttonsTooltips.play}
         buttonStyle="primary"
         onClick={handlePlayButton}
-        label={isArtistPlaying ? t('clearplay.pause') : t('clearplay.playAll')}
+        label={isArtistPlaying ? t('rimelight.pause') : t('rimelight.playAll')}
       >
         {isArtistPlaying ? <Actions.PauseIcon /> : <Actions.PlayIcon />}
       </Actions.Button>

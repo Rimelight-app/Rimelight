@@ -7,7 +7,7 @@ are also written to `$RIG/perf-results/` as JSON. They're slow (minutes), so
 they aren't in CI.
 
 `make_big_library.py` and `fault-proxy.mjs` also work on their own, without
-Electron or the rest of this folder. ClearPlay for Android uses them from an
+Electron or the rest of this folder. Rimelight for Android uses them from an
 emulator (see below).
 
 ## Setup
@@ -20,7 +20,7 @@ pnpm install && pnpm electron:build
 (cd tools/dev-rig && npm install)           # playwright-core, pngjs
 
 # Navidrome 0.64.2 + the big library (about 15 s to write, 3 min to scan)
-RIG=/tmp/clearplay-rig
+RIG=/tmp/rimelight-rig
 mkdir -p $RIG/nd/data && (cd $RIG/nd && curl -sL https://github.com/navidrome/navidrome/releases/download/v0.64.2/navidrome_0.64.2_linux_amd64.tar.gz | tar xz)
 python3 tools/dev-rig/make_big_library.py $RIG/music $RIG/local
 #   navidrome.toml as in tools/dev-rig/setup.sh, with MusicFolder = $RIG/music
@@ -50,7 +50,7 @@ session bus and starts Navidrome if needed.
 Common settings (environment): `PROFILE=normal|cpu4|nogpu` (`cpu4` slows only
 the renderer's JavaScript, through CDP), `ENGINE=html|mpv`, `SIZE=1920x1080`,
 `USERDATA=<profile dir>`, `FRESH=1` (empty profile),
-`CLEARPLAY_APP=<another build>` and `ELECTRON_BIN=<its electron>` to measure
+`RIMELIGHT_APP=<another build>` and `ELECTRON_BIN=<its electron>` to measure
 an older version (e.g. a `git worktree` of `v0.6.0`).
 
 | Script | Measures / checks | Command |
@@ -72,7 +72,7 @@ Not rebuilt from the audit (their fixes weren't in 0.6.1): the idle CPU
 matrix, the React re-render counter, the memory soak and the local-library
 scan timings.
 
-## Fault proxy (also for ClearPlay for Android)
+## Fault proxy (also for Rimelight for Android)
 
 Plain Node 18+, no dependencies. It sits between a client and a real server
 and breaks chosen requests.

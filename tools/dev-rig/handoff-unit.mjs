@@ -43,10 +43,10 @@ export * as handoff from '@/service/handoff'
 export { queueSync } from '@/service/queue-sync'
 export { usePlayerStore } from '@/store/player.store'
 export { useAppStore } from '@/store/app.store'
-export { useClearPlaySettings } from '@/store/clearplay-settings.store'
+export { useRimelightSettings } from '@/store/rimelight-settings.store'
 export { useHandoffStore } from '@/store/handoff.store'
 `)
-const { handoff, queueSync, usePlayerStore, useAppStore, useClearPlaySettings, useHandoffStore } = app
+const { handoff, queueSync, usePlayerStore, useAppStore, useRimelightSettings, useHandoffStore } = app
 
 useAppStore.setState((s) => {
   s.data.url = URL_
@@ -57,7 +57,7 @@ useAppStore.setState((s) => {
   s.data.serverType = 'navidrome'
   s.data.extensionsSupported = { indexBasedQueue: [1], playbackReport: [1] }
 })
-useClearPlaySettings.getState().set({ syncQueue: true })
+useRimelightSettings.getState().set({ syncQueue: true })
 
 const songs = Array.from({ length: 12 }, (_, i) => ({ id: `s${i + 1}`, title: `Song ${i + 1}`, artist: 'A', album: 'B', duration: 200, coverArt: '' }))
 const realStart = queueSync.startQueueAt

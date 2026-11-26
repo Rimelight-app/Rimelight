@@ -7,13 +7,13 @@ import path from 'node:path'
 
 /**
  * A small client for mpv's JSON IPC protocol (DOCS/man/ipc.rst in mpv).
- * ClearPlay's own code: it starts one mpv process with --idle and talks to it
+ * Rimelight's own code: it starts one mpv process with --idle and talks to it
  * over a Unix socket (Linux) or a named pipe (Windows), one JSON object per
  * line. Replies are matched to requests by request_id; everything else is an
  * event ("property-change", "end-file", "log-message" ...).
  */
 
-// Windows: mpv can't see ClearPlay go away, so the pid of the running mpv is
+// Windows: mpv can't see Rimelight go away, so the pid of the running mpv is
 // kept on disk and a leftover one is stopped at the next start.
 const pidFile = () => path.join(os.tmpdir(), 'clearplay-mpv.pid')
 
@@ -33,7 +33,7 @@ function forgetPid() {
   }
 }
 
-/** Stops an mpv left running by a ClearPlay that crashed (Windows). */
+/** Stops an mpv left running by a Rimelight that crashed (Windows). */
 export function stopLeftoverMpv() {
   if (process.platform !== 'win32') return
   try {
@@ -96,7 +96,7 @@ export class MpvClient extends EventEmitter {
     private readonly args: string[] = [],
   ) {
     super()
-    const tag = `clearplay-mpv-${process.pid}-${Date.now().toString(36)}`
+    const tag = `rimelight-mpv-${process.pid}-${Date.now().toString(36)}`
     this.socketPath =
       process.platform === 'win32'
         ? `\\\\.\\pipe\\${tag}`
@@ -110,7 +110,7 @@ export class MpvClient extends EventEmitter {
   async start(): Promise<void> {
     if (this.running) return
     // Linux/macOS: talk over an inherited socket (fd 3). mpv quits when it
-    // closes, so it never outlives ClearPlay, even after a crash. Windows:
+    // closes, so it never outlives Rimelight, even after a crash. Windows:
     // a named pipe (fd passing works differently there).
     const useFd = process.platform !== 'win32'
     if (!useFd) this.removeSocketFile()
@@ -142,7 +142,7 @@ export class MpvClient extends EventEmitter {
     )
     this.proc = proc
     if (!useFd && proc.pid) rememberPid(proc.pid)
-    // Never leave mpv playing after ClearPlay exits.
+    // Never leave mpv playing after Rimelight exits.
     const killOnExit = () => {
       try {
         proc.kill()

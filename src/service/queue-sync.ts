@@ -243,7 +243,7 @@ async function startQueueAt(
 
 /**
  * Load button: replaces the local queue with the server's and starts where
- * ClearPlay on the phone is (playing or paused, from Now Playing), else at
+ * Rimelight on the phone is (playing or paused, from Now Playing), else at
  * the saved song and position.
  */
 async function restoreFromServer() {

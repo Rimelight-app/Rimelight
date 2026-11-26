@@ -195,7 +195,7 @@ let silentUrl: string | null = null
 
 /**
  * With the mpv engine Chromium plays nothing, so the system media controls
- * (MPRIS on Linux, the Windows media overlay) would not show ClearPlay. A
+ * (MPRIS on Linux, the Windows media overlay) would not show Rimelight. A
  * silent loop keeps them active; Chromium's own audio output is switched off
  * in this mode, so it never touches a sound device.
  */

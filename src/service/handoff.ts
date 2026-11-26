@@ -1,7 +1,7 @@
 import { useAppStore } from '@/store/app.store'
-import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { useHandoffStore } from '@/store/handoff.store'
 import { usePlayerStore } from '@/store/player.store'
+import { useRimelightSettings } from '@/store/rimelight-settings.store'
 import { logger } from '@/utils/logger'
 import { isUsingLocalLibrary } from './local-library'
 import {
@@ -38,7 +38,7 @@ const isPlayingHere = () => usePlayerStore.getState().playerState.isPlaying
 let dirty = false
 
 function storedHandled() {
-  return useClearPlaySettings.getState().handledChanged[serverKey()] ?? null
+  return useRimelightSettings.getState().handledChanged[serverKey()] ?? null
 }
 
 /**
@@ -51,7 +51,7 @@ function markHandled(changed?: string | null) {
     changed,
   )
   if (!value || value === storedHandled()) return
-  const { handledChanged, set } = useClearPlaySettings.getState()
+  const { handledChanged, set } = useRimelightSettings.getState()
   set({ handledChanged: { ...handledChanged, [serverKey()]: value } })
 }
 
@@ -61,7 +61,7 @@ function saveCheck() {
   const { songs, currentIndex } = localQueue()
   const current = songs[currentIndex]
   return {
-    enabled: useClearPlaySettings.getState().syncQueue,
+    enabled: useRimelightSettings.getState().syncQueue,
     online: navigator.onLine !== false,
     queueLength: songs.length,
     currentIsLocal: !current || current.local,
@@ -292,8 +292,9 @@ export function closeLeftBehind() {
 let checking: Promise<void> | null = null
 
 /**
- * Is this device left behind? The other ClearPlay app plays a song from this
- * queue (Now Playing) and saved the server's queue last (read only then).
+ * Is this device left behind? The phone app (ClearPlay for Android) plays a
+ * song from this queue (Now Playing) and saved the server's queue last (read
+ * only then).
  * Runs before a song change's save (see QueueObserver), so the device left
  * behind doesn't save first and make itself changedBy.
  */
@@ -308,11 +309,11 @@ export function checkLeftBehind() {
 async function runLeftBehindCheck() {
   const state = useHandoffStore.getState()
   if (state.leftBehind || state.leftBehindShown || isUsingLocalLibrary()) return
-  if (!useClearPlaySettings.getState().syncQueue || !isPlayingHere()) return
+  if (!useRimelightSettings.getState().syncQueue || !isPlayingHere()) return
   const nowPlaying = await queueSync.getNowPlaying()
   if (!nowPlaying) return
   const input = () => ({
-    publishing: useClearPlaySettings.getState().syncQueue,
+    publishing: useRimelightSettings.getState().syncQueue,
     playingHere: isPlayingHere(),
     thisApp: DESKTOP_APP,
     username: useAppStore.getState().data.username,

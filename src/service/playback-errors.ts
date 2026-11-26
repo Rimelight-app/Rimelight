@@ -24,7 +24,7 @@ let failuresInARow = 0
 let handling: string | null = null
 
 const t = (key: string, opts?: Record<string, unknown>) =>
-  i18n.t(`clearplay.playbackErrors.${key}`, opts)
+  i18n.t(`rimelight.playbackErrors.${key}`, opts)
 
 /** Songs from "Music on this computer" don't depend on the server. */
 function isLocalSong(songId: string) {

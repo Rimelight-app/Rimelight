@@ -685,7 +685,7 @@
     "privacy": {
       "services": {
         "group": "External Services",
-        "description": "Manage the external services that ClearPlay can access.",
+        "description": "Manage the external services that Rimelight can access.",
         "lrclib": {
           "info": "LRCLIB is used to find song lyrics.",
           "label": "LRCLIB",
@@ -739,7 +739,7 @@
       },
       "podcast": {
         "group": "Podcasts",
-        "description": "Enable integration with the ClearPlay Podcasts service.",
+        "description": "Enable integration with the Rimelight Podcasts service.",
         "enabled": {
           "label": "Enable Integration"
         },
@@ -826,7 +826,7 @@
       "yy": "%d years"
     }
   },
-  "clearplay": {
+  "rimelight": {
     "playAll": "Play all",
     "pause": "Pause",
     "addToQueue": "Add to queue",
@@ -845,7 +845,7 @@
     "close": "Close",
     "effects": {
       "group": "Effects",
-      "description": "Blur and motion used across ClearPlay."
+      "description": "Blur and motion used across Rimelight."
     },
     "openNowPlaying": "Open now playing",
     "visualizer": "Visualiser",
@@ -928,7 +928,7 @@
         "hint": "If listens show “sent” here but not on ListenBrainz, check Navidrome → your user → Personal → ListenBrainz, and the Navidrome log."
       },
       "interface": {
-        "group": "ClearPlay",
+        "group": "Rimelight",
         "description": "Layout and look.",
         "startPage": {
           "label": "Open on start"
@@ -1008,7 +1008,7 @@
       "offline": "offline",
       "fastest": {
         "label": "Use the fastest server at start",
-        "info": "When ClearPlay starts, it pings your saved servers for this user and connects to the quickest one, so at home it uses the local address and away it uses Tailscale."
+        "info": "When Rimelight starts, it pings your saved servers for this user and connects to the quickest one, so at home it uses the local address and away it uses Tailscale."
       }
     },
     "sound": {
@@ -1016,7 +1016,7 @@
       "description": "Output, equalizer and playback.",
       "device": {
         "label": "Output device",
-        "info": "Send ClearPlay to a specific device (headphones, DAC, speakers) without changing the system default.",
+        "info": "Send Rimelight to a specific device (headphones, DAC, speakers) without changing the system default.",
         "system": "System default",
         "output": "Output"
       },
@@ -1052,7 +1052,7 @@
         "note": "The built-in engine plays through Chromium, which mixes at the system rate. For bit-perfect output (each song at its own rate, straight to your DAC), choose the mpv engine above."
       },
       "fxOff": "Equalizer, mono and playback speed are off with the mpv engine: bit-perfect playback sends each song to the device unchanged.",
-      "visualizerOff": "Off with the mpv engine: ClearPlay doesn't see the sound on its way to the device.",
+      "visualizerOff": "Off with the mpv engine: Rimelight doesn't see the sound on its way to the device.",
       "replayGainOff": "Off with the mpv engine: changing the level would change the song's bits."
     },
     "sleep": {
@@ -1067,11 +1067,11 @@
       "description": "Continue on other devices and keep the music going.",
       "sync": {
         "label": "Continue on other devices",
-        "info": "Saves your queue and position to Navidrome when the song changes or you pause, so ClearPlay on your phone (or another app such as Symfonium) can continue it. Shuffle library and similar-music refills don't carry over."
+        "info": "Saves your queue and position to Navidrome when the song changes or you pause, so ClearPlay for Android on your phone (or another app such as Symfonium) can continue it. Shuffle library and similar-music refills don't carry over."
       },
       "autoDj": {
         "label": "Keep playing similar music",
-        "info": "When the last song in the queue starts, ClearPlay adds similar songs (from Navidrome's Last.fm data, or random songs of the same genre when that isn't set up)."
+        "info": "When the last song in the queue starts, Rimelight adds similar songs (from Navidrome's Last.fm data, or random songs of the same genre when that isn't set up)."
       },
       "save": "Save queue to server",
       "load": "Load queue from server",
@@ -1147,7 +1147,7 @@
         "info": "mpv plays the original file and takes over the output device while it plays (other apps go silent on that device).",
         "builtin": "Built-in",
         "mpv": "mpv (bit-perfect)",
-        "restart": "Restart ClearPlay to switch to {{engine}}.",
+        "restart": "Restart Rimelight to switch to {{engine}}.",
         "restartNow": "Restart now",
         "missing": "mpv can't be used: {{problem}}",
         "running": "Using mpv {{version}}.",
@@ -1166,7 +1166,7 @@
         "hwNo": "No",
         "hwUnknown": "Not known until it plays",
         "access": "Access",
-        "exclusive": "Exclusive: ClearPlay has the device to itself",
+        "exclusive": "Exclusive: Rimelight has the device to itself",
         "shared": "Shared with other apps",
         "now": "Now",
         "song": "Song",
@@ -1184,7 +1184,7 @@
         "ratesInfo": "Switch off rates this device claims but doesn't really play (e.g. silence at 44.1 kHz). Songs at a switched-off rate are converted to the closest rate that's left.",
         "check": "Check again",
         "volume": "Volume",
-        "volumeInfo": "Hardware: the slider moves the device's own volume (bit-perfect). Fixed: set the loudness on the device or amp (bit-perfect). App: ClearPlay lowers the level itself (not bit-perfect).",
+        "volumeInfo": "Hardware: the slider moves the device's own volume (bit-perfect). Fixed: set the loudness on the device or amp (bit-perfect). App: Rimelight lowers the level itself (not bit-perfect).",
         "hardware": "Hardware ({{control}})",
         "hardwarePlain": "Hardware",
         "fixed": "Fixed (bit-perfect)",
@@ -1218,7 +1218,7 @@
     },
     "taskbarProgress": {
       "label": "Show song progress on the taskbar button",
-      "info": "The ClearPlay button on the taskbar fills up as the song plays: green while playing, yellow when paused, red when a song couldn't be played."
+      "info": "The Rimelight button on the taskbar fills up as the song plays: green while playing, yellow when paused, red when a song couldn't be played."
     }
   }
 }

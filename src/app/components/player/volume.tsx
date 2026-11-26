@@ -42,7 +42,7 @@ export function PlayerVolume({
   }, [audioRef, volume])
 
   const tooltipText = fixed
-    ? t('clearplay.bitperfect.fixedVolume')
+    ? t('rimelight.bitperfect.fixedVolume')
     : volume === 0
       ? t('player.tooltips.volume.unmute')
       : t('player.tooltips.volume.mute')

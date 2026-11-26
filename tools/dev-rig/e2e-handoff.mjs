@@ -17,7 +17,7 @@ import { _electron as electron } from 'playwright-core'
 
 const here = path.dirname(new URL(import.meta.url).pathname)
 const app = path.resolve(here, '../..')
-const rig = process.env.RIG || '/tmp/clearplay-rig'
+const rig = process.env.RIG || '/tmp/rimelight-rig'
 const ENGINE = process.env.ENGINE || 'builtin'
 const ND_PORT = 4533
 const FAKE_PORT = 4542
@@ -133,10 +133,10 @@ async function launch(userData) {
   const mpvEnv =
     ENGINE === 'mpv'
       ? {
-          CLEARPLAY_ASOUND_ROOT: path.join(fakeAudio, 'asound'),
+          RIMELIGHT_ASOUND_ROOT: path.join(fakeAudio, 'asound'),
           FAKE_AUDIO_STATE: fs.mkdtempSync('/tmp/cp-fake-audio-'),
           PATH: `${path.join(fakeAudio, 'bin')}:${process.env.PATH}`,
-          CLEARPLAY_MPV_DEVICE_MAP: 'alsa/hw:CARD=SIMGOT,DEV=0=null;auto=null',
+          RIMELIGHT_MPV_DEVICE_MAP: 'alsa/hw:CARD=SIMGOT,DEV=0=null;auto=null',
         }
       : {}
   electronApp = await electron.launch({
@@ -148,7 +148,7 @@ async function launch(userData) {
       `--user-data-dir=${userData}`,
     ],
     cwd: app,
-    env: { ...process.env, CLEARPLAY_E2E: '1', ...mpvEnv },
+    env: { ...process.env, RIMELIGHT_E2E: '1', ...mpvEnv },
     timeout: 60000,
   })
   win = await electronApp.firstWindow()

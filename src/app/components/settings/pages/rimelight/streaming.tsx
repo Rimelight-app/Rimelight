@@ -12,28 +12,28 @@ import {
 } from '@/app/components/settings/section'
 import {
   StreamFormat,
-  useClearPlaySettings,
-} from '@/store/clearplay-settings.store'
+  useRimelightSettings,
+} from '@/store/rimelight-settings.store'
 import { SettingSelect } from './controls'
 
 export function StreamingSettings() {
   const { t } = useTranslation()
-  const { maxBitRate, streamFormat, set } = useClearPlaySettings()
+  const { maxBitRate, streamFormat, set } = useRimelightSettings()
 
   return (
     <Root>
       <Header>
-        <HeaderTitle>{t('clearplay.settings.streaming.group')}</HeaderTitle>
+        <HeaderTitle>{t('rimelight.settings.streaming.group')}</HeaderTitle>
         <HeaderDescription>
-          {t('clearplay.settings.streaming.description')}
+          {t('rimelight.settings.streaming.description')}
         </HeaderDescription>
       </Header>
       <Content>
         <ContentItem>
           <ContentItemTitle
-            info={t('clearplay.settings.streaming.quality.info')}
+            info={t('rimelight.settings.streaming.quality.info')}
           >
-            {t('clearplay.settings.streaming.quality.label')}
+            {t('rimelight.settings.streaming.quality.label')}
           </ContentItemTitle>
           <ContentItemForm>
             <SettingSelect
@@ -42,7 +42,7 @@ export function StreamingSettings() {
               options={[
                 {
                   value: '0',
-                  label: t('clearplay.settings.streaming.original'),
+                  label: t('rimelight.settings.streaming.original'),
                 },
                 { value: '320', label: '320 kbps' },
                 { value: '256', label: '256 kbps' },
@@ -56,9 +56,9 @@ export function StreamingSettings() {
         {maxBitRate !== '0' && (
           <ContentItem>
             <ContentItemTitle
-              info={t('clearplay.settings.streaming.format.info')}
+              info={t('rimelight.settings.streaming.format.info')}
             >
-              {t('clearplay.settings.streaming.format.label')}
+              {t('rimelight.settings.streaming.format.label')}
             </ContentItemTitle>
             <ContentItemForm>
               <SettingSelect<StreamFormat>

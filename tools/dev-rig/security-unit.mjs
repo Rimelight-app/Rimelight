@@ -86,9 +86,9 @@ for (const url of [
 // ---------- isAppUrl (navigation guard) ----------
 
 const prodEntry =
-  'file:///opt/ClearPlay/resources/app.asar/out/renderer/index.html'
+  'file:///opt/Rimelight/resources/app.asar/out/renderer/index.html'
 const winEntry =
-  'file:///C:/Users/a/AppData/Local/Programs/ClearPlay/resources/app.asar/out/renderer/index.html'
+  'file:///C:/Users/a/AppData/Local/Programs/Rimelight/resources/app.asar/out/renderer/index.html'
 t('isAppUrl: same file with a hash route', () =>
   assert.equal(isAppUrl(`${prodEntry}#/albums`, prodEntry), true),
 )
@@ -101,7 +101,7 @@ t('isAppUrl: Windows path', () =>
 for (const target of [
   'https://example.com',
   'file:///etc/passwd',
-  'file:///opt/ClearPlay/resources/app.asar/out/renderer/other.html',
+  'file:///opt/Rimelight/resources/app.asar/out/renderer/other.html',
   'file:///C:/Windows/System32/calc.exe',
   'http://127.0.0.1:47470/',
   'data:text/html,hi',

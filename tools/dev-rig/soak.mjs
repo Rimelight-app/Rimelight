@@ -6,7 +6,7 @@ import { _electron as electron } from 'playwright-core'
 import path from 'node:path'
 
 const app = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..')
-const rig = process.env.RIG || '/tmp/clearplay-rig'
+const rig = process.env.RIG || '/tmp/rimelight-rig'
 const minutes = Number(process.argv[2] || 5)
 const album = process.argv[3] || 'Neon Tides'
 const track = process.argv[4] || 'Signal'

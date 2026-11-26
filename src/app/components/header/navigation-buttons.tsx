@@ -5,7 +5,7 @@ import useNavigationHistory from '@/app/hooks/use-navigation-history'
 
 /**
  * Back/forward through pages. They used to be disabled whenever the lyrics or
- * queue side panel was open, which in ClearPlay is most of the time.
+ * queue side panel was open, which in Rimelight is most of the time.
  */
 export function NavigationButtons() {
   const { canGoBack, canGoForward, goBack, goForward } = useNavigationHistory()

@@ -5,7 +5,7 @@ export const ImageHeaderEffect = forwardRef<
   HTMLDivElement,
   ComponentPropsWithoutRef<'div'>
 >(({ children, className, ...props }, ref) => {
-  // ClearPlay: the window backdrop replaces this colour wash.
+  // Rimelight: the window backdrop replaces this colour wash.
   return (
     <div ref={ref} className={cn('hidden', className)} {...props}>
       {children}

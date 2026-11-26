@@ -104,7 +104,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ClearPlay-${{ matrix.name }}
+          name: Rimelight-${{ matrix.name }}
           path: ${{ matrix.files }}
           if-no-files-found: error
           retention-days: 14
@@ -149,7 +149,7 @@ jobs:
         if: steps.tag.outputs.publish == 'true'
         env:
           TAG: ${{ steps.tag.outputs.tag }}
-        run: bash tools/fetch-mpv-source.sh "release/ClearPlay-${TAG}-mpv-source.tar.gz"
+        run: bash tools/fetch-mpv-source.sh "release/Rimelight-${TAG}-mpv-source.tar.gz"
 
       # The release text is this version's CHANGELOG section. The app's
       # update dialog shows it when it offers the update.
@@ -174,7 +174,7 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          name: ClearPlay ${{ steps.tag.outputs.tag }}
+          name: Rimelight ${{ steps.tag.outputs.tag }}
           body_path: release-notes.md
           files: |
             release/*

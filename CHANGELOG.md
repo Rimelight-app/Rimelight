@@ -1,6 +1,12 @@
 # Changelog
 
-All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
+All notable changes to Rimelight (called ClearPlay up to 0.6.1). Format loosely follows Keep a Changelog.
+
+## [Unreleased]
+
+### Changed
+- **ClearPlay is now Rimelight.** Same app, new name: ClearPlay was already the name of another company's media software. Nothing to do on your side: ClearPlay 0.6.1 offers this version as a normal update, and your servers, settings, queue and music on this computer carry over on the first start. On Windows it updates the installed app in place; on Linux the `.deb` and `.rpm` replace the `clearplay` package. Downloads and updates now come from https://github.com/Rimelight-app/Rimelight.
+- **Continue on other devices still works with ClearPlay for Android 1.6.0.** Rimelight keeps telling your server it is "ClearPlay", the name the phone app looks for, so Navidrome's list of players still shows it under that name for now.
 
 ## [0.6.1] - 2026-11-26
 

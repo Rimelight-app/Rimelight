@@ -1,5 +1,5 @@
 import { AuthType } from '@/types/serverConfig'
-import { appName } from '@/utils/appName'
+import { subsonicClient } from '@/utils/appName'
 import { authQueryParams } from './httpClient'
 
 export async function queryServerInfo(url: string) {
@@ -7,7 +7,7 @@ export async function queryServerInfo(url: string) {
     const query = {
       ...authQueryParams('dummy', 'dummy', AuthType.PASSWORD), // Use dummy credentials, we don't want to actually be logged in
       v: '1.16.0',
-      c: appName,
+      c: subsonicClient,
       f: 'json',
     }
 

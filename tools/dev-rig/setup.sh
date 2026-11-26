@@ -1,10 +1,10 @@
 #!/bin/bash
 # Sets up a local test rig: Navidrome 0.64.2 with a generated library (4 albums,
 # 29 tracks, covers, .lrc lyrics) and the Playwright driver for screenshots.
-# Usage: RIG=/tmp/clearplay-rig tools/dev-rig/setup.sh     (admin / test1234 on 127.0.0.1:4533)
+# Usage: RIG=/tmp/rimelight-rig tools/dev-rig/setup.sh     (admin / test1234 on 127.0.0.1:4533)
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
-RIG="${RIG:-/tmp/clearplay-rig}"
+RIG="${RIG:-/tmp/rimelight-rig}"
 ND_VER=0.64.2
 mkdir -p "$RIG/nd/data" "$RIG/music" "$RIG/shots"
 if [ ! -x "$RIG/nd/navidrome" ]; then

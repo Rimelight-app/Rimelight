@@ -46,7 +46,7 @@ function useOutputDevices(enabled: boolean) {
 /** mpv engine: devices as mpv and the system see them (refreshed on open). */
 function MpvDeviceSelect() {
   const { t } = useTranslation()
-  const k = 'clearplay.sound'
+  const k = 'rimelight.sound'
   const list = useMpvRuntime((s) => s.deviceList)
   const deviceKey = useBitPerfect((s) => s.device)
   const active = currentDevice(list, deviceKey)
@@ -112,10 +112,10 @@ function Equalizer() {
             value={preamp}
             onChange={(e) => set({ preamp: Number(e.target.value) })}
             className="cp-vslider"
-            aria-label={t('clearplay.sound.preamp')}
+            aria-label={t('rimelight.sound.preamp')}
           />
           <span className="text-[11px] text-white/60">
-            {t('clearplay.sound.preampShort')}
+            {t('rimelight.sound.preampShort')}
           </span>
         </div>
         {EQ_BANDS.map((f, i) => (
@@ -140,7 +140,7 @@ function Equalizer() {
         ))}
       </div>
       <p className="mt-3 text-[11px] text-white/60">
-        {t('clearplay.sound.eqHint')}
+        {t('rimelight.sound.eqHint')}
       </p>
     </div>
   )
@@ -161,7 +161,7 @@ export function SoundSettings() {
   const mpv = useIsMpvSession()
   const devices = useOutputDevices(!mpv)
   const [rate, setRate] = useState<number | null>(null)
-  const k = 'clearplay.sound'
+  const k = 'rimelight.sound'
 
   useEffect(() => {
     const id = window.setInterval(

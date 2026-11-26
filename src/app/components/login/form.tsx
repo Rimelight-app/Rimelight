@@ -98,7 +98,7 @@ export function LoginForm() {
       if (!state.folders.length) return
       const server = await connectLocalLibrary()
       if (!server) {
-        toast.error(t('clearplay.local.failed'))
+        toast.error(t('rimelight.local.failed'))
         return
       }
       activateServer(server)
@@ -243,7 +243,7 @@ export function LoginForm() {
       {hasLocalLibrary() && (
         <div className="mt-4 flex w-[450px] flex-col items-center gap-2 text-center">
           <p className="text-[13px] text-white/55">
-            {t('clearplay.local.loginHint')}
+            {t('rimelight.local.loginHint')}
           </p>
           <Button
             type="button"
@@ -258,7 +258,7 @@ export function LoginForm() {
             ) : (
               <HardDrive className="mr-2 h-4 w-4" strokeWidth={1.75} />
             )}
-            {t('clearplay.local.login')}
+            {t('rimelight.local.login')}
           </Button>
         </div>
       )}

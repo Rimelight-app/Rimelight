@@ -75,7 +75,7 @@ export function SidePanel() {
         <button
           type="button"
           onClick={closeDrawer}
-          aria-label={t('clearplay.close')}
+          aria-label={t('rimelight.close')}
           className="flex size-8 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white"
         >
           <X className="size-4" />

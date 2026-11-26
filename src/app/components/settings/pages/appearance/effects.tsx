@@ -20,15 +20,15 @@ export function EffectsSettings() {
   return (
     <Root>
       <Header>
-        <HeaderTitle>{t('clearplay.effects.group')}</HeaderTitle>
+        <HeaderTitle>{t('rimelight.effects.group')}</HeaderTitle>
         <HeaderDescription>
-          {t('clearplay.effects.description')}
+          {t('rimelight.effects.description')}
         </HeaderDescription>
       </Header>
       <Content>
         <ContentItem>
-          <ContentItemTitle info={t('clearplay.reduceEffects.info')}>
-            {t('clearplay.reduceEffects.label')}
+          <ContentItemTitle info={t('rimelight.reduceEffects.info')}>
+            {t('rimelight.reduceEffects.label')}
           </ContentItemTitle>
           <ContentItemForm>
             <Switch

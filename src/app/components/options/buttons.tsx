@@ -203,7 +203,7 @@ function StartRadio({ variant = 'dropdown', ...props }: DropdownMenuItemProps) {
     <MenuItemFactory
       variant={variant}
       icon={<Radio className="mr-2 h-4 w-4" />}
-      label={t('clearplay.radio.start')}
+      label={t('rimelight.radio.start')}
       data-testid="start-radio"
       {...props}
     />

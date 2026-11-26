@@ -69,7 +69,7 @@ export function PlaylistButtons({
         onClick={handlePlayButton}
         disabled={!playlist.entry}
         label={
-          isPlaylistPlaying ? t('clearplay.pause') : t('clearplay.playAll')
+          isPlaylistPlaying ? t('rimelight.pause') : t('rimelight.playAll')
         }
       >
         {isPlaylistPlaying ? <Actions.PauseIcon /> : <Actions.PlayIcon />}
@@ -85,7 +85,7 @@ export function PlaylistButtons({
       </Actions.Button>
 
       <Actions.Button
-        tooltip={t('clearplay.addToQueue')}
+        tooltip={t('rimelight.addToQueue')}
         disabled={!playlist.entry}
         onClick={() => {
           if (!playlist.entry) return
@@ -98,7 +98,7 @@ export function PlaylistButtons({
 
       {onToggleSearch && (
         <Actions.Button
-          tooltip={t('clearplay.searchInPlaylist')}
+          tooltip={t('rimelight.searchInPlaylist')}
           onClick={onToggleSearch}
           disabled={!playlist.entry}
           className={searchActive ? 'bg-white/[0.2] text-white' : undefined}

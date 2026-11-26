@@ -13,8 +13,8 @@ import { SongRating } from '@/app/components/rating/song-rating'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/routes/routesList'
 import { useIsMpvSession } from '@/store/bitperfect.store'
-import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { usePlayerFullscreen, useSongColor } from '@/store/player.store'
+import { useRimelightSettings } from '@/store/rimelight-settings.store'
 import { ISong } from '@/types/responses/song'
 import { getAudioQuality } from '@/utils/audioQuality'
 import { getAverageColor } from '@/utils/getAverageColor'
@@ -80,8 +80,8 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
         type="button"
         className="group relative shrink-0 cursor-pointer rounded-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
         onClick={() => setIsFullscreen(true)}
-        aria-label={t('clearplay.openNowPlaying')}
-        title={t('clearplay.openNowPlaying')}
+        aria-label={t('rimelight.openNowPlaying')}
+        title={t('rimelight.openNowPlaying')}
       >
         <div className="min-w-[54px] max-w-[54px] aspect-square bg-cover bg-center bg-white/5 rounded-[14px] overflow-hidden shadow-[0_8px_20px_-8px_rgb(0_0_0/0.6)] relative">
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all duration-200 group-hover:bg-black/45 group-hover:opacity-100">
@@ -143,7 +143,7 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
 /** The song's own format and quality, next to the stars. */
 function TrackQuality({ song }: { song: ISong }) {
   const { format, details, lossless, hiRes } = getAudioQuality(song)
-  const { showQuality, maxBitRate, streamFormat } = useClearPlaySettings()
+  const { showQuality, maxBitRate, streamFormat } = useRimelightSettings()
   const mpv = useIsMpvSession()
   if (!showQuality) return null
   const limit = Number(maxBitRate)

@@ -1,4 +1,4 @@
-"""ClearPlay logo (provided by the user), redrawn as vector + raster sizes."""
+"""Rimelight logo (provided by the user), redrawn as vector + raster sizes."""
 import os, sys
 from PIL import Image, ImageDraw
 
@@ -34,7 +34,7 @@ svg.append('</svg>')
 svg_text = "\n".join(svg) + "\n"
 os.makedirs(os.path.join(app, "build"), exist_ok=True)
 open(os.path.join(app, "build/icon.svg"), "w").write(svg_text)
-open(os.path.join(app, "public/clearplay-logo.svg"), "w").write(svg_text)
+open(os.path.join(app, "public/rimelight-logo.svg"), "w").write(svg_text)
 
 def render(size, pad=0.0):
     ss = 8

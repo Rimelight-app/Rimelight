@@ -38,7 +38,7 @@ export async function connectLocalLibrary(): Promise<SavedServer | null> {
     c.url,
     c.username,
     c.password,
-    i18n.t('clearplay.local.serverName'),
+    i18n.t('rimelight.local.serverName'),
   )
   if (!server) return null
   const { servers, upsert, remove } = useServersStore.getState()

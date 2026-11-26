@@ -33,8 +33,8 @@ export function QueueActions() {
     if (!name.trim()) return
     await run(
       () => queueSync.saveAsPlaylist(name.trim()),
-      t('clearplay.queue.playlistSaved', { name: name.trim() }),
-      t('clearplay.queue.failed'),
+      t('rimelight.queue.playlistSaved', { name: name.trim() }),
+      t('rimelight.queue.failed'),
     )
     setNaming(false)
     setName('')
@@ -50,7 +50,7 @@ export function QueueActions() {
           autoFocus
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder={t('clearplay.queue.playlistName')}
+          placeholder={t('rimelight.queue.playlistName')}
           className="h-8 min-w-0 flex-1 rounded-full border border-white/10 bg-white/[0.05] px-3 text-[12px] outline-none placeholder:text-white/35 focus:border-white/30"
         />
         <button
@@ -58,14 +58,14 @@ export function QueueActions() {
           disabled={busy}
           className="h-8 rounded-full bg-white/90 px-3 text-[12px] font-semibold text-[#121216]"
         >
-          {t('clearplay.servers.save')}
+          {t('rimelight.servers.save')}
         </button>
         <button
           type="button"
           onClick={() => setNaming(false)}
           className="h-8 rounded-full px-2 text-[12px] text-white/60 hover:text-white"
         >
-          {t('clearplay.servers.cancel')}
+          {t('rimelight.servers.cancel')}
         </button>
       </form>
     )
@@ -73,7 +73,7 @@ export function QueueActions() {
 
   return (
     <div className="flex items-center justify-end gap-0.5 px-2 pb-1">
-      <SimpleTooltip text={t('clearplay.queue.save')}>
+      <SimpleTooltip text={t('rimelight.queue.save')}>
         <button
           type="button"
           disabled={busy}
@@ -81,15 +81,15 @@ export function QueueActions() {
           onClick={() =>
             run(
               queueSync.saveToServer,
-              t('clearplay.queue.saved'),
-              t('clearplay.queue.failed'),
+              t('rimelight.queue.saved'),
+              t('rimelight.queue.failed'),
             )
           }
         >
           <CloudUpload className="size-4" />
         </button>
       </SimpleTooltip>
-      <SimpleTooltip text={t('clearplay.queue.load')}>
+      <SimpleTooltip text={t('rimelight.queue.load')}>
         <button
           type="button"
           disabled={busy}
@@ -97,15 +97,15 @@ export function QueueActions() {
           onClick={() =>
             run(
               queueSync.restoreFromServer,
-              t('clearplay.queue.loaded'),
-              t('clearplay.queue.nothing'),
+              t('rimelight.queue.loaded'),
+              t('rimelight.queue.nothing'),
             )
           }
         >
           <CloudDownload className="size-4" />
         </button>
       </SimpleTooltip>
-      <SimpleTooltip text={t('clearplay.queue.asPlaylist')}>
+      <SimpleTooltip text={t('rimelight.queue.asPlaylist')}>
         <button
           type="button"
           disabled={busy}
@@ -115,7 +115,7 @@ export function QueueActions() {
           <ListPlus className="size-4" />
         </button>
       </SimpleTooltip>
-      <SimpleTooltip text={t('clearplay.queue.clear')}>
+      <SimpleTooltip text={t('rimelight.queue.clear')}>
         <button
           type="button"
           className={btn}

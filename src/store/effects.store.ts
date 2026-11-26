@@ -6,7 +6,7 @@ interface EffectsState {
   setReduceEffects: (value: boolean) => void
 }
 
-/** ClearPlay visual-effects preference (blur, drifting gradients). */
+/** Rimelight visual-effects preference (blur, drifting gradients). */
 export const useEffectsStore = create<EffectsState>()(
   persist(
     (set) => ({

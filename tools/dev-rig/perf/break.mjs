@@ -1,5 +1,5 @@
 // Breakage checks (B8, B9, B10, B11) through the fault proxy. Prints
-// PASS/FAIL against ClearPlay 0.6.1's behaviour, with what happened.
+// PASS/FAIL against Rimelight 0.6.1's behaviour, with what happened.
 // CASES=comma list (default all): song404, three404, serverDown, corruptLocal,
 //   pageErrors, offlineStart, lastSong
 // Usage (from tools/dev-rig): ENGINE=html perf/xrun.sh node perf/break.mjs

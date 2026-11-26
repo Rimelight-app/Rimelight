@@ -1,4 +1,4 @@
-import { InterfaceSettings } from '../clearplay/interface'
+import { InterfaceSettings } from '../rimelight/interface'
 import { EffectsSettings } from './effects'
 import { FullscreenSettings } from './fullscreen'
 

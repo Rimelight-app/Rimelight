@@ -110,8 +110,8 @@ export default function SongList() {
         <div className="flex gap-2 flex-1 justify-end items-center">
           {!hasSomeFilter && (
             <Actions.Button
-              tooltip={t('clearplay.shuffleLibrary.label')}
-              aria-label={t('clearplay.shuffleLibrary.label')}
+              tooltip={t('rimelight.shuffleLibrary.label')}
+              aria-label={t('rimelight.shuffleLibrary.label')}
               disabled={shuffling}
               data-testid="shuffle-library"
               onClick={async () => {

@@ -1,8 +1,8 @@
 import { httpClient } from '@/api/httpClient'
 import { showMessagePill } from '@/app/components/player/queue-pill'
 import i18n from '@/i18n'
-import { useClearPlaySettings } from '@/store/clearplay-settings.store'
 import { usePlayerStore } from '@/store/player.store'
+import { useRimelightSettings } from '@/store/rimelight-settings.store'
 import type { ISong } from '@/types/responses/song'
 import { logger } from '@/utils/logger'
 import { useConnectionStore } from './connection'
@@ -48,14 +48,14 @@ export async function startRadio(seed: RadioSeed, seedSong?: ISong) {
   const queue = radioQueue(seedSong ?? null, similar)
   if (queue.length === 0) {
     showMessagePill(
-      i18n.t('clearplay.radio.nothingFound', { name: seed.name }),
+      i18n.t('rimelight.radio.nothingFound', { name: seed.name }),
       { kind: 'error' },
     )
     return false
   }
   const { actions } = usePlayerStore.getState()
   actions.setSongList(queue, 0)
-  useClearPlaySettings.getState().set({ autoDj: true })
+  useRimelightSettings.getState().set({ autoDj: true })
   actions.setPlayingState(true)
   return true
 }

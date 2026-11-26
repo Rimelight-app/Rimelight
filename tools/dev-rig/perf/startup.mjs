@@ -5,7 +5,7 @@
 //     -> first paint, -> home with covers
 //   - renderer reload -> first paint (the part PROFILE=cpu4 slows)
 //   - mpv probe: how long `mpv --no-config --version` takes here, and
-//     whether the app ran it during launch (a logging mpv shim, CLEARPLAY_MPV)
+//     whether the app ran it during launch (a logging mpv shim, RIMELIGHT_MPV)
 // Usage (from tools/dev-rig): perf/xrun.sh node perf/startup.mjs
 //                             PROFILE=cpu4 perf/xrun.sh node perf/startup.mjs
 //                             ENGINE=mpv perf/xrun.sh node perf/startup.mjs
@@ -22,7 +22,7 @@ import {
   writeResult,
 } from './lib.mjs'
 
-const appDir = process.env.CLEARPLAY_APP || repo
+const appDir = process.env.RIMELIGHT_APP || repo
 const RUNS = Number(process.env.RUNS || 3)
 
 // ---- startup JS from the built HTML
@@ -98,7 +98,7 @@ for (let i = 0; i < RUNS; i++) {
   fs.rmSync(shimLog, { force: true })
   const s = await launch({
     login: true,
-    env: realMpv ? { CLEARPLAY_MPV: path.join(shimDir, 'mpv') } : {},
+    env: realMpv ? { RIMELIGHT_MPV: path.join(shimDir, 'mpv') } : {},
   })
   const { app, win, cdp } = s
   // Wait for covers on home.

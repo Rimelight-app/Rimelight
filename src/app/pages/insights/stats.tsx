@@ -71,7 +71,7 @@ function BarList({
 }) {
   const { t } = useTranslation()
   if (items.length === 0)
-    return <p className="text-sm text-white/45">{t('clearplay.stats.empty')}</p>
+    return <p className="text-sm text-white/45">{t('rimelight.stats.empty')}</p>
   const max = Math.max(...items.map((i) => i[metric]), 1)
 
   return (
@@ -79,7 +79,7 @@ function BarList({
       {items.map((item) => {
         const value =
           metric === 'plays'
-            ? t('clearplay.stats.playsCount', {
+            ? t('rimelight.stats.playsCount', {
                 count: item.plays,
                 n: fmtInt(item.plays),
               })
@@ -94,7 +94,7 @@ function BarList({
           <li
             key={item.key}
             className="group"
-            title={`${item.label}: ${value} · ${t('clearplay.stats.playsCount', { count: item.plays, n: fmtInt(item.plays) })}`}
+            title={`${item.label}: ${value} · ${t('rimelight.stats.playsCount', { count: item.plays, n: fmtInt(item.plays) })}`}
           >
             <div className="mb-1 flex items-baseline justify-between gap-3">
               {to ? (
@@ -127,7 +127,7 @@ export default function StatsPage() {
 
   const { data, isLoading, isFetching, isError, refetch, dataUpdatedAt } =
     useQuery({
-      queryKey: ['clearplay-stats'],
+      queryKey: ['rimelight-stats'],
       // signal: leaving the page stops the download.
       queryFn: async ({ signal }) =>
         computeStats(await statsService.getAllSongs(setLoaded, signal)),
@@ -141,10 +141,10 @@ export default function StatsPage() {
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
-            {t('clearplay.stats.kicker')}
+            {t('rimelight.stats.kicker')}
           </p>
           <h1 className="mt-1 text-4xl font-bold tracking-tight">
-            {t('clearplay.stats.title')}
+            {t('rimelight.stats.title')}
           </h1>
         </div>
         <button
@@ -154,7 +154,7 @@ export default function StatsPage() {
           className="glass-chip inline-flex h-9 items-center gap-2 rounded-full px-4 text-[13px] text-white/80 transition-colors hover:bg-white/[0.14] hover:text-white disabled:opacity-50"
         >
           <RefreshCw className={cn('size-4', isFetching && 'animate-spin')} />
-          {t('clearplay.stats.refresh')}
+          {t('rimelight.stats.refresh')}
         </button>
       </div>
 
@@ -163,13 +163,13 @@ export default function StatsPage() {
           data-testid="stats-error"
           className="glass-panel flex h-48 flex-col items-center justify-center gap-2 rounded-[20px] text-white/60"
         >
-          <p className="text-sm">{t('clearplay.stats.error')}</p>
+          <p className="text-sm">{t('rimelight.stats.error')}</p>
         </div>
       ) : isLoading || !data ? (
         <div className="glass-panel flex h-48 flex-col items-center justify-center gap-2 rounded-[20px] text-white/60">
           <RefreshCw className="size-5 animate-spin" />
           <p className="text-sm tabular-nums">
-            {t('clearplay.stats.loading', { n: fmtInt(loaded) })}
+            {t('rimelight.stats.loading', { n: fmtInt(loaded) })}
           </p>
         </div>
       ) : (
@@ -177,17 +177,17 @@ export default function StatsPage() {
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
             <Tile
               icon={<Clock />}
-              label={t('clearplay.stats.hours')}
+              label={t('rimelight.stats.hours')}
               value={fmtHours(data.listenSeconds)}
-              note={t('clearplay.stats.hoursNote', {
+              note={t('rimelight.stats.hoursNote', {
                 days: (data.listenSeconds / 86400).toFixed(1),
               })}
             />
             <Tile
               icon={<Headphones />}
-              label={t('clearplay.stats.plays')}
+              label={t('rimelight.stats.plays')}
               value={fmtInt(data.plays)}
-              note={t('clearplay.stats.playsNote', {
+              note={t('rimelight.stats.playsNote', {
                 avg: data.songsPlayed
                   ? (data.plays / data.songsPlayed).toFixed(1)
                   : '0',
@@ -195,18 +195,18 @@ export default function StatsPage() {
             />
             <Tile
               icon={<Disc3 />}
-              label={t('clearplay.stats.discovered')}
+              label={t('rimelight.stats.discovered')}
               value={`${data.songs ? Math.round((data.songsPlayed / data.songs) * 100) : 0}%`}
-              note={t('clearplay.stats.discoveredNote', {
+              note={t('rimelight.stats.discoveredNote', {
                 played: fmtInt(data.songsPlayed),
                 total: fmtInt(data.songs),
               })}
             />
             <Tile
               icon={<Library />}
-              label={t('clearplay.stats.library')}
+              label={t('rimelight.stats.library')}
               value={fmtHours(data.librarySeconds)}
-              note={t('clearplay.stats.libraryNote', {
+              note={t('rimelight.stats.libraryNote', {
                 albums: fmtInt(data.albums),
                 artists: fmtInt(data.artists),
                 size: fmtBytes(data.libraryBytes),
@@ -215,14 +215,14 @@ export default function StatsPage() {
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
-            <Section title={t('clearplay.stats.topArtists')}>
+            <Section title={t('rimelight.stats.topArtists')}>
               <BarList
                 items={data.topArtists}
                 metric="seconds"
                 link={(r) => (r.id ? ROUTES.ARTIST.PAGE(r.id) : undefined)}
               />
             </Section>
-            <Section title={t('clearplay.stats.topGenres')}>
+            <Section title={t('rimelight.stats.topGenres')}>
               <BarList
                 items={data.topGenres}
                 metric="seconds"
@@ -232,10 +232,10 @@ export default function StatsPage() {
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
-            <Section title={t('clearplay.stats.topSongs')}>
+            <Section title={t('rimelight.stats.topSongs')}>
               {data.topSongs.length === 0 ? (
                 <p className="text-sm text-white/45">
-                  {t('clearplay.stats.empty')}
+                  {t('rimelight.stats.empty')}
                 </p>
               ) : (
                 <ol className="space-y-1">
@@ -262,7 +262,7 @@ export default function StatsPage() {
                         </p>
                       </div>
                       <span className="text-[12px] tabular-nums text-white/60">
-                        {t('clearplay.stats.playsCount', {
+                        {t('rimelight.stats.playsCount', {
                           count: s.plays,
                           n: fmtInt(s.plays),
                         })}
@@ -273,10 +273,10 @@ export default function StatsPage() {
               )}
             </Section>
             <div className="space-y-4">
-              <Section title={t('clearplay.stats.decades')}>
+              <Section title={t('rimelight.stats.decades')}>
                 <BarList items={data.decades} metric="seconds" />
               </Section>
-              <Section title={t('clearplay.stats.formats')}>
+              <Section title={t('rimelight.stats.formats')}>
                 <div className="flex flex-wrap gap-1.5">
                   {data.formats.map((f) => (
                     <span
@@ -291,7 +291,7 @@ export default function StatsPage() {
                   ))}
                 </div>
                 <p className="mt-3 text-[12px] text-white/50">
-                  {t('clearplay.stats.lossless', {
+                  {t('rimelight.stats.lossless', {
                     pct: Math.round(data.losslessShare * 100),
                   })}
                 </p>
@@ -300,7 +300,7 @@ export default function StatsPage() {
           </div>
 
           {data.topAlbums.length > 0 && (
-            <Section title={t('clearplay.stats.topAlbums')}>
+            <Section title={t('rimelight.stats.topAlbums')}>
               <div className="grid grid-cols-3 gap-4 lg:grid-cols-6">
                 {data.topAlbums.map((a) => (
                   <Link
@@ -318,7 +318,7 @@ export default function StatsPage() {
                       {a.label}
                     </p>
                     <p className="truncate text-[12px] text-white/50">
-                      {t('clearplay.stats.playsCount', {
+                      {t('rimelight.stats.playsCount', {
                         count: a.plays,
                         n: fmtInt(a.plays),
                       })}
@@ -330,7 +330,7 @@ export default function StatsPage() {
           )}
 
           <p className="pt-2 text-center text-[11px] text-white/35">
-            {t('clearplay.stats.footnote')}
+            {t('rimelight.stats.footnote')}
             {dataUpdatedAt
               ? ` · ${new Date(dataUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
               : ''}

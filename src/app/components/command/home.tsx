@@ -17,7 +17,7 @@ type HomeProps = CommandItemProps & {
   setPages: (value: CommandPages[]) => void
 }
 
-// ClearPlay has a single glass theme.
+// Rimelight has a single glass theme.
 const appHideThemes = true
 
 export function CommandHome({ pages, setPages, runCommand }: HomeProps) {
@@ -40,7 +40,7 @@ export function CommandHome({ pages, setPages, runCommand }: HomeProps) {
       {handoff && (
         <CommandItem onSelect={() => runCommand(() => continueWithMessage())}>
           <CustomCommandItem variant="ContinueFrom">
-            {t('clearplay.handoff.continueFrom', {
+            {t('rimelight.handoff.continueFrom', {
               device: handoff.offer.device,
             })}
           </CustomCommandItem>
@@ -51,13 +51,13 @@ export function CommandHome({ pages, setPages, runCommand }: HomeProps) {
           onSelect={() => runCommand(() => startRadio(radioSeed, playing))}
         >
           <CustomCommandItem variant="StartRadio">
-            {t('clearplay.radio.startFrom', { name: playing.title })}
+            {t('rimelight.radio.startFrom', { name: playing.title })}
           </CustomCommandItem>
         </CommandItem>
       )}
       <CommandItem onSelect={() => runCommand(() => shuffleLibrary())}>
         <CustomCommandItem variant="ShuffleLibrary">
-          {t('clearplay.shuffleLibrary.label')}
+          {t('rimelight.shuffleLibrary.label')}
         </CustomCommandItem>
       </CommandItem>
       <CommandItem onSelect={() => setPages([...pages, 'GOTO'])}>

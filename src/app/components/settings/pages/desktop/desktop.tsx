@@ -12,15 +12,15 @@ import {
 } from '@/app/components/settings/section'
 import { Switch } from '@/app/components/ui/switch'
 import { useAppDesktopActions, useAppDesktopData } from '@/store/app.store'
-import { useClearPlaySettings } from '@/store/clearplay-settings.store'
+import { useRimelightSettings } from '@/store/rimelight-settings.store'
 import { isWindows } from '@/utils/desktop'
 
 export function DesktopSettings() {
   const { t } = useTranslation()
   const { minimizeToTray } = useAppDesktopData()
   const { setMinimizeToTray } = useAppDesktopActions()
-  const taskbarProgress = useClearPlaySettings((s) => s.taskbarProgress)
-  const setSettings = useClearPlaySettings((s) => s.set)
+  const taskbarProgress = useRimelightSettings((s) => s.taskbarProgress)
+  const setSettings = useRimelightSettings((s) => s.set)
 
   return (
     <Root>
@@ -44,8 +44,8 @@ export function DesktopSettings() {
         </ContentItem>
         {isWindows && (
           <ContentItem>
-            <ContentItemTitle info={t('clearplay.taskbarProgress.info')}>
-              {t('clearplay.taskbarProgress.label')}
+            <ContentItemTitle info={t('rimelight.taskbarProgress.info')}>
+              {t('rimelight.taskbarProgress.label')}
             </ContentItemTitle>
             <ContentItemForm>
               <Switch

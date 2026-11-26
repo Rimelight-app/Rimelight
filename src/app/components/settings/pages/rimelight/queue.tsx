@@ -11,12 +11,12 @@ import {
   Root,
 } from '@/app/components/settings/section'
 import { Switch } from '@/app/components/ui/switch'
-import { useClearPlaySettings } from '@/store/clearplay-settings.store'
+import { useRimelightSettings } from '@/store/rimelight-settings.store'
 
 export function QueueSettings() {
   const { t } = useTranslation()
-  const { syncQueue, autoDj, set } = useClearPlaySettings()
-  const k = 'clearplay.queue'
+  const { syncQueue, autoDj, set } = useRimelightSettings()
+  const k = 'rimelight.queue'
 
   return (
     <Root>
