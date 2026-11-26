@@ -88,6 +88,9 @@ export function useAlbumsListModel() {
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset,
     enabled: enableMainQuery(),
+    // Coming back to Albums doesn't refetch every loaded page: albums added
+    // on the server show up within 5 minutes (or after a restart).
+    staleTime: 5 * 60 * 1000,
   })
 
   useEffect(() => {

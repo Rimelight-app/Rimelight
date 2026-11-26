@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from 'react'
-import { getCoverArtUrl } from '@/api/httpClient'
+import { getSimpleCoverArtUrl } from '@/api/httpClient'
 import { CoverArt } from '@/types/coverArtType'
 
 interface ImageLoaderProps {
@@ -37,7 +37,8 @@ export function ImageLoader({
 
     const fetchImage = async () => {
       try {
-        const url = await getCoverArtUrl(id, type, size.toString())
+        // Cover URLs are stable: Chromium's HTTP cache keeps the images.
+        const url = getSimpleCoverArtUrl(id, type, size.toString())
 
         if (!abortController.signal.aborted) {
           setSrc(url)

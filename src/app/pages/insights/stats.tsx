@@ -125,12 +125,16 @@ export default function StatsPage() {
   const { t } = useTranslation()
   const [loaded, setLoaded] = useState(0)
 
-  const { data, isLoading, isFetching, refetch, dataUpdatedAt } = useQuery({
-    queryKey: ['clearplay-stats'],
-    queryFn: async () =>
-      computeStats(await statsService.getAllSongs(setLoaded)),
-    staleTime: 10 * 60 * 1000,
-  })
+  const { data, isLoading, isFetching, isError, refetch, dataUpdatedAt } =
+    useQuery({
+      queryKey: ['clearplay-stats'],
+      // signal: leaving the page stops the download.
+      queryFn: async ({ signal }) =>
+        computeStats(await statsService.getAllSongs(setLoaded, signal)),
+      staleTime: 10 * 60 * 1000,
+      // A retry downloads the whole library again: Refresh does it instead.
+      retry: false,
+    })
 
   return (
     <div className="w-full px-8 pb-8 pt-6">
@@ -154,7 +158,14 @@ export default function StatsPage() {
         </button>
       </div>
 
-      {isLoading || !data ? (
+      {isError && !data && !isFetching ? (
+        <div
+          data-testid="stats-error"
+          className="glass-panel flex h-48 flex-col items-center justify-center gap-2 rounded-[20px] text-white/60"
+        >
+          <p className="text-sm">{t('clearplay.stats.error')}</p>
+        </div>
+      ) : isLoading || !data ? (
         <div className="glass-panel flex h-48 flex-col items-center justify-center gap-2 rounded-[20px] text-white/60">
           <RefreshCw className="size-5 animate-spin" />
           <p className="text-sm tabular-nums">

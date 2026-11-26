@@ -17,8 +17,6 @@ declare global {
     SERVER_TYPE: string | undefined
     APP_THEME: string | undefined
     APP_HIDE_THEMES: boolean | undefined
-    IMAGE_CACHE_ENABLED: boolean | undefined
-    DISABLE_IMAGE_CACHE_TOGGLE: boolean | undefined
     DISABLE_DOWNLOADS: boolean | undefined
     DISABLE_LRCLIB: boolean | undefined
   }

@@ -35,8 +35,6 @@ interface IAppPages {
   setHideRadiosSection: (value: boolean) => void
   artistsPageViewType: PageViewType
   setArtistsPageViewType: (type: PageViewType) => void
-  imagesCacheLayerEnabled: boolean
-  setImagesCacheLayerEnabled: (value: boolean) => void
   lyricsCacheEnabled: boolean
   setLyricsCacheEnabled: (value: boolean) => void
   mediaCacheEnabled: boolean

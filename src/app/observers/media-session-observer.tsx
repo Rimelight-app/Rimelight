@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   usePlayerIsPlaying,
@@ -25,50 +25,61 @@ export function MediaSessionObserver() {
     radioList.length === 0 &&
     podcastList.length === 0
 
-  const resetAppTitle = useCallback(() => {
-    document.title = appName
-  }, [])
-
+  // Play / pause only changes the playback state: no new metadata, so the
+  // OS media controls don't fetch the cover again.
   useEffect(() => {
     manageMediaSession.setPlaybackState(isPlaying)
+  }, [isPlaying])
 
-    if (hasNothingPlaying) {
+  // What is playing, by id (a starred or rated song is the same song).
+  const itemKey = hasNothingPlaying
+    ? null
+    : isSong && song
+      ? `song:${song.id}`
+      : isRadio && radio
+        ? `radio:${radio.id}`
+        : isPodcast && episode
+          ? `podcast:${episode.id}`
+          : null
+  const latest = useRef({ song, radio, episode, radioLabel })
+  latest.current = { song, radio, episode, radioLabel }
+  const metadataFor = useRef<string | null>(null)
+
+  // Metadata once per item, when it first plays (as before: nothing is
+  // shown for a queue that was restored paused).
+  useEffect(() => {
+    if (itemKey === null) {
+      metadataFor.current = null
       manageMediaSession.removeMediaSession()
-    }
-
-    if (hasNothingPlaying || !isPlaying) {
-      resetAppTitle()
       return
     }
-
-    let title = ''
-
-    if (isRadio && radio) {
-      title = `${radioLabel} - ${radio.name}`
+    if (!isPlaying || metadataFor.current === itemKey) return
+    metadataFor.current = itemKey
+    const { song, radio, episode, radioLabel } = latest.current
+    if (itemKey.startsWith('radio:') && radio) {
       manageMediaSession.setRadioMediaSession(radioLabel, radio.name)
-    }
-    if (isSong && song) {
-      title = `${song.artist} - ${song.title}`
+    } else if (itemKey.startsWith('song:') && song) {
       manageMediaSession.setMediaSession(song)
-    }
-    if (isPodcast && episode) {
-      title = `${episode.title} - ${episode.podcast.title}`
+    } else if (itemKey.startsWith('podcast:') && episode) {
       manageMediaSession.setPodcastMediaSession(episode)
     }
+  }, [itemKey, isPlaying])
 
-    document.title = title
-  }, [
-    episode,
-    hasNothingPlaying,
-    isPlaying,
-    isPodcast,
-    isRadio,
-    isSong,
-    radio,
-    radioLabel,
-    song,
-    resetAppTitle,
-  ])
+  // The window title: the song while playing, the app name otherwise.
+  useEffect(() => {
+    const { song, radio, episode, radioLabel } = latest.current
+    let title = appName
+    if (itemKey !== null && isPlaying) {
+      if (itemKey.startsWith('radio:') && radio) {
+        title = `${radioLabel} - ${radio.name}`
+      } else if (itemKey.startsWith('song:') && song) {
+        title = `${song.artist} - ${song.title}`
+      } else if (itemKey.startsWith('podcast:') && episode) {
+        title = `${episode.title} - ${episode.podcast.title}`
+      }
+    }
+    if (document.title !== title) document.title = title
+  }, [itemKey, isPlaying])
 
   return null
 }

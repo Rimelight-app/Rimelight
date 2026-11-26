@@ -11,20 +11,46 @@ function removeMediaSession() {
   navigator.mediaSession.metadata = null
 }
 
-function setMediaSession(song: ISong) {
+/**
+ * The OS media controls only take http(s), data: or blob: images, so a song
+ * without a cover gets the default cover as a data: URL (its own chunk,
+ * loaded the first time it's needed).
+ */
+let defaultArtwork: Promise<string> | null = null
+function defaultArtworkDataUrl() {
+  defaultArtwork ??= import('@/assets/default_album_art.png?inline').then(
+    (m) => m.default,
+  )
+  return defaultArtwork
+}
+
+async function setMediaSession(song: ISong) {
   if (!navigator.mediaSession) return
+
+  const artwork: MediaImage[] = song.coverArt
+    ? artworkSizes.map((size) => ({
+        src: getSimpleCoverArtUrl(song.coverArt, 'song', size),
+        sizes: [size, size].join('x'),
+        type: 'image/jpeg',
+      }))
+    : [
+        {
+          src: await defaultArtworkDataUrl(),
+          sizes: '800x800',
+          type: 'image/png',
+        },
+      ]
+
+  // Another song may have started while the default cover loaded.
+  const { songlist } = usePlayerStore.getState()
+  const current = songlist.currentList[songlist.currentSongIndex]
+  if (current && current.id !== song.id) return
 
   navigator.mediaSession.metadata = new MediaMetadata({
     title: song.title,
     artist: song.artist,
     album: song.album,
-    artwork: artworkSizes.map((size): MediaImage => {
-      return {
-        src: getSimpleCoverArtUrl(song.coverArt, 'song', size),
-        sizes: [size, size].join('x'),
-        type: 'image/jpeg',
-      }
-    }),
+    artwork,
   })
 }
 

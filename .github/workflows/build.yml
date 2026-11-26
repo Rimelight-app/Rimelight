@@ -84,6 +84,9 @@ jobs:
       - name: Unit checks (songs that can't play, page errors)
         run: node tools/dev-rig/playback-errors-unit.mjs
 
+      - name: Unit checks (Stats numbers)
+        run: node tools/dev-rig/stats-unit.mjs
+
       - name: Compile main and renderer
         run: pnpm electron:build
 

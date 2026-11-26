@@ -20,13 +20,15 @@ async function get({
   albumOffset = 0,
   songCount = 20,
   songOffset = 0,
-}: SearchQueryOptions) {
+  signal,
+}: SearchQueryOptions & { signal?: AbortSignal }) {
   // Navidrome expects double quotes "" but other servers expect an empty string
   const serverType = useAppStore.getState().data.serverType
   const searchAllQuery = serverType === 'navidrome' ? '""' : ''
 
   const response = await httpClient<ISearchResponse>('/search3', {
     method: 'GET',
+    signal,
     query: {
       query: query || searchAllQuery,
       artistCount: artistCount.toString(),

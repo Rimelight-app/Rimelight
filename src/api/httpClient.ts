@@ -1,5 +1,6 @@
 import omit from 'lodash/omit'
-import { getCachedImage } from '@/cache/image'
+import defaultAlbumArt from '@/assets/default_album_art.png'
+import defaultArtistArt from '@/assets/default_artist_art.png'
 import { useAppStore } from '@/store/app.store'
 import { CoverArt } from '@/types/coverArtType'
 import {
@@ -90,7 +91,10 @@ async function browserFetch<T>(
 
     return undefined
   } catch (error) {
-    console.error('Error on browserFetch request', error)
+    // A request the app cancelled on purpose (e.g. leaving Stats) isn't one.
+    if ((error as Error)?.name !== 'AbortError') {
+      console.error('Error on browserFetch request', error)
+    }
     return undefined
   }
 }
@@ -179,31 +183,10 @@ export function getSimpleCoverArtUrl(
 ): string {
   if (!id) {
     // everything except artists uses the same default cover art
-    const resolvedType = type === 'artist' ? 'artist' : 'album'
-    return `/default_${resolvedType}_art.png`
+    return type === 'artist' ? defaultArtistArt : defaultAlbumArt
   }
 
   return getUrl('getCoverArt', { id, size })
-}
-
-export async function getCoverArtUrl(
-  id?: string,
-  type: CoverArt = 'album',
-  size = '300',
-): Promise<string> {
-  const url = getSimpleCoverArtUrl(id, type, size)
-
-  if (!id) {
-    return url
-  }
-
-  const { imagesCacheLayerEnabled } = useAppStore.getState().pages
-
-  if (!imagesCacheLayerEnabled) {
-    return url
-  }
-
-  return getCachedImage(url)
 }
 
 export function getSongStreamUrl(

@@ -17,13 +17,9 @@ import { Switch } from '@/app/components/ui/switch'
 import { clearAllCaches } from '@/cache/clearAll'
 import { useAppCaches } from '@/store/app.store'
 
-const { DISABLE_IMAGE_CACHE_TOGGLE } = window
-
 export function CachesContent() {
   const { t } = useTranslation()
   const {
-    imagesCacheLayerEnabled,
-    setImagesCacheLayerEnabled,
     lyricsCacheEnabled,
     setLyricsCacheEnabled,
     mediaCacheEnabled,
@@ -54,18 +50,6 @@ export function CachesContent() {
         </HeaderDescription>
       </Header>
       <Content>
-        <ContentItem>
-          <ContentItemTitle info={t('settings.content.caches.images.info')}>
-            {t('settings.content.caches.images.label')}
-          </ContentItemTitle>
-          <ContentItemForm>
-            <Switch
-              checked={imagesCacheLayerEnabled}
-              onCheckedChange={setImagesCacheLayerEnabled}
-              disabled={DISABLE_IMAGE_CACHE_TOGGLE}
-            />
-          </ContentItemForm>
-        </ContentItem>
         <ContentItem>
           <ContentItemTitle info={t('settings.content.caches.lyrics.info')}>
             {t('settings.content.caches.lyrics.label')}

@@ -1,4 +1,47 @@
-import { ISong } from '@/types/responses/song'
+import type { ISong } from '@/types/responses/song'
+
+/** The song fields computeStats reads; Stats keeps only these per song. */
+export type StatsSong = Pick<
+  ISong,
+  | 'id'
+  | 'title'
+  | 'artist'
+  | 'artistId'
+  | 'album'
+  | 'albumId'
+  | 'coverArt'
+  | 'duration'
+  | 'size'
+  | 'suffix'
+  | 'genre'
+  | 'year'
+  | 'playCount'
+  | 'played'
+>
+
+/**
+ * Drops everything else from a song (Navidrome sends about 40 fields, with
+ * arrays), so a whole library in memory stays small. The numbers Stats
+ * shows don't change.
+ */
+export function statsFields(s: ISong): StatsSong {
+  return {
+    id: s.id,
+    title: s.title,
+    artist: s.artist,
+    artistId: s.artistId,
+    album: s.album,
+    albumId: s.albumId,
+    coverArt: s.coverArt,
+    duration: s.duration,
+    size: s.size,
+    suffix: s.suffix,
+    genre: s.genre,
+    year: s.year,
+    playCount: s.playCount,
+    played: s.played,
+  }
+}
 
 export interface Ranked {
   key: string
@@ -26,7 +69,7 @@ export interface LibraryStats {
   topAlbums: Ranked[]
   topGenres: Ranked[]
   decades: Ranked[]
-  recent: (ISong & { playedAt: number })[]
+  recent: (StatsSong & { playedAt: number })[]
 }
 
 const LOSSLESS = new Set([
@@ -65,7 +108,7 @@ const top = (
     .slice(0, n)
 
 /** Aggregates per-song play counts into listening statistics. */
-export function computeStats(songs: ISong[]): LibraryStats {
+export function computeStats(songs: StatsSong[]): LibraryStats {
   const albums = new Set<string>()
   const artists = new Set<string>()
   const formats = new Map<string, number>()

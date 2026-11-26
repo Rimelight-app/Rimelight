@@ -1,6 +1,7 @@
 import { httpClient } from '@/api/httpClient'
 import { ISong } from '@/types/responses/song'
 import { SubsonicResponse } from '@/types/responses/subsonicResponse'
+import { StatsSong, statsFields } from '@/utils/libraryStats'
 import { search } from './search'
 
 export type NowPlayingEntry = ISong & {
@@ -45,15 +46,22 @@ const PAGE = 500
 
 /**
  * Fetches every song in the library through search3 paging (a few requests
- * run in parallel). onProgress reports how many songs have arrived.
+ * run in parallel), keeping only the fields Stats uses. onProgress reports
+ * how many songs have arrived. Stops when `signal` aborts (the page was left).
+ * A page that fails makes the whole load fail: partial numbers would look
+ * final.
  */
-async function getAllSongs(onProgress?: (loaded: number) => void) {
-  const all: ISong[] = []
+async function getAllSongs(
+  onProgress?: (loaded: number) => void,
+  signal?: AbortSignal,
+): Promise<StatsSong[]> {
+  const all: StatsSong[] = []
   let offset = 0
   let done = false
   const parallel = 4
 
   while (!done) {
+    signal?.throwIfAborted()
     const batch = await Promise.all(
       Array.from({ length: parallel }, (_, i) =>
         search.get({
@@ -62,12 +70,15 @@ async function getAllSongs(onProgress?: (loaded: number) => void) {
           albumCount: 0,
           songCount: PAGE,
           songOffset: offset + i * PAGE,
+          signal,
         }),
       ),
     )
+    signal?.throwIfAborted()
     for (const result of batch) {
-      const songs = result?.song ?? []
-      all.push(...songs)
+      if (!result) throw new Error('Stats: a page of songs could not be loaded')
+      const songs = result.song ?? []
+      for (const song of songs) all.push(statsFields(song))
       if (songs.length < PAGE) done = true
     }
     offset += parallel * PAGE

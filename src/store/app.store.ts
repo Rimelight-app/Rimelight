@@ -30,7 +30,6 @@ const {
   HIDE_PLAYLISTS_SECTION,
   HIDE_RADIOS_SECTION,
   SERVER_TYPE,
-  IMAGE_CACHE_ENABLED,
 } = window
 
 const defaultArtworkServiceUrl = 'https://artwork.m8tec.top'
@@ -203,12 +202,6 @@ export const useAppStore = createWithEqualityFn<IAppContext>()(
             setArtistsPageViewType: (type) => {
               set((state) => {
                 state.pages.artistsPageViewType = type
-              })
-            },
-            imagesCacheLayerEnabled: IMAGE_CACHE_ENABLED ?? false,
-            setImagesCacheLayerEnabled: (value) => {
-              set((state) => {
-                state.pages.imagesCacheLayerEnabled = value
               })
             },
             lyricsCacheEnabled: true,
@@ -420,7 +413,6 @@ export const useAppStore = createWithEqualityFn<IAppContext>()(
             let hideFavoritesSection = false
             let hidePlaylistsSection = false
             let hideRadiosSection = false
-            let enableImageCache = false
             let enableLyricsCache = true
             let enableMediaCache = true
 
@@ -433,8 +425,6 @@ export const useAppStore = createWithEqualityFn<IAppContext>()(
               hidePlaylistsSection =
                 persisted.pages.hidePlaylistsSection ?? false
               hideRadiosSection = persisted.pages.hideRadiosSection ?? false
-              enableImageCache =
-                persisted.pages.imagesCacheLayerEnabled ?? false
               enableLyricsCache = persisted.pages.lyricsCacheEnabled ?? true
               enableMediaCache = persisted.pages.mediaCacheEnabled ?? true
             }
@@ -456,9 +446,6 @@ export const useAppStore = createWithEqualityFn<IAppContext>()(
             if (HIDE_RADIOS_SECTION !== undefined) {
               hideRadiosSection = HIDE_RADIOS_SECTION
             }
-            if (IMAGE_CACHE_ENABLED !== undefined) {
-              enableImageCache = IMAGE_CACHE_ENABLED
-            }
 
             if (hasValidConfig) {
               const newState = {
@@ -475,7 +462,6 @@ export const useAppStore = createWithEqualityFn<IAppContext>()(
                 pages: {
                   hidePlaylistsSection,
                   hideRadiosSection,
-                  imagesCacheLayerEnabled: enableImageCache,
                   lyricsCacheEnabled: enableLyricsCache,
                   mediaCacheEnabled: enableMediaCache,
                 },
@@ -499,7 +485,6 @@ export const useAppStore = createWithEqualityFn<IAppContext>()(
                 hideFavoritesSection,
                 hidePlaylistsSection,
                 hideRadiosSection,
-                imagesCacheLayerEnabled: enableImageCache,
                 lyricsCacheEnabled: enableLyricsCache,
                 mediaCacheEnabled: enableMediaCache,
               },
@@ -588,16 +573,8 @@ export const useAppArtistsViewType = () =>
       isGridView,
     }
   })
-export const useAppImagesCacheLayer = () =>
-  useAppStore((state) => ({
-    imagesCacheLayerEnabled: state.pages.imagesCacheLayerEnabled,
-    setImagesCacheLayerEnabled: state.pages.setImagesCacheLayerEnabled,
-  }))
-
 export const useAppCaches = () =>
   useAppStore((state) => ({
-    imagesCacheLayerEnabled: state.pages.imagesCacheLayerEnabled,
-    setImagesCacheLayerEnabled: state.pages.setImagesCacheLayerEnabled,
     lyricsCacheEnabled: state.pages.lyricsCacheEnabled,
     setLyricsCacheEnabled: state.pages.setLyricsCacheEnabled,
     mediaCacheEnabled: state.pages.mediaCacheEnabled,

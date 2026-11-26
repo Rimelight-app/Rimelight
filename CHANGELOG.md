@@ -15,6 +15,13 @@ All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 - **Server errors looked like "404 Not Found"**: a server error, a broken answer or a timeout on an album, artist or playlist now shows "Couldn't load this page" with Retry, and a rejected login shows "The server rejected your login" with Log in again (the address and username stay filled in). Only something that really doesn't exist shows the 404 page.
 - **Starting without the server showed the login screen**: if the server is off or the network is down when ClearPlay starts, it now opens normally with "Can't reach <server>. Retrying…", asks again after 5 s, 15 s, 30 s and then every minute (and as soon as the computer is back online), and loads the page once the server answers. Local songs and the saved queue keep working meanwhile. A rejected login still opens the server page.
 - **The queue was deleted when it finished**: when the last song ends (repeat off), ClearPlay now stops on it, paused at the start, and keeps the queue.
+- **Stats kept downloading after you left it, and could show wrong totals**: Stats reads the whole library; leaving the page now stops that. If part of the library can't be loaded, Stats says so and offers Refresh instead of showing partial numbers as if they were final. It also uses less memory while it loads.
+- **Albums reloaded every page on each visit**: coming back to Albums after scrolling no longer asks the server for every page again. Albums added on the server show up within 5 minutes (or after a restart).
+- **The media controls fetched the cover again on every play and pause**: the song's details and cover are now sent to the system media controls (Windows, Linux) once per song.
+- **Songs without a cover had no picture in the system media controls**, and the default cover image didn't load in the app. Both show the default cover now.
+
+### Removed
+- **Settings → Content → "Enable Image Cache"**: with it on, ClearPlay kept a copy of every cover it showed in memory and never let go of it, so memory use grew until restart. Covers are cached by the app's normal web cache anyway, so the setting is gone; nothing changes if you had it off.
 
 ## [0.6.0] - 2026-11-24
 

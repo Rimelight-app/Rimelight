@@ -872,7 +872,8 @@
       "playsCount_one": "{{n}} play",
       "playsCount_other": "{{n}} plays",
       "empty": "Nothing played yet.",
-      "footnote": "Based on the play counts Navidrome records for your user (scrobbles)"
+      "footnote": "Based on the play counts Navidrome records for your user (scrobbles)",
+      "error": "Couldn't load the statistics: the server didn't answer for part of the library. Press Refresh to try again."
     },
     "nowPlaying": {
       "kicker": "Listening on your server",
