@@ -265,7 +265,7 @@ fun SettingsScreen(ui: SettingsUi, actions: SettingsActions, bottomPadding: Dp) 
 
         // About -----------------------------------------------------------------
         Group("About", null) {
-            ActionRow(R.drawable.ic_info, "About ClearPlay", "Version ${ui.version}") { aboutOpen = true }
+            ActionRow(R.drawable.ic_info, "About Rimelight", "Version ${ui.version}") { aboutOpen = true }
         }
     }
 
@@ -325,7 +325,7 @@ private fun InfoRow(icon: Int, title: String, value: String) {
 }
 
 const val CONTINUE_NOTE =
-    "Saves your queue and position to Navidrome when the song changes or you pause, so ClearPlay on your computer " +
+    "Saves your queue and position to Navidrome when the song changes or you pause, so Rimelight on your computer " +
         "(or another app such as Symfonium) can continue it. Shuffle library and similar-music refills don't carry over."
 
 @Composable

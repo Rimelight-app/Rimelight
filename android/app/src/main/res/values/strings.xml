@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ClearPlay</string>
+    <string name="app_name">Rimelight</string>
     <string name="downloads_channel">Downloads</string>
     <string name="downloads_waiting_wifi">Waiting for Wi-Fi</string>
 </resources>

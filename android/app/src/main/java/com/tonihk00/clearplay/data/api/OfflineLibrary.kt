@@ -1,7 +1,7 @@
 package com.tonihk00.clearplay.data.api
 
 /**
- * A library built from songs already on the phone: ClearPlay downloads and, with
+ * A library built from songs already on the phone: this app's downloads and, with
  * permission, the phone's own music. Albums, artists, genres and search work the same
  * as with a server, so the screens don't change when the connection drops.
  */

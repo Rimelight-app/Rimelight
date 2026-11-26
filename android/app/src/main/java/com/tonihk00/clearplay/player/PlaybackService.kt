@@ -263,7 +263,7 @@ class PlaybackService : MediaLibraryService() {
             val root = MediaItem.Builder()
                 .setMediaId(ROOT)
                 .setMediaMetadata(
-                    MediaMetadata.Builder().setTitle("ClearPlay").setIsBrowsable(true).setIsPlayable(false)
+                    MediaMetadata.Builder().setTitle("Rimelight").setIsBrowsable(true).setIsPlayable(false)
                         .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED).build(),
                 ).build()
             return Futures.immediateFuture(LibraryResult.ofItem(root, params))

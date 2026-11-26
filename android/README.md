@@ -1,10 +1,12 @@
-# ClearPlay for Android
+# Rimelight for Android
 
-The ClearPlay frosted-glass player for Navidrome / OpenSubsonic, as a native Android app.
+The Rimelight frosted-glass player for Navidrome / OpenSubsonic, as a native Android app
+([Rimelight-app/Rimelight](https://github.com/Rimelight-app/Rimelight), branch `android`).
+It was called ClearPlay for Android up to 1.6.0 (same app, same application ID; 1.6.1 updates over it).
 Kotlin, Jetpack Compose, Media3 (ExoPlayer + MediaLibraryService), Coil, Haze, Ktor.
 Same design tokens as the desktop `.glass` theme (`src/themes.css`).
 
-Status: **1.5.3** — see `CHANGELOG.md`.
+Status: **1.6.1** — see `CHANGELOG.md`.
 
 ## Build
 
@@ -41,7 +43,7 @@ app/src/main/java/com/tonihk00/clearplay/
   player/QueueStore        the queue as last left (filesDir/queue.json) for playback resumption
   player/QueueWatcher      service-side listener: saves the queue, feeds Continue, Resume shortcut
   player/QueueFiller       shuffle library's refill, on the service's player
-  player/QueueHandoff      Continue on other devices: the rules, ported line by line from desktop 0.6.0
+  player/QueueHandoff      Continue on other devices: the rules, ported line by line from desktop 0.6.2
   player/Handoff           Continue on other devices at run time (saves, look, offer, left behind)
   data/LibraryCache        first page of each library list on disk, per account
   ui/theme/Theme.kt        design tokens (Cp.*), Inter, motion
@@ -60,7 +62,7 @@ app/src/main/java/com/tonihk00/clearplay/
 ## Releases
 
 `.github/workflows/android.yml` runs on changes under `android/`. A tag `android-vX.Y.Z`
-publishes `ClearPlay-X.Y.Z.apk` as a GitHub release that is **not** marked latest,
+publishes `Rimelight-X.Y.Z.apk` as a GitHub release that is **not** marked latest,
 so the desktop updater keeps seeing desktop releases.
 
 Every release is signed with the same key, so each APK installs over the previous one
@@ -119,8 +121,9 @@ the emulator reaches it at `http://10.0.2.2:4544` (admin / test1234).
 ### Continue on other devices, end to end
 
 `tools/e2e/` drives the app through its UI (adb + `uiautomator dump`) against the rig's
-Navidrome 0.64.2, with `pretend_desktop.mjs` playing ClearPlay desktop (c=ClearPlay) using the
-desktop's own rules (`git show v0.6.0:src/service/queue-handoff.ts > rules.ts`, Node 22.18+):
+Navidrome 0.64.2, with `pretend_desktop.mjs` playing Rimelight desktop (c=Rimelight; `--client ClearPlay` or
+`DESKTOP_CLIENT=ClearPlay` plays a ClearPlay 0.6.1 desktop not updated yet) using the
+desktop's own rules (`git show v0.6.2:src/service/queue-handoff.ts > rules.ts`, Node 22.18+):
 
 ```sh
 cd android/tools/e2e

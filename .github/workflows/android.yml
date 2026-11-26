@@ -1,6 +1,6 @@
 name: Android
 
-# Builds ClearPlay for Android (android/). Separate from the desktop build:
+# Builds Rimelight for Android (android/; called ClearPlay for Android up to 1.6.0). Separate from the desktop build:
 # runs only when android/** changes, and releases only on android-v* tags.
 on:
   push:
@@ -81,11 +81,11 @@ jobs:
             -PcpVersionName="${{ steps.ver.outputs.name }}" \
             -PcpVersionCode="${{ steps.ver.outputs.code }}"
           mkdir -p ../dist
-          cp app/build/outputs/apk/release/app-release.apk "../dist/ClearPlay-${{ steps.ver.outputs.name }}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "../dist/Rimelight-${{ steps.ver.outputs.name }}.apk"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: clearplay-android
+          name: rimelight-android
           path: dist/*.apk
           retention-days: 14
 
@@ -100,7 +100,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: clearplay-android
+          name: rimelight-android
           path: dist
 
       # The release text is this version's section of android/CHANGELOG.md.
@@ -120,7 +120,7 @@ jobs:
       # which the desktop updater and the README badge read.
       - uses: softprops/action-gh-release@v2
         with:
-          name: ClearPlay ${{ github.ref_name }}
+          name: Rimelight for Android ${{ github.ref_name }}
           files: dist/*.apk
           body_path: release-notes.md
           make_latest: 'false'

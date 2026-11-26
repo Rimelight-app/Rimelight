@@ -80,7 +80,7 @@ fun LoginScreen(onLoggedIn: suspend (ServerConfig) -> Unit, initialError: String
         Spacer(Modifier.height(32.dp))
         Logo(Modifier.size(72.dp))
         Spacer(Modifier.height(20.dp))
-        Text("ClearPlay", style = MaterialTheme.typography.headlineMedium)
+        Text("Rimelight", style = MaterialTheme.typography.headlineMedium)
         Text(
             "Connect to your Navidrome or OpenSubsonic server",
             style = MaterialTheme.typography.bodyMedium,
@@ -116,7 +116,7 @@ fun LoginScreen(onLoggedIn: suspend (ServerConfig) -> Unit, initialError: String
         }
         if (onUsePhone != null) {
             Spacer(Modifier.height(18.dp))
-            // Skip the server: play the phone's own music (and any ClearPlay downloads).
+            // Skip the server: play the phone's own music (and any downloads made by this app).
             Row(
                 Modifier.clip(androidx.compose.foundation.shape.CircleShape)
                     .clickable(onClick = onUsePhone)

@@ -83,7 +83,7 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
     val connection: ConnectionMonitor by lazy { ConnectionMonitor(this, appScope) { client } }
 
     /**
-     * What the screens read: the server while it answers, otherwise ClearPlay downloads plus
+     * What the screens read: the server while it answers, otherwise this app's downloads plus
      * (if allowed) the phone's own music, laid out the same way.
      */
     @get:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)

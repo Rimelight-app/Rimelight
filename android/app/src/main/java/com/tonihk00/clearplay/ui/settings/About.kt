@@ -49,7 +49,7 @@ import com.tonihk00.clearplay.ui.components.IconButtonCp
 import com.tonihk00.clearplay.ui.components.Logo
 import com.tonihk00.clearplay.ui.theme.Cp
 
-const val GITHUB_URL = "https://github.com/tonihk00/ClearPlay"
+const val GITHUB_URL = "https://github.com/Rimelight-app/Rimelight"
 
 /** What the About window shows; built from the package info and the connected server. */
 data class AboutInfo(
@@ -69,24 +69,24 @@ fun serverLabel(type: String?, version: String?): String? {
 }
 
 /**
- * The app's own licence, as bundled in assets/licenses/ClearPlay-<SPDX>.txt (a copy of the
+ * The app's own licence, as bundled in assets/licenses/Rimelight-<SPDX>.txt (a copy of the
  * repository's LICENSE.txt): the licence name from the file name, the copyright from its first line.
  */
 fun licenceSummary(fileName: String, text: String): String {
-    val spdx = fileName.removePrefix("ClearPlay-").removeSuffix(".txt")
+    val spdx = fileName.removePrefix("Rimelight-").removeSuffix(".txt")
     val copyright = text.lineSequence().map { it.trim() }.firstOrNull { it.startsWith("Copyright", ignoreCase = true) }
     return listOfNotNull("$spdx licence", copyright).joinToString(" · ")
 }
 
 fun readAppLicence(context: android.content.Context): String? = runCatching {
-    val name = context.assets.list("licenses")?.firstOrNull { it.startsWith("ClearPlay-") } ?: return null
+    val name = context.assets.list("licenses")?.firstOrNull { it.startsWith("Rimelight-") } ?: return null
     licenceSummary(name, context.assets.open("licenses/$name").bufferedReader().use { it.readText() })
 }.getOrNull()
 
 /** For bug reports: versions and device only. No user names, addresses or tokens. */
 fun debugInfo(about: AboutInfo, androidRelease: String, sdk: Int, manufacturer: String, model: String): String =
     listOf(
-        "ClearPlay ${about.versionName} (build ${about.versionCode})",
+        "Rimelight ${about.versionName} (build ${about.versionCode})",
         "Android $androidRelease (API $sdk)",
         "Device: $manufacturer $model",
         "Server: ${about.server ?: "offline"}",
@@ -128,7 +128,7 @@ fun AboutDialog(about: AboutInfo, onClose: () -> Unit) {
                 ) {
                     Logo(Modifier.size(64.dp))
                     Spacer(Modifier.height(14.dp))
-                    Text("ClearPlay", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+                    Text("Rimelight", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
                     Text(
                         "Version ${about.versionName} · build ${about.versionCode}",
                         style = MaterialTheme.typography.bodyMedium, color = Cp.TextSoft, textAlign = TextAlign.Center,
@@ -152,7 +152,7 @@ fun AboutDialog(about: AboutInfo, onClose: () -> Unit) {
                     LaunchedEffect(copied) { if (copied) { kotlinx.coroutines.delay(2000); copied = false } }
                     PillButton(if (copied) "Copied" else "Copy debug info", primary = false) {
                         val text = debugInfo(about, Build.VERSION.RELEASE, Build.VERSION.SDK_INT, Build.MANUFACTURER, Build.MODEL)
-                        context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("ClearPlay debug info", text))
+                        context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Rimelight debug info", text))
                         copied = true
                     }
                 }
