@@ -1,4 +1,4 @@
-import { httpClient } from '@/api/httpClient'
+import { httpClient, httpClientOrThrow } from '@/api/httpClient'
 import {
   CreateParams,
   PlaylistsResponse,
@@ -14,6 +14,18 @@ async function getAll() {
   })
 
   return response?.data.playlists.playlist ?? []
+}
+
+/** For the playlist page: throws a ServerError when it can't be loaded. */
+async function getOneOrThrow(id: string) {
+  const data = await httpClientOrThrow<PlaylistWithEntriesResponse>(
+    '/getPlaylist',
+    {
+      method: 'GET',
+      query: { id },
+    },
+  )
+  return data.playlist
 }
 
 async function getOne(id: string) {
@@ -111,6 +123,7 @@ export async function createWithDetails(data: CreateParams) {
 export const playlists = {
   getAll,
   getOne,
+  getOneOrThrow,
   remove,
   create,
   createWithDetails,

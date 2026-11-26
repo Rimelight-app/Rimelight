@@ -17,7 +17,7 @@ import {
   useGetArtistAlbums,
   useGetGenreAlbums,
 } from '@/app/hooks/use-album'
-import ErrorPage from '@/app/pages/error-page'
+import ErrorPage, { PageLoadError } from '@/app/pages/error-page'
 import { songsColumns } from '@/app/tables/songs-columns'
 import { ROUTES } from '@/routes/routesList'
 import { usePlayerActions } from '@/store/player.store'
@@ -36,6 +36,8 @@ export default function Album() {
     data: album,
     isLoading: albumIsLoading,
     isFetched,
+    error: albumError,
+    refetch: refetchAlbum,
   } = useGetAlbum(albumId)
   const { data: artist, isLoading: moreAlbumsIsLoading } = useGetArtistAlbums(
     album?.artistId || '',
@@ -46,6 +48,9 @@ export default function Album() {
   const moreAlbums = artist?.album
 
   if (albumIsLoading) return <AlbumFallback />
+  if (albumError && !album) {
+    return <PageLoadError error={albumError} onRetry={() => refetchAlbum()} />
+  }
   if (isFetched && !album) {
     return <ErrorPage status={404} statusText="Not Found" />
   }

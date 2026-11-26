@@ -2,6 +2,10 @@ import omit from 'lodash/omit'
 import { getCachedImage } from '@/cache/image'
 import { useAppStore } from '@/store/app.store'
 import { CoverArt } from '@/types/coverArtType'
+import {
+  classifyPageError,
+  PageErrorKind,
+} from '@/service/playback-errors-rules'
 import { AuthType } from '@/types/serverConfig'
 import { appName } from '@/utils/appName'
 import { saltWord } from '@/utils/salt'
@@ -104,6 +108,68 @@ export async function httpClient<T>(
     console.error('Error on httpClient request', error)
     return undefined
   }
+}
+
+/**
+ * A page's main request failed. `kind` decides what the page shows: the 404
+ * page, "Couldn't load this page" with Retry, or "The server rejected your
+ * login" (see classifyPageError).
+ */
+export class ServerError extends Error {
+  constructor(
+    readonly kind: PageErrorKind,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'ServerError'
+  }
+}
+
+/**
+ * Like httpClient, but throws a ServerError instead of returning undefined,
+ * and treats a Subsonic "failed" answer as an error. For the request a page
+ * can't show anything without (an album, an artist, a playlist).
+ */
+export async function httpClientOrThrow<T>(
+  path: string,
+  options: FetchOptions,
+): Promise<T> {
+  const url = getUrl(path, options.query)
+  let response: Response
+  try {
+    response = await fetch(url, omit(options, 'query'))
+  } catch (error) {
+    throw new ServerError('server', `network: ${String(error)}`)
+  }
+  if (!response.ok) {
+    throw new ServerError(
+      classifyPageError({ status: response.status }),
+      `HTTP ${response.status}`,
+    )
+  }
+  let body: { 'subsonic-response'?: T & SubsonicStatus }
+  try {
+    body = await response.json()
+  } catch {
+    throw new ServerError(classifyPageError({ badBody: true }), 'bad JSON')
+  }
+  const data = body?.['subsonic-response']
+  if (!data) {
+    throw new ServerError(classifyPageError({ badBody: true }), 'no body')
+  }
+  if (data.status === 'failed') {
+    const code = data.error?.code ?? 0
+    throw new ServerError(
+      classifyPageError({ subsonicCode: code }),
+      `Subsonic error ${code}: ${data.error?.message ?? ''}`,
+    )
+  }
+  return data
+}
+
+type SubsonicStatus = {
+  status?: string
+  error?: { code?: number; message?: string }
 }
 
 export function getSimpleCoverArtUrl(

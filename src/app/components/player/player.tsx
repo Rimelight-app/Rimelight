@@ -4,6 +4,7 @@ import { getProxyURL } from '@/api/podcastClient'
 import { MiniPlayerButton } from '@/app/components/mini-player/button'
 import { RadioInfo } from '@/app/components/player/radio-info'
 import { TrackInfo } from '@/app/components/player/track-info'
+import { notePlaybackProgress } from '@/service/playback-errors'
 import { podcasts } from '@/service/podcasts'
 import { useAppMediaCache, useAppStore } from '@/store/app.store'
 import { useIsMpvSession } from '@/store/bitperfect.store'
@@ -192,7 +193,9 @@ export function Player() {
 
     const currentProgress = Math.floor(audio.currentTime)
     setProgress(currentProgress)
-  }, [getAudioRef, setProgress])
+    // A song is really playing: ends a failure streak (and its pill state).
+    if (isSong && song && audio.currentTime > 0) notePlaybackProgress(song.id)
+  }, [getAudioRef, setProgress, isSong, song])
 
   const setupInitialVolume = useCallback(() => {
     const audio = getAudioRef().current
@@ -342,6 +345,7 @@ export function Player() {
 
       {!mpv && isSong && song && (
         <AudioPlayer
+          songId={song.id}
           replayGain={trackReplayGain}
           src={songStreamUrl}
           autoPlay={isPlaying}

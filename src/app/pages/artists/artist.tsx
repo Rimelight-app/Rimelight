@@ -16,7 +16,7 @@ import {
   useGetArtistInfo,
   useGetTopSongs,
 } from '@/app/hooks/use-artist'
-import ErrorPage from '@/app/pages/error-page'
+import ErrorPage, { PageLoadError } from '@/app/pages/error-page'
 import { ROUTES } from '@/routes/routesList'
 import { sortRecentAlbums } from '@/utils/album'
 
@@ -28,6 +28,8 @@ export default function Artist() {
     data: artist,
     isLoading: artistIsLoading,
     isFetched,
+    error: artistError,
+    refetch: refetchArtist,
   } = useGetArtist(artistId)
   const { data: artistInfo, isLoading: artistInfoIsLoading } =
     useGetArtistInfo(artistId)
@@ -36,6 +38,9 @@ export default function Artist() {
   )
 
   if (artistIsLoading) return <AlbumFallback />
+  if (artistError && !artist) {
+    return <PageLoadError error={artistError} onRetry={() => refetchArtist()} />
+  }
   if (isFetched && !artist) {
     return <ErrorPage status={404} statusText="Not Found" />
   }

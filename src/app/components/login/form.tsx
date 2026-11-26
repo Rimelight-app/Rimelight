@@ -71,7 +71,8 @@ export function LoginForm() {
   const [localLoading, setLocalLoading] = useState(false)
   const [serverIsIncompatible, setServerIsIncompatible] = useState(false)
   const { saveConfig } = useAppActions()
-  const { hideServer } = useAppData()
+  // After "Log in again" the address and username are still known.
+  const { hideServer, url: savedUrl, username: savedUsername } = useAppData()
   const navigate = useNavigate()
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -81,8 +82,8 @@ export function LoginForm() {
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
     values: {
-      url,
-      username: '',
+      url: savedUrl || url,
+      username: savedUrl ? savedUsername : '',
       password: '',
     },
   })

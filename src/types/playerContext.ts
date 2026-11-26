@@ -56,6 +56,11 @@ export interface IPlayerState {
   hasPrev: boolean
   hasNext: boolean
   playbackContext: IPlaybackContext
+  /**
+   * The last song that couldn't be played (after its retry). Cleared when
+   * the next song plays. Not saved.
+   */
+  playbackError: { songId: string; title: string } | null
 }
 
 export interface IPlayerProgress {
@@ -172,6 +177,9 @@ export interface IPlayerActions {
   starSongInQueue: (id: string) => void
   starCurrentSong: () => Promise<void>
   setPlayingState: (status: boolean) => void
+  setPlaybackError: (error: IPlayerState['playbackError']) => void
+  /** The last song ended (or failed): stay on it, paused, at 0; keep the queue. */
+  stopAtEnd: () => void
   togglePlayPause: () => void
   toggleLoop: () => void
   toggleShuffle: () => void

@@ -2,6 +2,7 @@ import { MutableRefObject, RefObject, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'react-toastify'
 import { MpvMediaElement } from '@/service/mpv-player'
+import { handleSongError } from '@/service/playback-errors'
 import {
   usePlayerActions,
   usePlayerIsPlaying,
@@ -90,6 +91,17 @@ export function MpvAudio({
       on('ended', () => handlers.current.onEnded?.()),
       on('loadstart', () => handlers.current.onLoadStart?.()),
       on('error', () => {
+        // Songs: the shared error path (retry once, then skip). Radio and
+        // podcasts: as before.
+        const failed = element.song
+        if (failed) {
+          handleSongError(failed.id, () => {
+            const wasPlaying = usePlayerStore.getState().playerState.isPlaying
+            element.load()
+            if (wasPlaying) element.play()
+          })
+          return
+        }
         toast.error(t('warnings.songError'))
         setPlayingState(false)
       }),

@@ -1,4 +1,11 @@
-import { ListEnd, ListStart, MonitorSmartphone, X } from 'lucide-react'
+import {
+  CircleAlert,
+  ListEnd,
+  ListStart,
+  MonitorSmartphone,
+  WifiOff,
+  X,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { create } from 'zustand'
@@ -10,10 +17,13 @@ import {
   dismissOffer,
   pauseHere,
 } from '@/service/handoff'
+import { serverName, useConnectionStore } from '@/service/connection'
 import { ageText } from '@/service/queue-handoff'
 import { useHandoffStore } from '@/store/handoff.store'
 
-type Pill = { id: number; kind: 'next' | 'last'; count: number }
+type Pill =
+  | { id: number; kind: 'next' | 'last'; count: number }
+  | { id: number; kind: 'error' | 'offline'; text: string; ms: number }
 
 const usePillStore = create<{ pill: Pill | null }>()(() => ({ pill: null }))
 
@@ -23,6 +33,14 @@ let seq = 0
 export function showQueuePill(kind: 'next' | 'last', count: number) {
   if (count < 1) return
   usePillStore.setState({ pill: { id: ++seq, kind, count } })
+}
+
+/** A short message above the player bar (a song that couldn't play, …). */
+export function showMessagePill(
+  text: string,
+  { kind, ms = 4000 }: { kind: 'error' | 'offline'; ms?: number },
+) {
+  usePillStore.setState({ pill: { id: ++seq, kind, text, ms } })
 }
 
 const VISIBLE_MS = 1800
@@ -40,11 +58,12 @@ export function QueuePill() {
     setShown(pill)
     // Next frame, so a new pill animates in even if one is showing.
     const raf = requestAnimationFrame(() => setVisible(true))
-    const hide = window.setTimeout(() => setVisible(false), VISIBLE_MS)
+    const visibleMs = 'ms' in pill ? pill.ms : VISIBLE_MS
+    const hide = window.setTimeout(() => setVisible(false), visibleMs)
     const clear = window.setTimeout(() => {
       setShown(null)
       usePillStore.setState({ pill: null })
-    }, VISIBLE_MS + FADE_MS)
+    }, visibleMs + FADE_MS)
     return () => {
       cancelAnimationFrame(raf)
       window.clearTimeout(hide)
@@ -52,7 +71,14 @@ export function QueuePill() {
     }
   }, [pill])
 
-  const Icon = shown?.kind === 'next' ? ListStart : ListEnd
+  const Icon =
+    shown?.kind === 'next'
+      ? ListStart
+      : shown?.kind === 'last'
+        ? ListEnd
+        : shown?.kind === 'offline'
+          ? WifiOff
+          : CircleAlert
 
   return (
     <div
@@ -62,7 +88,8 @@ export function QueuePill() {
       {shown && (
         <div
           key={shown.id}
-          data-testid="queue-pill"
+          data-testid={'text' in shown ? 'message-pill' : 'queue-pill'}
+          data-kind={shown.kind}
           className={cn(
             'glass-chip glass-blur flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-white/90',
             'shadow-[0_10px_30px_-10px_rgb(0_0_0/0.6)] transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none',
@@ -71,10 +98,13 @@ export function QueuePill() {
         >
           <Icon className="size-4 text-white/70" strokeWidth={2} />
           <span>
-            {t(`clearplay.queuePill.${shown.kind}`, { count: shown.count })}
+            {'text' in shown
+              ? shown.text
+              : t(`clearplay.queuePill.${shown.kind}`, { count: shown.count })}
           </span>
         </div>
       )}
+      <OfflinePill />
       <HandoffPill />
     </div>
   )
@@ -208,6 +238,35 @@ function HandoffPill() {
       >
         <X className="size-4" />
       </button>
+    </div>
+  )
+}
+
+/**
+ * While the server doesn't answer: "Can't reach <server>. Retrying…" after
+ * a start without it, "Can't reach <server>" when a song couldn't load.
+ */
+function OfflinePill() {
+  const { t } = useTranslation()
+  const unreachable = useConnectionStore((s) => s.unreachable)
+  if (!unreachable) return null
+  return (
+    <div
+      data-testid="offline-pill"
+      className={cn(
+        'glass-chip glass-blur flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-white/90',
+        'shadow-[0_10px_30px_-10px_rgb(0_0_0/0.6)]',
+      )}
+    >
+      <WifiOff className="size-4 text-white/70" strokeWidth={2} />
+      <span>
+        {t(
+          unreachable.reason === 'startup'
+            ? 'clearplay.playbackErrors.retrying'
+            : 'clearplay.playbackErrors.serverUnreachable',
+          { server: serverName() },
+        )}
+      </span>
     </div>
   )
 }

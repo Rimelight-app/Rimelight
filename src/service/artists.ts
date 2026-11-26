@@ -1,4 +1,4 @@
-import { httpClient } from '@/api/httpClient'
+import { httpClient, httpClientOrThrow } from '@/api/httpClient'
 import {
   ArtistInfoResponse,
   ArtistResponse,
@@ -20,6 +20,15 @@ async function getAll() {
   })
 
   return artistsList.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+/** For the artist page: throws a ServerError when it can't be loaded. */
+async function getOneOrThrow(id: string) {
+  const data = await httpClientOrThrow<ArtistResponse>('/getArtist', {
+    method: 'GET',
+    query: { id },
+  })
+  return data.artist
 }
 
 async function getOne(id: string) {
@@ -46,6 +55,7 @@ async function getInfo(id: string) {
 
 export const artists = {
   getOne,
+  getOneOrThrow,
   getInfo,
   getAll,
 }

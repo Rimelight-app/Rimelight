@@ -10,12 +10,13 @@ import { PlaylistButtons } from '@/app/components/playlist/buttons'
 import { RemoveSongFromPlaylistDialog } from '@/app/components/playlist/remove-song-dialog'
 import { PlaylistStickyHeader } from '@/app/components/playlist/sticky-header'
 import { DataTable } from '@/app/components/ui/data-table'
-import ErrorPage from '@/app/pages/error-page'
+import ErrorPage, { PageLoadError } from '@/app/pages/error-page'
 import { songsColumns } from '@/app/tables/songs-columns'
 import { subsonic } from '@/service/subsonic'
 import { usePlayerActions } from '@/store/player.store'
 import { ColumnFilter } from '@/types/columnFilter'
 import { convertSecondsToHumanRead } from '@/utils/convertSecondsToTime'
+import { retryPageLoad } from '@/utils/pageLoad'
 import { queryKeys } from '@/utils/queryKeys'
 
 export default function Playlist() {
@@ -25,14 +26,23 @@ export default function Playlist() {
   const { setSongList } = usePlayerActions()
   const [searchActive, setSearchActive] = useState(false)
 
-  const { data: playlist, isLoading } = useQuery({
+  const {
+    data: playlist,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: [queryKeys.playlist.single, playlistId],
-    queryFn: () => subsonic.playlists.getOne(playlistId),
+    queryFn: () => subsonic.playlists.getOneOrThrow(playlistId),
+    retry: retryPageLoad,
   })
 
   // Only while there is nothing to show yet: a background refetch keeps the
   // table (and its scroll position) instead of swapping in the skeleton.
   if (isLoading) return <PlaylistFallback />
+  if (error && !playlist) {
+    return <PageLoadError error={error} onRetry={() => refetch()} />
+  }
   if (!playlist) return <ErrorPage status={404} statusText="Not Found" />
 
   const columnsToShow: ColumnFilter[] = [

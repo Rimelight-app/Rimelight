@@ -1192,6 +1192,21 @@
         "system": "The system default goes through the system mixer. Choose your DAC or speakers by name for bit-perfect playback."
       },
       "fixedVolume": "Fixed volume: set the loudness on the device or amp"
+    },
+    "playbackErrors": {
+      "couldNotPlay": "Couldn't play {{title}}",
+      "stoppedInARow": "Couldn't play {{count}} songs in a row. Playback stopped.",
+      "serverUnreachable": "Can't reach {{server}}",
+      "retrying": "Can't reach {{server}}. Retrying…"
+    },
+    "pageErrors": {
+      "loadTitle": "Couldn't load this page",
+      "loadText": "The server didn't answer properly. Check that it's running, then try again.",
+      "retry": "Retry",
+      "authTitle": "The server rejected your login",
+      "authText": "Your username or password is no longer accepted.",
+      "logInAgain": "Log in again",
+      "home": "Back to home"
     }
   }
 }

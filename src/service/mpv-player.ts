@@ -541,6 +541,10 @@ export class MpvMediaElement extends EventTarget {
       case 'ended':
         if (!this.loaded) return
         this.loaded = false
+        // mpv is idle now: if this song stays (end of the queue), Play loads
+        // it again from the start.
+        this.released = true
+        this._time = 0
         this.dispatchEvent(new Event('ended'))
         break
       case 'error':

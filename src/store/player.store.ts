@@ -75,6 +75,7 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
               isSourceModified: false,
               source: null,
             },
+            playbackError: null,
           },
           fullscreen: {
             isFullscreen: false,
@@ -494,6 +495,25 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
 
               if (!isPlaying) {
                 get().actions.setPlayingState(true)
+              }
+            },
+            setPlaybackError: (error) => {
+              set((state) => {
+                state.playerState.playbackError = error
+              })
+            },
+            stopAtEnd: () => {
+              get().actions.setPlayingState(false)
+              get().actions.resetProgress()
+              // The engine is at the end of the song: back to its start, so
+              // Play plays it again.
+              const element = get().playerState.audioPlayerRef
+              if (element) {
+                try {
+                  element.currentTime = 0
+                } catch {
+                  // Nothing loaded (a song that failed): nothing to rewind.
+                }
               }
             },
             setPlayingState: (status) => {
@@ -971,6 +991,9 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
               if (hasNextSong() || loopState === LoopState.All) {
                 playNextSong()
                 setPlayingState(true)
+              } else if (get().playerState.mediaType === 'song') {
+                // The queue stays: stopped on its last song, at the start.
+                get().actions.stopAtEnd()
               } else {
                 clearPlayerState()
                 setPlayingState(false)
@@ -1079,6 +1102,7 @@ export const usePlayerStore = createWithEqualityFn<IPlayerContext>()(
             'actions',
             'playerState.isPlaying',
             'playerState.audioPlayerRef',
+            'playerState.playbackError',
             'playerState.mainDrawerState',
             'playerState.queueState',
             'playerState.lyricsState',

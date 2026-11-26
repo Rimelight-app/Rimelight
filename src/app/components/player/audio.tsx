@@ -10,10 +10,13 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'react-toastify'
 import { useAudioContext } from '@/app/hooks/use-audio-context'
 import { useAudioFx } from '@/store/audio-fx.store'
+import { serverAnswers } from '@/service/connection'
+import { handleSongError as handlePlaybackError } from '@/service/playback-errors'
 import {
   usePlayerActions,
   usePlayerIsPlaying,
   usePlayerMediaType,
+  usePlayerStore,
   usePlayerVolume,
   useReplayGainActions,
   useReplayGainState,
@@ -28,11 +31,14 @@ import { calculateReplayGain, ReplayGainParams } from '@/utils/replayGain'
 type AudioPlayerProps = ComponentPropsWithoutRef<'audio'> & {
   audioRef: RefObject<HTMLAudioElement>
   replayGain?: ReplayGainParams
+  /** The song being played (songs only): for the shared error path. */
+  songId?: string
 }
 
 export function AudioPlayer({
   audioRef,
   replayGain,
+  songId,
   ...props
 }: AudioPlayerProps) {
   const { t } = useTranslation()
@@ -79,19 +85,31 @@ export function AudioPlayer({
       error: audio.error,
     })
 
-    toast.error(t('warnings.songError'))
+    // Only drop the audio graph (EQ, visualizer) when the server answers but
+    // refuses cross-origin audio; a bad file or a server that is down must
+    // not turn them off. The fallback lasts this session.
+    if (
+      !replayGainError &&
+      (await serverAnswers()) &&
+      !(await serverAllowsCors(audio.src))
+    ) {
+      setAudioGraphFallback(true)
+      setReplayGainError(true)
+      window.location.reload()
+      return
+    }
 
-    if (replayGainError) return
-
-    // Only drop the audio graph (EQ, visualizer) when the server really
-    // refuses cross-origin requests; a single bad file or a dropped
-    // connection must not turn them off. The fallback lasts this session.
-    if (await serverAllowsCors(audio.src)) return
-
-    setAudioGraphFallback(true)
-    setReplayGainError(true)
-    window.location.reload()
-  }, [audioRef, replayGainError, setReplayGainError, t])
+    if (!songId) return
+    handlePlaybackError(songId, () => {
+      // load() pauses a playing element (and the store with it).
+      const wasPlaying = usePlayerStore.getState().playerState.isPlaying
+      audio.load()
+      if (wasPlaying) {
+        usePlayerStore.getState().actions.setPlayingState(true)
+        audio.play().catch(() => undefined)
+      }
+    })
+  }, [audioRef, replayGainError, setReplayGainError, songId])
 
   const handleRadioError = useCallback(() => {
     const audio = audioRef.current
@@ -116,6 +134,8 @@ export function AudioPlayer({
       } catch (error) {
         // play() is interrupted when the song changes quickly; not an error.
         if ((error as DOMException)?.name === 'AbortError') return
+        // The source failed: the element's error event handles it.
+        if (audio.error) return
         logger.error('Audio playback failed', error)
         handleSongError()
       }

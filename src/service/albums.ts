@@ -1,4 +1,4 @@
-import { httpClient } from '@/api/httpClient'
+import { httpClient, httpClientOrThrow } from '@/api/httpClient'
 import {
   AlbumInfoResponse,
   AlbumListResponse,
@@ -43,6 +43,15 @@ async function getAlbumList(params: Partial<AlbumListParams> = {}) {
   }
 }
 
+/** For the album page: throws a ServerError when it can't be loaded. */
+async function getOneOrThrow(id: string) {
+  const data = await httpClientOrThrow<GetAlbumResponse>('/getAlbum', {
+    method: 'GET',
+    query: { id },
+  })
+  return data.album
+}
+
 async function getOne(id: string) {
   const response = await httpClient<GetAlbumResponse>('/getAlbum', {
     method: 'GET',
@@ -68,5 +77,6 @@ async function getInfo(id: string) {
 export const albums = {
   getAlbumList,
   getOne,
+  getOneOrThrow,
   getInfo,
 }

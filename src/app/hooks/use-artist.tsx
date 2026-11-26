@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { subsonic } from '@/service/subsonic'
+import { retryPageLoad } from '@/utils/pageLoad'
 import { queryKeys } from '@/utils/queryKeys'
 
 export const useGetArtist = (artistId: string) => {
   return useQuery({
     queryKey: [queryKeys.artist.single, artistId],
-    queryFn: () => subsonic.artists.getOne(artistId),
+    queryFn: () => subsonic.artists.getOneOrThrow(artistId),
     enabled: !!artistId,
+    retry: retryPageLoad,
   })
 }
 
