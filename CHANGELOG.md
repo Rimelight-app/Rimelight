@@ -19,6 +19,8 @@ All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 - **Albums reloaded every page on each visit**: coming back to Albums after scrolling no longer asks the server for every page again. Albums added on the server show up within 5 minutes (or after a restart).
 - **The media controls fetched the cover again on every play and pause**: the song's details and cover are now sent to the system media controls (Windows, Linux) once per song.
 - **Songs without a cover had no picture in the system media controls**, and the default cover image didn't load in the app. Both show the default cover now.
+- **Quitting, sleep or locking the screen could overwrite the queue you continued on your phone**: with "Continue on other devices" on, ClearPlay saved its old queue on quit, sleep and lock even when nothing had happened on the PC, so the phone then offered "Paused on ClearPlay desktop" with an old song. ClearPlay now saves then only if something changed here or it is playing, and while playing it first checks whether the phone took over. Same rules as ClearPlay for Android 1.6.0.
+- **Continue that failed lost the offer**: if starting the queue failed (for example, the network dropped), the Continue pill disappeared until the server's queue changed again. It now stays, with "Couldn't continue. Try again."
 - **Faster start**: the code that shows release notes is loaded only when an update is found, and with the built-in audio engine ClearPlay no longer runs `mpv --version` at every start; Settings → Audio engine checks mpv when you open it ("Checking…").
 
 ### Removed

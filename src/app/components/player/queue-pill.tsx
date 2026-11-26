@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { create } from 'zustand'
 import { getSimpleCoverArtUrl } from '@/api/httpClient'
+import i18n from '@/i18n'
 import { cn } from '@/lib/utils'
 import {
   closeLeftBehind,
@@ -33,6 +34,17 @@ let seq = 0
 export function showQueuePill(kind: 'next' | 'last', count: number) {
   if (count < 1) return
   usePillStore.setState({ pill: { id: ++seq, kind, count } })
+}
+
+/** Continue, and say so when it didn't work (the offer stays). */
+export async function continueWithMessage() {
+  const ok = await continueOffer().catch(() => false)
+  if (!ok && useHandoffStore.getState().offer) {
+    showMessagePill(i18n.t('clearplay.handoff.continueFailed'), {
+      kind: 'error',
+    })
+  }
+  return ok
 }
 
 /** A short message above the player bar (a song that couldn't play, …). */
@@ -194,7 +206,7 @@ function HandoffPill() {
           className={pillButton}
           onClick={async () => {
             setBusy(true)
-            await continueOffer().catch(() => false)
+            await continueWithMessage()
             setBusy(false)
           }}
         >

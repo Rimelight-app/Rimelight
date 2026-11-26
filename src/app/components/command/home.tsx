@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { CommandGroup, CommandItem } from '@/app/components/ui/command'
-import { continueOffer } from '@/service/handoff'
+import { continueWithMessage } from '@/app/components/player/queue-pill'
 import { shuffleLibrary } from '@/service/library-shuffle'
 import { useAppStore } from '@/store/app.store'
 import { useHandoffStore } from '@/store/handoff.store'
@@ -27,7 +27,7 @@ export function CommandHome({ pages, setPages, runCommand }: HomeProps) {
   return (
     <CommandGroup heading={t('command.commands.heading')}>
       {handoff && (
-        <CommandItem onSelect={() => runCommand(() => continueOffer())}>
+        <CommandItem onSelect={() => runCommand(() => continueWithMessage())}>
           <CustomCommandItem variant="ContinueFrom">
             {t('clearplay.handoff.continueFrom', {
               device: handoff.offer.device,

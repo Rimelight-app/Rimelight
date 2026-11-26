@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import {
   checkLeftBehind,
   closeLeftBehind,
-  playbackStartedHere,
+  played as handoffPlayed,
   publishEvent,
   takePauseHere,
 } from '@/service/handoff'
@@ -77,10 +77,7 @@ export function QueueObserver() {
           if (!songChanged && !fromPauseHere) publishEvent('pause')
         }
       }
-      if (played) {
-        closeLeftBehind()
-        playbackStartedHere()
-      }
+      if (played) handoffPlayed()
 
       const { currentList, currentSongIndex } = state.songlist
       const isLast =

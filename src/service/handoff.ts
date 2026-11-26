@@ -29,6 +29,14 @@ const serverKey = () => {
 
 const isPlayingHere = () => usePlayerStore.getState().playerState.isPlaying
 
+/**
+ * Something happened here since the last save (an event, or Play). Quit,
+ * sleep and lock only save when it is set, when playing, or when a save is
+ * waiting: an untouched, paused desktop must not overwrite a newer queue
+ * saved by the phone. Same guard as ClearPlay Android 1.6.0's Handoff.kt.
+ */
+let dirty = false
+
 function storedHandled() {
   return useClearPlaySettings.getState().handledChanged[serverKey()] ?? null
 }
@@ -66,8 +74,12 @@ async function save(event: SaveEvent, keepalive = false) {
   try {
     const ok = await queueSync.saveToServer({ keepalive })
     logger.info(`[handoff] saved (${event})`, { ok })
-    // This device took the queue back: "left behind" may show again.
-    if (ok) useHandoffStore.setState({ leftBehindShown: false })
+    if (ok) {
+      // This device took the queue back: "left behind" may show again.
+      useHandoffStore.setState({ leftBehindShown: false })
+      // Still playing: the position keeps moving, so the next quit saves.
+      dirty = isPlayingHere()
+    }
     return ok
   } catch (e) {
     logger.error('[handoff] save failed', e)
@@ -89,11 +101,47 @@ const debouncer = createSaveDebouncer(
  */
 export function publishEvent(event: SaveEvent) {
   if (useHandoffStore.getState().leftBehind) return
+  dirty = true
   debouncer.event(event)
 }
 
-/** Quit, system sleep, screen lock: save right away (keepalive survives the page). */
-export function saveNow(event: SaveEvent) {
+/** Play was pressed here (or playback started). */
+export function played() {
+  dirty = true
+  closeLeftBehind()
+  playbackStartedHere()
+}
+
+/**
+ * How long quit, sleep and lock wait for the "left behind" check. The main
+ * process gives quit 1.5 s in all; the save itself needs the rest.
+ */
+const CHECK_BUDGET_MS = 1000
+
+/**
+ * Quit, system sleep, screen lock: save right away (keepalive survives the
+ * page), but only if this device has something newer than the server:
+ *  - nothing happened here and nothing plays: nothing is sent
+ *  - playing here: first ask whether the phone took over (the regular check
+ *    runs only every 60 s); if it did, "Continued on" shows and the save is
+ *    blocked. No answer within the budget: no save (the safe side).
+ */
+export async function saveNow(event: SaveEvent): Promise<boolean> {
+  if (!dirty && !isPlayingHere() && !debouncer.pending) return false
+  if (isPlayingHere()) {
+    let timer: number | undefined
+    const answered = await Promise.race([
+      checkLeftBehind().then(
+        () => true,
+        () => false,
+      ),
+      new Promise<false>((resolve) => {
+        timer = window.setTimeout(() => resolve(false), CHECK_BUDGET_MS)
+      }),
+    ])
+    window.clearTimeout(timer)
+    if (!answered) return false
+  }
   debouncer.cancel()
   return save(event, true)
 }
@@ -168,21 +216,32 @@ export async function continueOffer() {
   if (!current || continuing) return false
   const { offer: o, queue } = current
   continuing = true
-  markHandled(o.changed)
-  useHandoffStore.setState({
-    offer: null,
-    leftBehind: null,
-    leftBehindShown: false,
-  })
   try {
-    const started = await queueSync.startQueueAt(
-      queue.entries,
-      o.index,
-      o.positionMs,
-    )
-    // Save straight back, so the other device doesn't offer it back.
-    if (started) await saveNow('continued')
-    return started
+    let started = false
+    try {
+      started = await queueSync.startQueueAt(
+        queue.entries,
+        o.index,
+        o.positionMs,
+      )
+    } catch (e) {
+      logger.error('[handoff] continue failed', e)
+    }
+    // The offer stays, so Continue can be pressed again (the caller says
+    // "Couldn't continue. Try again.").
+    if (!started) return false
+    // Only now is the server's queue dealt with.
+    markHandled(o.changed)
+    useHandoffStore.setState({
+      offer: null,
+      leftBehind: null,
+      leftBehindShown: false,
+    })
+    // Save straight back, so the other device doesn't offer it back. Not
+    // through saveNow: the player may not report playing yet.
+    debouncer.cancel()
+    await save('continued')
+    return true
   } finally {
     continuing = false
   }
@@ -217,6 +276,8 @@ export function takePauseHere() {
 /** "Pause here": pauses without saving; saving resumes after. */
 export function pauseHere() {
   debouncer.cancel()
+  // Left behind: this device has nothing newer than the server.
+  dirty = false
   pausingHere = isPlayingHere()
   useHandoffStore.setState({ leftBehind: null })
   usePlayerStore.getState().actions.setPlayingState(false)

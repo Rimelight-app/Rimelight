@@ -1136,7 +1136,8 @@
         "hours_one": "{{count}} h ago",
         "hours_other": "{{count}} h ago",
         "yesterday": "yesterday"
-      }
+      },
+      "continueFailed": "Couldn't continue. Try again."
     },
     "bitperfect": {
       "group": "Audio engine",
