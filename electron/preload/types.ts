@@ -39,6 +39,7 @@ export enum IpcChannels {
   LocalLibraryRescan = 'local-library-rescan',
   LocalLibraryConnect = 'local-library-connect',
   MpvStatus = 'mpv-status',
+  MpvProbe = 'mpv-probe',
   MpvSetEngine = 'mpv-set-engine',
   MpvRelaunch = 'mpv-relaunch',
   MpvDevices = 'mpv-devices',
@@ -74,6 +75,11 @@ export type MpvEngineStatus = {
   binary: string | null
   /** Why mpv can't be used, in plain words. */
   problem: string | null
+  /**
+   * False until mpv has been checked: with the built-in engine it isn't at
+   * launch (see probe()). available/version/problem mean nothing until then.
+   */
+  checked: boolean
   platform: 'linux' | 'win32' | 'darwin' | 'other'
 }
 
@@ -252,6 +258,8 @@ export interface IClearPlayAPI {
   }
   mpv: {
     status: () => Promise<MpvEngineStatus>
+    /** Checks mpv (`mpv --version`) if that hasn't happened this session. */
+    probe: () => Promise<MpvEngineStatus>
     setEngine: (engine: AudioEngine) => Promise<MpvEngineStatus>
     relaunch: () => void
     devices: () => Promise<MpvDevice[]>

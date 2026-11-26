@@ -1149,7 +1149,8 @@
         "restart": "Restart ClearPlay to switch to {{engine}}.",
         "restartNow": "Restart now",
         "missing": "mpv can't be used: {{problem}}",
-        "running": "Using mpv {{version}}."
+        "running": "Using mpv {{version}}.",
+        "checking": "Checking…"
       },
       "info": {
         "title": "Output",

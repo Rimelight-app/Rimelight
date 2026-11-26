@@ -1,32 +1,30 @@
 import { useQuery } from '@tanstack/react-query'
-import { Loader2, RocketIcon } from 'lucide-react'
-import { FormEvent, useEffect, useState } from 'react'
+import { ComponentType, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import Markdown from 'react-markdown'
 import { toast } from 'react-toastify'
-import rehypeRaw from 'rehype-raw'
-import remarkGfm from 'remark-gfm'
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/app/components/ui/alert-dialog'
-import { Badge } from '@/app/components/ui/badge'
-import { Button } from '@/app/components/ui/button'
 import { useAppUpdate } from '@/store/app.store'
-import { getAppInfo } from '@/utils/appName'
-import { isMacOS } from '@/utils/desktop'
 import { queryKeys } from '@/utils/queryKeys'
-import { sanitizeHtml } from '@/utils/sanitize'
+
+export type UpdateCheckResult = NonNullable<
+  Awaited<ReturnType<typeof window.api.checkForUpdates>>
+>
+
+type DialogComponent = ComponentType<{
+  updateCheckResult: UpdateCheckResult
+  updateHasStarted: boolean
+  setUpdateHasStarted: (value: boolean) => void
+}>
+
+/** The dialog's code (markdown, sanitizer): fetched only when it's needed. */
+const loadDialog = () =>
+  import('./update-dialog').then((m) => m.UpdateDialog as DialogComponent)
 
 export function UpdateObserver() {
   const { t } = useTranslation()
-  const { openDialog, setOpenDialog, remindOnNextBoot, setRemindOnNextBoot } =
+  const { setOpenDialog, remindOnNextBoot, setRemindOnNextBoot } =
     useAppUpdate()
   const [updateHasStarted, setUpdateHasStarted] = useState(false)
+  const [Dialog, setDialog] = useState<DialogComponent | null>(null)
 
   const { data: updateCheckResult } = useQuery({
     queryKey: [queryKeys.update.check],
@@ -39,8 +37,18 @@ export function UpdateObserver() {
   })
 
   useEffect(() => {
-    if (updateCheckResult?.isUpdateAvailable) {
-      setOpenDialog(true)
+    if (!updateCheckResult?.isUpdateAvailable) return
+    let cancelled = false
+    // Load the dialog first, then open it: it appears as before.
+    loadDialog()
+      .then((component) => {
+        if (cancelled) return
+        setDialog(() => component)
+        setOpenDialog(true)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
     }
   }, [setOpenDialog, updateCheckResult])
 
@@ -74,99 +82,13 @@ export function UpdateObserver() {
     })
   }, [t, setRemindOnNextBoot])
 
-  if (!updateCheckResult || !updateCheckResult.isUpdateAvailable) return null
-
-  const handleUpdate = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-
-    toast(t('update.toasts.started'), {
-      autoClose: false,
-      type: 'default',
-      isLoading: true,
-      toastId: 'update',
-      progress: 0,
-    })
-
-    setUpdateHasStarted(true)
-    window.api.downloadUpdate()
-  }
-
-  const { updateInfo } = updateCheckResult
-
-  function getReleaseNotes() {
-    if (typeof updateInfo.releaseNotes === 'string') {
-      return updateInfo.releaseNotes
-    } else if (Array.isArray(updateInfo.releaseNotes)) {
-      return updateInfo.releaseNotes.map((note) => note.note).join('\n')
-    }
-
-    return updateInfo.version
-  }
+  if (!updateCheckResult?.isUpdateAvailable || !Dialog) return null
 
   return (
-    <AlertDialog open={openDialog}>
-      <AlertDialogContent>
-        <AlertDialogDescription className="sr-only">
-          {t('update.dialog.title')}
-        </AlertDialogDescription>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <RocketIcon className="w-6 h-6 text-primary fill-primary/60" />
-            <span>{t('update.dialog.title')}</span>
-            <Badge>{updateInfo.version}</Badge>
-          </AlertDialogTitle>
-        </AlertDialogHeader>
-
-        <div
-          id="update-info-body"
-          className="w-full min-h-16 max-h-80 overflow-auto rounded-xl border border-white/10 bg-white/[0.04] p-4 text-white/70"
-        >
-          <div className="space-y-2 text-sm">
-            <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-              {sanitizeHtml(getReleaseNotes(), 'rich')}
-            </Markdown>
-          </div>
-        </div>
-
-        <AlertDialogFooter>
-          <form onSubmit={handleUpdate} className="flex gap-2">
-            <Button
-              variant="outline"
-              disabled={updateHasStarted}
-              onClick={() => {
-                setOpenDialog(false)
-                setRemindOnNextBoot(true)
-              }}
-              type="button"
-            >
-              {t('update.dialog.remindLater')}
-            </Button>
-            {!isMacOS ? (
-              <Button
-                variant="default"
-                disabled={updateHasStarted}
-                type="submit"
-              >
-                {updateHasStarted ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  t('update.dialog.install')
-                )}
-              </Button>
-            ) : (
-              <Button variant="default" asChild>
-                <a
-                  href={getAppInfo().releaseUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t('update.dialog.macOS')}
-                </a>
-              </Button>
-            )}
-          </form>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <Dialog
+      updateCheckResult={updateCheckResult}
+      updateHasStarted={updateHasStarted}
+      setUpdateHasStarted={setUpdateHasStarted}
+    />
   )
 }

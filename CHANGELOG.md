@@ -19,6 +19,7 @@ All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 - **Albums reloaded every page on each visit**: coming back to Albums after scrolling no longer asks the server for every page again. Albums added on the server show up within 5 minutes (or after a restart).
 - **The media controls fetched the cover again on every play and pause**: the song's details and cover are now sent to the system media controls (Windows, Linux) once per song.
 - **Songs without a cover had no picture in the system media controls**, and the default cover image didn't load in the app. Both show the default cover now.
+- **Faster start**: the code that shows release notes is loaded only when an update is found, and with the built-in audio engine ClearPlay no longer runs `mpv --version` at every start; Settings → Audio engine checks mpv when you open it ("Checking…").
 
 ### Removed
 - **Settings → Content → "Enable Image Cache"**: with it on, ClearPlay kept a copy of every cover it showed in memory and never let go of it, so memory use grew until restart. Covers are cached by the app's normal web cache anyway, so the setting is gone; nothing changes if you had it off.

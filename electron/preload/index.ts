@@ -108,6 +108,7 @@ const api: IClearPlayAPI = {
   },
   mpv: {
     status: () => ipcRenderer.invoke(IpcChannels.MpvStatus),
+    probe: () => ipcRenderer.invoke(IpcChannels.MpvProbe),
     setEngine: (engine) => ipcRenderer.invoke(IpcChannels.MpvSetEngine, engine),
     relaunch: () => ipcRenderer.send(IpcChannels.MpvRelaunch),
     devices: () => ipcRenderer.invoke(IpcChannels.MpvDevices),

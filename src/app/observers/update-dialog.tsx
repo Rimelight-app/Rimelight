@@ -1,0 +1,134 @@
+import { Loader2, RocketIcon } from 'lucide-react'
+import { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import Markdown from 'react-markdown'
+import { toast } from 'react-toastify'
+import rehypeRaw from 'rehype-raw'
+import remarkGfm from 'remark-gfm'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/app/components/ui/alert-dialog'
+import { Badge } from '@/app/components/ui/badge'
+import { Button } from '@/app/components/ui/button'
+import { useAppUpdate } from '@/store/app.store'
+import { getAppInfo } from '@/utils/appName'
+import { isMacOS } from '@/utils/desktop'
+import { sanitizeHtml } from '@/utils/sanitize'
+import type { UpdateCheckResult } from './update-observer'
+
+/**
+ * The update dialog and its release notes. Loaded with import() by
+ * UpdateObserver only when an update is found, so the markdown renderer and
+ * the sanitizer aren't part of every start.
+ */
+export function UpdateDialog({
+  updateCheckResult,
+  updateHasStarted,
+  setUpdateHasStarted,
+}: {
+  updateCheckResult: UpdateCheckResult
+  updateHasStarted: boolean
+  setUpdateHasStarted: (value: boolean) => void
+}) {
+  const { t } = useTranslation()
+  const { openDialog, setOpenDialog, setRemindOnNextBoot } = useAppUpdate()
+
+  const handleUpdate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    toast(t('update.toasts.started'), {
+      autoClose: false,
+      type: 'default',
+      isLoading: true,
+      toastId: 'update',
+      progress: 0,
+    })
+
+    setUpdateHasStarted(true)
+    window.api.downloadUpdate()
+  }
+
+  const { updateInfo } = updateCheckResult
+
+  function getReleaseNotes() {
+    if (typeof updateInfo.releaseNotes === 'string') {
+      return updateInfo.releaseNotes
+    } else if (Array.isArray(updateInfo.releaseNotes)) {
+      return updateInfo.releaseNotes.map((note) => note.note).join('\n')
+    }
+
+    return updateInfo.version
+  }
+
+  return (
+    <AlertDialog open={openDialog}>
+      <AlertDialogContent>
+        <AlertDialogDescription className="sr-only">
+          {t('update.dialog.title')}
+        </AlertDialogDescription>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <RocketIcon className="w-6 h-6 text-primary fill-primary/60" />
+            <span>{t('update.dialog.title')}</span>
+            <Badge>{updateInfo.version}</Badge>
+          </AlertDialogTitle>
+        </AlertDialogHeader>
+
+        <div
+          id="update-info-body"
+          className="w-full min-h-16 max-h-80 overflow-auto rounded-xl border border-white/10 bg-white/[0.04] p-4 text-white/70"
+        >
+          <div className="space-y-2 text-sm">
+            <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+              {sanitizeHtml(getReleaseNotes(), 'rich')}
+            </Markdown>
+          </div>
+        </div>
+
+        <AlertDialogFooter>
+          <form onSubmit={handleUpdate} className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={updateHasStarted}
+              onClick={() => {
+                setOpenDialog(false)
+                setRemindOnNextBoot(true)
+              }}
+              type="button"
+            >
+              {t('update.dialog.remindLater')}
+            </Button>
+            {!isMacOS ? (
+              <Button
+                variant="default"
+                disabled={updateHasStarted}
+                type="submit"
+              >
+                {updateHasStarted ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  t('update.dialog.install')
+                )}
+              </Button>
+            ) : (
+              <Button variant="default" asChild>
+                <a
+                  href={getAppInfo().releaseUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t('update.dialog.macOS')}
+                </a>
+              </Button>
+            )}
+          </form>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}

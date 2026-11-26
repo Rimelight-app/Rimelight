@@ -1,5 +1,5 @@
 import { Check, Copy, RotateCw } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'react-toastify'
 import {
@@ -47,6 +47,16 @@ export function AudioEngineSettings() {
   const placement = useBitPerfect((s) => s.placement)
   const setBp = useBitPerfect((s) => s.set)
   const [saving, setSaving] = useState(false)
+  const unchecked = status !== null && !status.checked
+
+  // With the built-in engine mpv isn't checked at launch: check it now.
+  useEffect(() => {
+    if (!unchecked) return
+    window.api.mpv
+      .probe()
+      .then((next) => setRuntime({ status: next }))
+      .catch(() => undefined)
+  }, [unchecked, setRuntime])
 
   if (!status) return null
 
@@ -88,28 +98,36 @@ export function AudioEngineSettings() {
           </ContentItemForm>
         </ContentItem>
 
-        {status.savedEngine === 'mpv' && !status.available && (
-          <Note tone="warn" testId="mpv-missing">
-            {t(`${k}.engine.missing`, { problem: status.problem })}
-          </Note>
+        {!status.checked && (
+          <Note testId="mpv-checking">{t(`${k}.engine.checking`)}</Note>
         )}
 
-        {pending && (status.savedEngine === 'builtin' || status.available) && (
-          <Note testId="engine-restart">
-            <span className="flex-1">
-              {t(`${k}.engine.restart`, {
-                engine: engineName(status.savedEngine),
-              })}
-            </span>
-            <button
-              type="button"
-              onClick={() => window.api.mpv.relaunch()}
-              className="shrink-0 rounded-full bg-white/[0.14] px-3 py-1 text-[12px] font-medium text-white transition-colors hover:bg-white/[0.22]"
-            >
-              {t(`${k}.engine.restartNow`)}
-            </button>
-          </Note>
-        )}
+        {status.checked &&
+          status.savedEngine === 'mpv' &&
+          !status.available && (
+            <Note tone="warn" testId="mpv-missing">
+              {t(`${k}.engine.missing`, { problem: status.problem })}
+            </Note>
+          )}
+
+        {pending &&
+          (status.savedEngine === 'builtin' ||
+            (status.checked && status.available)) && (
+            <Note testId="engine-restart">
+              <span className="flex-1">
+                {t(`${k}.engine.restart`, {
+                  engine: engineName(status.savedEngine),
+                })}
+              </span>
+              <button
+                type="button"
+                onClick={() => window.api.mpv.relaunch()}
+                className="shrink-0 rounded-full bg-white/[0.14] px-3 py-1 text-[12px] font-medium text-white transition-colors hover:bg-white/[0.22]"
+              >
+                {t(`${k}.engine.restartNow`)}
+              </button>
+            </Note>
+          )}
 
         {mpvSession ? (
           <>

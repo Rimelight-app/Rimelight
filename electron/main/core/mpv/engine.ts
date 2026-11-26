@@ -12,7 +12,7 @@ import {
 import { localLibraryOrigin } from '../local-library'
 import { httpOrigin, isAllowedMpvUrl } from '../safe-url'
 import { MpvClient, MpvEvent, stopLeftoverMpv } from './client'
-import { engineStatus, findMpvBinary, saveEngine } from './config'
+import { engineStatus, findMpvBinary, probeMpv, saveEngine } from './config'
 import {
   findVolumeControl,
   getMixerPercent,
@@ -866,9 +866,11 @@ export function setupMpvIpc(window: BrowserWindow) {
   }
 
   handle(IpcChannels.MpvStatus, () => engineStatus())
-  handle(IpcChannels.MpvSetEngine, (engine: AudioEngine) => {
+  handle(IpcChannels.MpvProbe, () => probeMpv())
+  handle(IpcChannels.MpvSetEngine, async (engine: AudioEngine) => {
     saveEngine(engine === 'mpv' ? 'mpv' : 'builtin')
-    return engineStatus()
+    // Switching: know whether mpv works before Settings offers the restart.
+    return probeMpv()
   })
   handle(IpcChannels.MpvDevices, () => mpvEngine.devices(true))
   handle(IpcChannels.MpvCaps, (key: string, force?: boolean) =>
