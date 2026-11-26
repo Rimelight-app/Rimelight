@@ -31,12 +31,19 @@ export function FullscreenMode() {
   // Keep the player mounted while the sheet slides down, so closing does not
   // show an empty gradient. Unmounted once the close animation is over.
   const [showContent, setShowContent] = useState(isFullscreen)
+  // True once the sheet has finished sliding in. Its glass blur is then
+  // switched off (themes.css): the opaque backdrop covers it completely, yet
+  // the compositor redrew it for every backdrop frame. While the sheet moves,
+  // its anti-aliased top edge lets the blurred page through, so the blur
+  // stays on for the open and close animations and nothing looks different.
+  const [settled, setSettled] = useState(false)
 
   useEffect(() => {
     if (isFullscreen) {
       setShowContent(true)
       return
     }
+    setSettled(false)
     const timer = window.setTimeout(() => setShowContent(false), 700)
     return () => window.clearTimeout(timer)
   }, [isFullscreen])
@@ -53,8 +60,14 @@ export function FullscreenMode() {
     >
       <DrawerTitle className="sr-only">Now playing</DrawerTitle>
       <DrawerContent
-        onAnimationEnd={handleDrawerAnimationEnd}
-        className="h-screen w-screen rounded-t-none border-none select-none cursor-default mt-0 bg-transparent"
+        onAnimationEnd={(event) => {
+          handleDrawerAnimationEnd(event)
+          if (event.target === event.currentTarget) {
+            setSettled(event.currentTarget.dataset.state === 'open')
+          }
+        }}
+        data-cp-settled={settled && isFullscreen ? '' : undefined}
+        className="cp-fullscreen-drawer h-screen w-screen rounded-t-none border-none select-none cursor-default mt-0 bg-transparent"
         showHandle={false}
         aria-describedby={undefined}
       >

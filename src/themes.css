@@ -634,6 +634,12 @@
   .glass [role="alertdialog"] {
     background-color: hsl(240 12% 9% / 0.88);
   }
+  /* The fullscreen player, once it has slid in: its opaque backdrop hides
+     the blur, which still cost a full-window filter on every frame. Kept
+     while the sheet moves (its edge shows the page). See fullscreen/page.tsx. */
+  .glass [role="dialog"].cp-fullscreen-drawer[data-cp-settled]:not(.vaul-dragging) {
+    backdrop-filter: none;
+  }
 
   /* Thumbs that used the page background would vanish on glass. */
   .glass [role="switch"] > span,
