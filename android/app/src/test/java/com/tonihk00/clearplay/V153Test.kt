@@ -330,10 +330,10 @@ class V153Test {
     @Test fun aboutTexts() {
         assertEquals("Navidrome 0.64.2 (10114574)", serverLabel("navidrome", "0.64.2 (10114574)"))
         assertNull(serverLabel("navidrome", null))
-        val licenceFile = File("src/main/assets/licenses").listFiles()!!.single { it.name.startsWith("ClearPlay-") }
+        val licenceFile = File("src/main/assets/licenses").listFiles()!!.single { it.name.startsWith("Rimelight-") }
         assertEquals("MIT licence · Copyright (c) 2026 Victor Alves", licenceSummary(licenceFile.name, licenceFile.readText()))
         val info = debugInfo(AboutInfo("1.5.3", 58, "Navidrome 0.64.2 (x)", null), "15", 35, "samsung", "SM-S921B")
-        assertEquals("ClearPlay 1.5.3 (build 58)\nAndroid 15 (API 35)\nDevice: samsung SM-S921B\nServer: Navidrome 0.64.2 (x)", info)
+        assertEquals("Rimelight 1.5.3 (build 58)\nAndroid 15 (API 35)\nDevice: samsung SM-S921B\nServer: Navidrome 0.64.2 (x)", info)
         assertFalse(info.contains("http") || info.contains("toni"))
         assertTrue(debugInfo(AboutInfo("1.5.3", 58, null, null), "15", 35, "g", "p").endsWith("Server: offline"))
     }

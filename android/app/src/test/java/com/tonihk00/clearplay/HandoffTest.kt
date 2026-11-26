@@ -198,7 +198,7 @@ class HandoffTest {
         assertTrue(save.form["id"]!!.none { it.startsWith("local:") })
         assertTrue("no ids in the URL", save.url.isEmpty() || "id" !in save.url)
         assertTrue("nothing at all in the URL (login in the body too)", save.url.isEmpty())
-        assertEquals("ClearPlay-Android", save.form["c"]!!.single())
+        assertEquals("Rimelight-Android", save.form["c"]!!.single())
     }
 
     @Test fun withoutIndexBasedQueueTheCurrentSongIdIsSent() = runTest {
@@ -239,13 +239,13 @@ class HandoffTest {
     @Test fun pausedDesktopIsOfferedAndContinueSavesStraightBack() = runTest {
         val (server, player, h) = setup()
         player.playing = false
-        server.queue = queueJson("ClearPlay", "2026-11-24T18:05:00.250Z", index = 3)
-        server.nowPlaying = """{"id":"b","title":"Title b","username":"toni","playerName":"ClearPlay","state":"paused","positionMs":90500}"""
+        server.queue = queueJson("Rimelight", "2026-11-24T18:05:00.250Z", index = 3)
+        server.nowPlaying = """{"id":"b","title":"Title b","username":"toni","playerName":"Rimelight","state":"paused","positionMs":90500}"""
         h.look(); runCurrent()
         val offer = h.offer.value
         assertNotNull(offer)
         assertEquals(QueueHandoff.Kind.paused, offer!!.offer.kind)
-        assertEquals("ClearPlay desktop", offer.offer.device)
+        assertEquals("Rimelight desktop", offer.offer.device)
         assertEquals("the second copy of b", 3, offer.offer.index)
         assertEquals(90_500L, offer.offer.positionMs)
 
@@ -256,8 +256,8 @@ class HandoffTest {
         assertEquals("3", save.form["currentIndex"]!!.single())
         assertNull(h.offer.value)
 
-        // The server now says ClearPlay-Android saved last: nothing offered again.
-        server.queue = queueJson("ClearPlay-Android", "2026-11-24T18:06:00Z", index = 3)
+        // The server now says Rimelight-Android saved last: nothing offered again.
+        server.queue = queueJson("Rimelight-Android", "2026-11-24T18:06:00Z", index = 3)
         player.playing = false
         h.look(); runCurrent()
         assertNull(h.offer.value)
@@ -266,16 +266,51 @@ class HandoffTest {
     @Test fun continueHereStartsAtTheLiveSecondOfTheTap() = runTest {
         val (server, player, h) = setup()
         player.playing = false
-        server.queue = queueJson("ClearPlay", "2026-11-24T18:05:00Z", index = 1)
-        server.nowPlaying = """{"id":"b","title":"Title b","username":"toni","playerName":"ClearPlay","state":"playing","positionMs":15000}"""
+        server.queue = queueJson("Rimelight", "2026-11-24T18:05:00Z", index = 1)
+        server.nowPlaying = """{"id":"b","title":"Title b","username":"toni","playerName":"Rimelight","state":"playing","positionMs":15000}"""
         h.look(); runCurrent()
         assertEquals(QueueHandoff.Kind.playing, h.offer.value!!.offer.kind)
         assertEquals(15_000L, h.offer.value!!.offer.positionMs)
         // The pill stays on screen for a while; the desktop keeps playing.
-        server.nowPlaying = """{"id":"b","title":"Title b","username":"toni","playerName":"ClearPlay","state":"playing","positionMs":26000}"""
+        server.nowPlaying = """{"id":"b","title":"Title b","username":"toni","playerName":"Rimelight","state":"playing","positionMs":26000}"""
         assertTrue(h.continueOffer())
         assertEquals(1, player.started!!.second)
         assertEquals(26_000L, player.started!!.third)
+    }
+
+    @Test fun desktopStillOnClearPlay061IsOfferedAndContinueWorks() = runTest {
+        val (server, player, h) = setup()
+        player.playing = false
+        // A computer not updated yet: ClearPlay desktop 0.6.1 sends c=ClearPlay.
+        server.queue = queueJson("ClearPlay", "2026-11-26T18:05:00.250Z", index = 3)
+        server.nowPlaying = """{"id":"b","title":"Title b","username":"toni","playerName":"ClearPlay","state":"paused","positionMs":90500}"""
+        h.look(); runCurrent()
+        val offer = h.offer.value!!.offer
+        assertEquals(QueueHandoff.Kind.paused, offer.kind)
+        assertEquals("ClearPlay desktop", offer.device)
+        assertTrue(
+            com.tonihk00.clearplay.ui.player.offerText(offer, System.currentTimeMillis()).text,
+            com.tonihk00.clearplay.ui.player.offerText(offer, System.currentTimeMillis()).text.startsWith("Paused on ClearPlay desktop · Title b · "),
+        )
+        assertEquals("the second copy of b, at the paused second", 3 to 90_500L, offer.index to offer.positionMs)
+
+        assertTrue(h.continueOffer())
+        runCurrent()
+        assertEquals(Triple(listOf("a", "b", "c", "b", "d"), 3, 90_500L), player.started!!.let { Triple(it.first.map(Song::id), it.second, it.third) })
+        val save = server.saves().single()
+        assertEquals("the phone saves under its new name", "Rimelight-Android", save.form["c"]!!.single())
+        assertEquals("3", save.form["currentIndex"]!!.single())
+        assertNull(h.offer.value)
+    }
+
+    @Test fun queueThisPhoneSavedAsClearPlayAndroidBeforeTheUpdateIsNotOffered() = runTest {
+        val (server, player, h) = setup()
+        player.playing = false
+        // Saved by this phone on 1.6.0 (c=ClearPlay-Android), read after updating to 1.6.1.
+        server.queue = queueJson("ClearPlay-Android", "2026-11-26T18:05:00Z", index = 2)
+        server.nowPlaying = """{"id":"c","title":"Title c","username":"toni","playerName":"ClearPlay-Android","state":"paused","positionMs":3000}"""
+        h.look(); runCurrent()
+        assertNull("its own queue, under its old name: no offer", h.offer.value)
     }
 
     @Test fun dismissHidesUntilTheServerQueueChanges() = runTest {
@@ -295,7 +330,7 @@ class HandoffTest {
     @Test fun playingHereHidesTheOfferForGood() = runTest {
         val (server, player, h) = setup()
         player.playing = false
-        server.queue = queueJson("ClearPlay", "2026-11-24T18:05:00Z")
+        server.queue = queueJson("Rimelight", "2026-11-24T18:05:00Z")
         h.look(); runCurrent()
         assertNotNull(h.offer.value)
         h.played()
@@ -309,13 +344,13 @@ class HandoffTest {
 
     @Test fun leftBehindShowsOnceAndBlocksSaves() = runTest {
         val (server, player, h) = setup()
-        server.nowPlaying = """{"id":"s5","title":"Song 5","username":"toni","playerName":"ClearPlay","state":"playing","positionMs":5000}"""
-        server.queue = queueJson("ClearPlay", "2026-11-24T18:05:00Z", ids = songs.map { it.id })
+        server.nowPlaying = """{"id":"s5","title":"Song 5","username":"toni","playerName":"Rimelight","state":"playing","positionMs":5000}"""
+        server.queue = queueJson("Rimelight", "2026-11-24T18:05:00Z", ids = songs.map { it.id })
         // A song ending by itself: the check runs before that change's save.
         player.index = 4
         h.songChanged(natural = true)
         runCurrent()
-        assertEquals("Continued on ClearPlay desktop", h.leftBehind.value?.let { "Continued on ${it.device}" })
+        assertEquals("Continued on Rimelight desktop", h.leftBehind.value?.let { "Continued on ${it.device}" })
         advanceTimeBy(6_000); runCurrent()
         assertEquals("no save while the pill shows", 0, server.saves().size)
         // A natural song change doesn't close it, and still doesn't save.
@@ -336,8 +371,8 @@ class HandoffTest {
     @Test fun theDeviceThatTookOverSeesNoPill() = runTest {
         val (server, player, h) = setup()
         // The desktop still plays, but this phone saved last (it continued).
-        server.nowPlaying = """{"id":"s5","title":"Song 5","username":"toni","playerName":"ClearPlay","state":"playing","positionMs":5000}"""
-        server.queue = queueJson("ClearPlay-Android", "2026-11-24T18:05:00Z", ids = songs.map { it.id })
+        server.nowPlaying = """{"id":"s5","title":"Song 5","username":"toni","playerName":"Rimelight","state":"playing","positionMs":5000}"""
+        server.queue = queueJson("Rimelight-Android", "2026-11-24T18:05:00Z", ids = songs.map { it.id })
         h.songChanged(natural = false); runCurrent()
         assertNull(h.leftBehind.value)
         advanceTimeBy(5_000); runCurrent()
@@ -346,8 +381,8 @@ class HandoffTest {
 
     @Test fun skipClosesThePillAndSavingResumes() = runTest {
         val (server, player, h) = setup()
-        server.nowPlaying = """{"id":"s5","title":"Song 5","username":"toni","playerName":"ClearPlay","state":"playing","positionMs":5000}"""
-        server.queue = queueJson("ClearPlay", "2026-11-24T18:05:00Z", ids = songs.map { it.id })
+        server.nowPlaying = """{"id":"s5","title":"Song 5","username":"toni","playerName":"Rimelight","state":"playing","positionMs":5000}"""
+        server.queue = queueJson("Rimelight", "2026-11-24T18:05:00Z", ids = songs.map { it.id })
         h.songChanged(natural = true); runCurrent()
         assertNotNull(h.leftBehind.value)
         // The user skips here.
@@ -360,8 +395,8 @@ class HandoffTest {
 
     @Test fun neverPausesByItself() = runTest {
         val (server, player, h) = setup()
-        server.nowPlaying = """{"id":"s5","title":"Song 5","username":"toni","playerName":"ClearPlay","state":"playing","positionMs":5000}"""
-        server.queue = queueJson("ClearPlay", "2026-11-24T18:05:00Z", ids = songs.map { it.id })
+        server.nowPlaying = """{"id":"s5","title":"Song 5","username":"toni","playerName":"Rimelight","state":"playing","positionMs":5000}"""
+        server.queue = queueJson("Rimelight", "2026-11-24T18:05:00Z", ids = songs.map { it.id })
         h.playingChanged(true)
         advanceTimeBy(61_000); runCurrent()
         assertNotNull("the 60 s check found it", h.leftBehind.value)

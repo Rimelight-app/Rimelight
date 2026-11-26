@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -25,6 +26,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.media3.common.Player
 import com.github.takahirom.roborazzi.captureRoboImage
+import dev.chrisbanes.haze.hazeSource
 import com.tonihk00.clearplay.player.PlayerState
 import com.tonihk00.clearplay.ui.DockPreview
 import com.tonihk00.clearplay.ui.LocalActions
@@ -40,7 +42,6 @@ import com.tonihk00.clearplay.ui.player.FullPlayer
 import com.tonihk00.clearplay.ui.player.LyricsState
 import com.tonihk00.clearplay.ui.player.Panel
 import com.tonihk00.clearplay.ui.player.PlayerControls
-import com.tonihk00.clearplay.ui.player.SongMenuContent
 import com.tonihk00.clearplay.ui.search.SearchScreen
 import com.tonihk00.clearplay.ui.theme.ClearPlayTheme
 import androidx.compose.ui.unit.dp
@@ -147,14 +148,71 @@ class ScreenshotTest {
         FullPlayer(state, controls, LyricsState.None, {}, initialPanel = Panel.Queue, backdrop = { BackdropLayer(fakeBlur(), dim = 0.05f) })
     }
 
-    @Test fun songMenu() = shoot("08-song-menu") {
-        Column(Modifier.fillMaxSize()) {
-            Spacer(Modifier.weight(1f))
-            Box(Modifier.fillMaxWidth().background(Color(0xFF16161C).copy(alpha = 0.97f), RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))) {
-                SongMenuContent(FakeServer.playing) {}
+    // ---------------------------------------------------------------- song menu / sleep timer (1.6.1)
+
+    private val darkCover = Brush.linearGradient(listOf(Color(0xFF0B1424), Color(0xFF17284A), Color(0xFF2A3F6B)))
+    private val brightCover = Brush.linearGradient(listOf(Color(0xFFFFFFFF), Color(0xFFF6F5EF), Color(0xFFFFFDF6)))
+
+    /** The cover blurred once (Backdrop.kt), from a cover's colours. */
+    private fun blurOf(colors: IntArray): androidx.compose.ui.graphics.ImageBitmap {
+        val src = Bitmap.createBitmap(150, 150, Bitmap.Config.ARGB_8888)
+        Canvas(src).drawRect(0f, 0f, 150f, 150f, Paint().apply { shader = LinearGradient(0f, 0f, 150f, 150f, colors, null, Shader.TileMode.CLAMP) })
+        return blurOnce(src).asImageBitmap()
+    }
+    private val darkBlur get() = blurOf(intArrayOf(0xFF0B1424.toInt(), 0xFF17284A.toInt(), 0xFF2A3F6B.toInt()))
+    private val brightBlur get() = blurOf(intArrayOf(0xFFFFFFFF.toInt(), 0xFFF6F5EF.toInt(), 0xFFFFFDF6.toInt()))
+
+    /**
+     * A sheet as the app draws it: over a page that is a Haze source (the album page, or the full
+     * player), every cover [cover]. [liveBlur] false: the solid glass of "Live blur" off.
+     */
+    private fun shootSheet(name: String, cover: Brush, backdrop: androidx.compose.ui.graphics.ImageBitmap, liveBlur: Boolean, behind: @Composable () -> Unit, sheet: @Composable () -> Unit) {
+        rule.setContent {
+            ClearPlayTheme(reduceMotion = true) {
+                CompositionLocalProvider(
+                    LocalClient provides FakeServer.client,
+                    LocalFakeCovers provides { _: String -> cover },
+                    LocalActions provides NoActions,
+                ) {
+                    val hazeState = dev.chrisbanes.haze.rememberHazeState()
+                    val host = androidx.compose.runtime.remember { com.tonihk00.clearplay.ui.components.SheetHost() }
+                    host.haze = if (liveBlur) hazeState else null
+                    CompositionLocalProvider(com.tonihk00.clearplay.ui.components.LocalSheetHost provides host) {
+                        Box(Modifier.fillMaxSize()) {
+                            Box(Modifier.fillMaxSize().hazeSource(hazeState)) {
+                                BackdropLayer(backdrop)
+                                behind()
+                            }
+                            sheet()
+                            host.Overlay()
+                        }
+                    }
+                }
             }
         }
+        rule.waitUntil(10_000) { rule.onAllNodesWithText("Go to artist").fetchSemanticsNodes().isNotEmpty() || rule.onAllNodesWithText("End of this song").fetchSemanticsNodes().isNotEmpty() }
+        rule.mainClock.advanceTimeBy(1_500)
+        rule.waitForIdle()
+        // The sheet is marked as a dialog (TalkBack), but it lives in the activity's window.
+        com.github.takahirom.roborazzi.captureScreenRoboImage("build/screens/$name.png")
     }
+
+    private val albumBehind: @Composable () -> Unit = { WithDock(0) { AlbumScreen("al1", 170.dp, FakeServer.playing.id) {} } }
+    private fun playerBehind(blur: androidx.compose.ui.graphics.ImageBitmap): @Composable () -> Unit =
+        { FullPlayer(state, controls, LyricsState.None, {}, backdrop = { BackdropLayer(blur, dim = 0.05f) }) }
+    private val menu: @Composable () -> Unit = { com.tonihk00.clearplay.ui.player.SongMenu(FakeServer.playing) {} }
+    private val sleepSheet: @Composable () -> Unit = {
+        com.tonihk00.clearplay.ui.player.SleepSheet(com.tonihk00.clearplay.player.PlayerConnection.Sleep(System.currentTimeMillis() + 23 * 60_000L), { _, _ -> }) {}
+    }
+
+    @Test fun songMenuDarkCoverBlur() = shootSheet("08a-song-menu-dark-blur", darkCover, darkBlur, true, albumBehind, menu)
+    @Test fun songMenuDarkCoverSolid() = shootSheet("08b-song-menu-dark-solid", darkCover, darkBlur, false, albumBehind, menu)
+    @Test fun songMenuBrightCoverBlur() = shootSheet("08c-song-menu-bright-blur", brightCover, brightBlur, true, playerBehind(brightBlur), menu)
+    @Test fun songMenuBrightCoverSolid() = shootSheet("08d-song-menu-bright-solid", brightCover, brightBlur, false, playerBehind(brightBlur), menu)
+    @Test fun songMenuBrightAlbumBlur() = shootSheet("08e-song-menu-bright-album-blur", brightCover, brightBlur, true, albumBehind, menu)
+    @Test fun songMenuOverWhiteBlur() = shootSheet("08f-song-menu-white-page-blur", brightCover, brightBlur, true, { Box(Modifier.fillMaxSize().background(Color.White)) }, menu)
+    @Test fun sleepTimerBlur() = shootSheet("14a-sleep-timer-blur", FakeServer.cover("al1"), fakeBlur(), true, playerBehind(fakeBlur()), sleepSheet)
+    @Test fun sleepTimerSolid() = shootSheet("14b-sleep-timer-solid", FakeServer.cover("al1"), fakeBlur(), false, playerBehind(fakeBlur()), sleepSheet)
 
     @Test fun settings() = shoot("10-settings") {
         WithDock(3) {

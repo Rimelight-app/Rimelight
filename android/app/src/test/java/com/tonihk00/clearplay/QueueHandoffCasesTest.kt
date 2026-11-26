@@ -26,7 +26,7 @@ import java.security.MessageDigest
 
 /**
  * Runs every case in the shared queue-handoff-cases.json (copied byte for byte from the desktop's
- * tools/dev-rig/ at tag v0.6.0) against QueueHandoff.kt, like the desktop's queue-handoff-unit.mjs
+ * tools/dev-rig/ at tag v0.6.2) against QueueHandoff.kt, like the desktop's queue-handoff-unit.mjs
  * runs them against queue-handoff.ts. Prints the case count; every case must pass.
  */
 class QueueHandoffCasesTest {
@@ -37,12 +37,12 @@ class QueueHandoffCasesTest {
 
     @Test fun casesFileIsTheDesktopCopy() {
         val sha = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-        assertEquals("cases file must be the v0.6.0 copy, unchanged", V060_SHA256, sha)
-        assertEquals("5358adced87d22d5", sha.take(16))
+        assertEquals("cases file must be the v0.6.2 copy, unchanged", V062_SHA256, sha)
+        assertEquals("aa3e9fa524e4cb65", sha.take(16))
         // When the repository has the tag (not in CI's shallow checkout), compare with it directly.
         tagCopy()?.let { tag ->
             val tagSha = MessageDigest.getInstance("SHA-256").digest(tag).joinToString("") { "%02x".format(it) }
-            assertEquals("cases file differs from git show v0.6.0:tools/dev-rig/queue-handoff-cases.json", tagSha, sha)
+            assertEquals("cases file differs from git show v0.6.2:tools/dev-rig/queue-handoff-cases.json", tagSha, sha)
         }
     }
 
@@ -51,9 +51,12 @@ class QueueHandoffCasesTest {
         val failed = results.filter { it.second != null }
         println("queue-handoff cases: ${results.size} run, ${results.size - failed.size} passed, ${failed.size} failed")
         failed.forEach { println("FAIL  ${it.first}: ${it.second}") }
-        assertEquals("cases file version", 3, cases["version"]!!.jsonPrimitive.int)
+        assertEquals("cases file version", 4, cases["version"]!!.jsonPrimitive.int)
+        assertEquals("shared case count", 108, results.size)
         assertEquals(QueueHandoff.DESKTOP_APP, cases["thisApp"]!!.jsonObject["desktop"]!!.jsonPrimitive.content)
         assertEquals(QueueHandoff.ANDROID_APP, cases["thisApp"]!!.jsonObject["android"]!!.jsonPrimitive.content)
+        val legacy = cases["legacyNames"]!!.jsonObject.mapValues { it.value.jsonPrimitive.content }
+        assertEquals("legacyNames must equal QueueHandoff.LEGACY_NAMES", QueueHandoff.LEGACY_NAMES, legacy)
         // Every section of the file is run (a new section would need a runner here first).
         val sections = cases.filterValues { it is JsonArray }.keys - "notes"
         assertEquals(RUN_SECTIONS, sections)
@@ -61,12 +64,13 @@ class QueueHandoffCasesTest {
     }
 
     /**
-     * (name, failure or null) for every case. [offer] and [leftBehind] can be swapped for broken
+     * (name, failure or null) for every case. [offer], [leftBehind] and [leftBehindCandidate] can be swapped for broken
      * copies (QueueHandoffMutationTest) to show that the cases catch those mistakes.
      */
     fun runAll(
         offer: (QueueHandoff.OfferInput<Id>) -> QueueHandoff.Offer<Id>? = { QueueHandoff.offer(it) },
         leftBehind: (QueueHandoff.LeftBehindInput) -> QueueHandoff.LeftBehind? = QueueHandoff::leftBehind,
+        leftBehindCandidate: (QueueHandoff.LeftBehindCandidateInput) -> QueueHandoff.LeftBehind? = QueueHandoff::leftBehindCandidate,
     ): List<Pair<String, String?>> {
         val out = ArrayList<Pair<String, String?>>()
         fun t(name: String, block: () -> Unit) {
@@ -146,7 +150,7 @@ class QueueHandoffCasesTest {
             eq(want, got)
         }
         for (c in arr("leftBehindCandidate")) t("leftBehindCandidate: ${c.name}") {
-            eq(leftBehindOf(c["expected"]!!), QueueHandoff.leftBehindCandidate(candidate(c["input"]!!.jsonObject)))
+            eq(leftBehindOf(c["expected"]!!), leftBehindCandidate(candidate(c["input"]!!.jsonObject)))
         }
         for (c in arr("leftBehind")) t("leftBehind: ${c.name}") {
             val i = c["input"]!!.jsonObject
@@ -237,15 +241,15 @@ class QueueHandoffCasesTest {
         if (e is JsonNull) null else QueueHandoff.LeftBehind(e.jsonObject["device"]!!.str!!, e.jsonObject["song"]!!.str!!)
 
     private fun tagCopy(): ByteArray? = runCatching {
-        val p = ProcessBuilder("git", "show", "v0.6.0:tools/dev-rig/queue-handoff-cases.json")
+        val p = ProcessBuilder("git", "show", "v0.6.2:tools/dev-rig/queue-handoff-cases.json")
             .directory(File(System.getProperty("user.dir"))).redirectErrorStream(false).start()
         val out = p.inputStream.readBytes()
         if (p.waitFor() == 0 && out.isNotEmpty()) out else null
     }.getOrNull()
 
     companion object {
-        /** SHA-256 of tools/dev-rig/queue-handoff-cases.json at desktop tag v0.6.0 (7812847). */
-        const val V060_SHA256 = "5358adced87d22d522ccdca73cf7bd27daac473de5c33d76c39171d100502c71"
+        /** SHA-256 of tools/dev-rig/queue-handoff-cases.json at desktop tag v0.6.2 (3155268). */
+        const val V062_SHA256 = "aa3e9fa524e4cb6515098c0b2989a8ba57d46ee3d33dca220da85ef3d6bc5008"
         val RUN_SECTIONS = setOf(
             "deviceName", "saveWindow", "shouldSave", "debounce", "offer", "leftBehindCandidate",
             "leftBehind", "isNaturalEnd", "isQueueCleared", "ageText",
