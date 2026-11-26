@@ -90,6 +90,9 @@ jobs:
       - name: Unit checks (Start radio)
         run: node tools/dev-rig/radio-unit.mjs
 
+      - name: Unit checks (taskbar progress)
+        run: node tools/dev-rig/taskbar-unit.mjs
+
       - name: Runtime checks (Continue on other devices, fake server)
         run: node tools/dev-rig/handoff-unit.mjs
 

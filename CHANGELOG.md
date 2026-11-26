@@ -9,6 +9,7 @@ All notable changes to ClearPlay. Format loosely follows Keep a Changelog.
 
 ### Added
 - **Start radio**: right-click a song (or use the "…" menu of an album or an artist, or Ctrl+K for the song that is playing) and choose Start radio. The queue is replaced with that song and similar music from your server, "Keep playing similar music" is switched on, and it starts playing. If the server finds nothing similar, your queue stays as it was. Not offered for songs from "Music on this computer". Similar music comes from Navidrome's Last.fm (or other) data; without it, Navidrome picks songs by genre.
+- **Song progress on the taskbar button (Windows)**: the ClearPlay button fills up as the song plays: green while playing, yellow when paused, red when a song couldn't be played, and empty when nothing plays. Settings → Desktop Application → "Show song progress on the taskbar button" (on by default).
 
 ### Fixed
 - **Big playlists and albums froze the app**: opening a playlist with thousands of songs could freeze ClearPlay for a minute or more and use gigabytes of memory, and a 500-song album took seconds to open. ClearPlay drew every row once before it switched to drawing only the rows on screen; now it draws only those from the start. Coming back to a playlist also no longer swaps it for the loading placeholder while it refreshes.

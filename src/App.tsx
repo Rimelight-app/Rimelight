@@ -11,6 +11,7 @@ import { QueueObserver } from '@/app/observers/queue-observer'
 import { ScrobbleObserver } from '@/app/observers/scrobble-observer'
 import { ServerObserver } from '@/app/observers/server-observer'
 import { SleepObserver } from '@/app/observers/sleep-observer'
+import { TaskbarProgressObserver } from '@/app/observers/taskbar-progress-observer'
 import { ThemeObserver } from '@/app/observers/theme-observer'
 import { ToastContainer } from '@/app/observers/toast-container'
 import { UpdateObserver } from '@/app/observers/update-observer'
@@ -25,6 +26,7 @@ function App() {
     <>
       {isElectron() && <UpdateObserver />}
       {isElectron() && <LocalLibraryObserver />}
+      {isElectron() && <TaskbarProgressObserver />}
       <MediaSessionObserver />
       <LangObserver />
       <ThemeObserver />

@@ -22,6 +22,7 @@ export enum IpcChannels {
   DownloadCompleted = 'download-completed',
   DownloadFailed = 'download-failed',
   UpdatePlayerState = 'update-player-state',
+  SetTaskbarProgress = 'set-taskbar-progress',
   PlayerStateListener = 'player-state-listener',
   SaveAppSettings = 'save-app-settings',
   CheckForUpdates = 'check-for-updates',
@@ -232,6 +233,11 @@ export interface IClearPlayAPI {
   downloadCompletedListener: (func: (fileId: string) => void) => void
   downloadFailedListener: (func: (fileId: string) => void) => void
   updatePlayerState: (payload: PlayerStatePayload) => void
+  /** Windows taskbar button progress: 0..1, or -1 to remove it. */
+  setTaskbarProgress: (
+    progress: number,
+    mode: 'normal' | 'paused' | 'error' | 'none',
+  ) => void
   playerStateListener: (
     func: (action: PlayerStateListenerActions) => void,
   ) => void

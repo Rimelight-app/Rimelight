@@ -1215,6 +1215,10 @@
       "start": "Start radio",
       "startFrom": "Start radio from {{name}}",
       "nothingFound": "No similar music found for {{name}}"
+    },
+    "taskbarProgress": {
+      "label": "Show song progress on the taskbar button",
+      "info": "The ClearPlay button on the taskbar fills up as the song plays: green while playing, yellow when paused, red when a song couldn't be played."
     }
   }
 }

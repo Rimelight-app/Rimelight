@@ -166,6 +166,7 @@ function resetIpcEvents() {
     IpcChannels.ThemeChanged,
     IpcChannels.UpdateNativeTheme,
     IpcChannels.UpdatePlayerState,
+    IpcChannels.SetTaskbarProgress,
     IpcChannels.SaveAppSettings,
     IpcChannels.MpvRelaunch,
   ]
@@ -177,6 +178,24 @@ export function setupIpcEvents(window: BrowserWindow | null) {
   if (!window) return
 
   resetIpcEvents()
+
+  // Taskbar button progress (Windows). On Linux Electron 42 only has it
+  // through libunity; that comes with a later Electron.
+  ipcMain.on(
+    IpcChannels.SetTaskbarProgress,
+    (_, progress: unknown, mode: unknown) => {
+      if (!platform.isWindows || window.isDestroyed()) return
+      const p =
+        typeof progress === 'number' && Number.isFinite(progress)
+          ? progress
+          : -1
+      const m =
+        mode === 'normal' || mode === 'paused' || mode === 'error'
+          ? mode
+          : 'none'
+      window.setProgressBar(p < 0 ? -1 : Math.min(1, p), { mode: m })
+    },
+  )
 
   ipcMain.on(IpcChannels.ToggleFullscreen, (_, isFullscreen: boolean) => {
     window.setFullScreen(isFullscreen)

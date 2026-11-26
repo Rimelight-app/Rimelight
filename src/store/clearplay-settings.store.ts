@@ -29,6 +29,8 @@ interface ClearPlaySettings {
   autoDj: boolean
   /** Spectrum visualizer on the Now Playing page. */
   visualizer: boolean
+  /** Song progress on the taskbar button (Windows). */
+  taskbarProgress: boolean
   set: (patch: Partial<Omit<ClearPlaySettings, 'set'>>) => void
 }
 
@@ -45,6 +47,7 @@ export const useClearPlaySettings = create<ClearPlaySettings>()(
       handledChanged: {},
       autoDj: false,
       visualizer: false,
+      taskbarProgress: true,
       set: (patch) => set(patch),
     }),
     { name: 'clearplay_settings' },

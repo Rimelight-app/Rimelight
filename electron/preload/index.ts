@@ -50,6 +50,9 @@ const api: IClearPlayAPI = {
       func(fileId),
     )
   },
+  setTaskbarProgress: (progress, mode) => {
+    ipcRenderer.send(IpcChannels.SetTaskbarProgress, progress, mode)
+  },
   updatePlayerState: (payload) => {
     ipcRenderer.send(IpcChannels.UpdatePlayerState, payload)
   },
