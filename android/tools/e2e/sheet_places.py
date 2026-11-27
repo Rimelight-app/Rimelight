@@ -97,7 +97,9 @@ def long_press_album_row():
     ui.tap("Neon Tides", exact=True)
     ui.wait("ALBUM", timeout=15)
     time.sleep(1)
-    y = more_buttons()[2]["center"][1]
+    # The third song row above the tab bar (on a shorter screen fewer rows fit in more_buttons' band).
+    rows = [n for n in ui.dump() if n["desc"] == "More" and 300 < n["center"][1] < 2050]
+    y = rows[min(2, len(rows) - 1)]["center"][1]
     return check_sheet("album-long-press", MENU, "ALBUM", lambda: ui.swipe(400, y, 400, y, 900))
 
 
