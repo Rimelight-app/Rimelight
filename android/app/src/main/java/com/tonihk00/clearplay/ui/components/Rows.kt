@@ -39,6 +39,9 @@ fun formatDuration(seconds: Int): String {
     return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, (s % 3600) / 60, s % 60) else "%d:%02d".format(s / 60, s % 60)
 }
 
+/** "1 song", "12 songs" (also albums). */
+fun countOf(n: Int, one: String) = "$n $one${if (n == 1) "" else "s"}"
+
 fun formatLongDuration(seconds: Int): String {
     val m = seconds / 60
     return if (m >= 60) "${m / 60} h ${m % 60} min" else "$m min ${"%02d".format(seconds % 60)} s"

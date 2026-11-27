@@ -1,6 +1,7 @@
 package com.tonihk00.clearplay.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -46,6 +47,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -200,7 +202,10 @@ private fun plural(n: Int, one: String) = "$n $one${if (n == 1) "" else "s"}"
 private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLogout: () -> Unit) {
     val app = ClearPlayApp.instance
     val context = LocalContext.current
-    val state by player.state.collectAsState()
+    // Only while the app is on screen: with the screen off or the app in the background the
+    // composition kept following every song change and loaded each song's lyrics (2 requests a
+    // song) for a screen nobody saw. Back on screen, the state is current again at once.
+    val state by player.state.collectAsStateWithLifecycle()
     val nav = rememberNavController()
     val scope = rememberCoroutineScope()
     val hazeState = rememberHazeState()
@@ -315,6 +320,8 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
             onNothingToResume = { toast.show("Nothing to resume") },
         )
     }
+    // "Couldn't play …" and other playback messages from the player service.
+    LaunchedEffect(toast) { app.playbackMessages.collect { toast.show(it) } }
     LaunchedEffect(shortcutActions) {
         app.shortcutRequests.collect { action ->
             app.shortcutRequests.resetReplayCache()
@@ -365,6 +372,7 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
         LocalToast provides toast::show,
         LocalConnectionLost provides { app.connection.recheck() },
         com.tonihk00.clearplay.ui.components.LocalSheetHost provides sheetHost,
+        com.tonihk00.clearplay.ui.LocalLogInAgain provides { addingServer = true },
     ) {
         Box(Modifier.fillMaxSize()) {
             // Everything under the dock is a Haze source, so the bars can blur it. The dock (and
@@ -643,7 +651,15 @@ private fun TabItem(tab: Tab, selected: Boolean, onClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CpIcon(tab.icon, size = 22.dp, tint = color)
-        Text(tab.label, style = MaterialTheme.typography.labelMedium, color = color, modifier = Modifier.padding(top = 3.dp))
+        // One line always: at a large font size "Settings" wrapped letter by letter (2.0×); the
+        // label shrinks just enough to fit instead. At normal sizes it fits, so nothing changes.
+        Text(
+            tab.label, style = MaterialTheme.typography.labelMedium, color = color, modifier = Modifier.padding(top = 3.dp),
+            maxLines = 1, softWrap = false,
+            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
+                minFontSize = 8.sp, maxFontSize = MaterialTheme.typography.labelMedium.fontSize, stepSize = 0.5.sp,
+            ),
+        )
     }
 }
 

@@ -24,16 +24,44 @@ class ConnectionMonitor(context: Context, private val scope: CoroutineScope, pri
     val online: StateFlow<Boolean> = _online
     private var retry: Job? = null
     private var check: Job? = null
+    /** What reachability depends on, as last seen (see [NetKey]). */
+    private var lastKey: NetKey? = null
 
     init {
         runCatching {
             cm?.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) { recheck() }
-                override fun onLost(network: Network) { recheck() }
-                override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) { recheck() }
+                override fun onAvailable(network: Network) { lastKey = null; recheck() }
+                override fun onLost(network: Network) { lastKey = null; recheck() }
+                override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+                    // Signal strength and bandwidth estimates change every few seconds (on the
+                    // emulator: 20 pings a minute with the app idle). Only a change that can
+                    // matter for reaching the server asks again.
+                    val key = NetKey.of(network.toString(), caps)
+                    if (shouldRecheck(lastKey, key)) {
+                        lastKey = key
+                        recheck()
+                    }
+                }
             })
         }
         recheck()
+    }
+
+    /** The parts of a network that decide whether the server can be reached. */
+    data class NetKey(val network: String, val internet: Boolean, val validated: Boolean, val transports: Set<Int>) {
+        companion object {
+            private val TRANSPORTS = listOf(
+                NetworkCapabilities.TRANSPORT_WIFI, NetworkCapabilities.TRANSPORT_CELLULAR,
+                NetworkCapabilities.TRANSPORT_ETHERNET, NetworkCapabilities.TRANSPORT_VPN,
+            )
+
+            fun of(network: String, caps: NetworkCapabilities) = NetKey(
+                network,
+                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET),
+                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
+                TRANSPORTS.filter(caps::hasTransport).toSet(),
+            )
+        }
     }
 
     private fun hasNetwork(): Boolean {
@@ -45,9 +73,12 @@ class ConnectionMonitor(context: Context, private val scope: CoroutineScope, pri
     fun recheck() {
         check?.cancel()
         check = scope.launch {
-            val c = client()
+            // No server yet (the saved login is still being read at start, or signed out): there
+            // is nothing to reach, so "online" stays as it was. Reporting offline here made the
+            // first real check look like coming back online, and every cold start downloaded
+            // the whole library again for Statistics (ClearPlayApp's reconnect refresh).
+            val c = client() ?: return@launch
             val ok = when {
-                c == null -> false
                 !hasNetwork() -> false
                 else -> withTimeoutOrNull(5_000) { runCatching { c.ping() }.isSuccess } ?: false
             }
@@ -65,5 +96,10 @@ class ConnectionMonitor(context: Context, private val scope: CoroutineScope, pri
                 }
             }
         }
+    }
+
+    companion object {
+        /** A capabilities callback asks the server again only when something that matters changed. */
+        fun shouldRecheck(previous: NetKey?, next: NetKey) = previous != next
     }
 }

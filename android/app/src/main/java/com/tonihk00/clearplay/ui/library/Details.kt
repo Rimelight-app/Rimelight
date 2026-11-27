@@ -180,7 +180,7 @@ fun AlbumContent(a: Album, bottomPadding: Dp, playingId: String?) {
         item {
             DetailHeader(
                 "Album", a.name, a.coverArt,
-                listOfNotNull(a.year?.toString(), a.genre, "${a.songCount} songs", formatLongDuration(a.duration)),
+                listOfNotNull(a.year?.toString(), a.genre, com.tonihk00.clearplay.ui.components.countOf(a.songCount, "song"), formatLongDuration(a.duration)),
                 a.song, a.artist, a.artistId?.let { { actions.openArtist(it) } },
                 albumId = a.id,
             )
@@ -197,7 +197,7 @@ fun PlaylistScreen(id: String, bottomPadding: Dp, playingId: String?, onBack: ()
         LoadBox(state, Modifier.statusBarsPadding().padding(top = 80.dp)) { p: Playlist ->
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)) {
                 item {
-                    DetailHeader("Playlist", p.name, p.coverArt, listOf("${p.songCount} songs", formatLongDuration(p.duration)), p.entry, p.owner)
+                    DetailHeader("Playlist", p.name, p.coverArt, listOf(com.tonihk00.clearplay.ui.components.countOf(p.songCount, "song"), formatLongDuration(p.duration)), p.entry, p.owner)
                 }
                 songCard(p.entry, playingId, actions, numbered = false)
             }
@@ -213,7 +213,7 @@ fun GenreScreen(name: String, bottomPadding: Dp, playingId: String?, onBack: () 
     PullDownToGoBack(onBack) {
         LoadBox(state, Modifier.statusBarsPadding().padding(top = 80.dp)) { songs: List<Song> ->
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)) {
-                item { DetailHeader("Genre", name, songs.firstOrNull()?.coverArt, listOf("${songs.size} songs"), songs) }
+                item { DetailHeader("Genre", name, songs.firstOrNull()?.coverArt, listOf(com.tonihk00.clearplay.ui.components.countOf(songs.size, "song")), songs) }
                 songCard(songs, playingId, actions, numbered = false)
             }
         }
@@ -244,7 +244,7 @@ fun ArtistScreen(id: String, bottomPadding: Dp, onBack: () -> Unit) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     DetailHeader(
                         "Artist", a.name, a.coverArt,
-                        listOf("${a.albumCount} albums", "${songs.size} songs"),
+                        listOf(com.tonihk00.clearplay.ui.components.countOf(a.albumCount, "album"), com.tonihk00.clearplay.ui.components.countOf(songs.size, "song")),
                         songs, roundCover = true,
                     )
                 }

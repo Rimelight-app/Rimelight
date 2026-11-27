@@ -434,7 +434,7 @@ fun PlaylistsTab(pad: PaddingValues) {
         if (list.isEmpty()) return@LoadBox EmptyState(R.drawable.ic_list_music, "No playlists yet")
         LazyColumn(Modifier.fillMaxSize(), contentPadding = pad) {
             items(list, key = { it.id }) {
-                SimpleRow(it.name, "${it.songCount} songs · ${formatLongDuration(it.duration)}", { actions.openPlaylist(it.id) }, coverArt = it.coverArt)
+                SimpleRow(it.name, "${com.tonihk00.clearplay.ui.components.countOf(it.songCount, "song")} · ${formatLongDuration(it.duration)}", { actions.openPlaylist(it.id) }, coverArt = it.coverArt)
             }
         }
     }
@@ -483,7 +483,7 @@ fun GenresTab(pad: PaddingValues) {
         if (list.isEmpty()) return@LoadBox EmptyState(R.drawable.ic_tag, "No genres yet")
         LazyColumn(Modifier.fillMaxSize(), contentPadding = pad) {
             items(list, key = { it.value }) {
-                SimpleRow(it.value, "${it.songCount} songs · ${it.albumCount} albums", { actions.openGenre(it.value) }, icon = R.drawable.ic_tag)
+                SimpleRow(it.value, "${com.tonihk00.clearplay.ui.components.countOf(it.songCount, "song")} · ${com.tonihk00.clearplay.ui.components.countOf(it.albumCount, "album")}", { actions.openGenre(it.value) }, icon = R.drawable.ic_tag)
             }
         }
     }
