@@ -100,8 +100,14 @@ fun Cover(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
                 onSuccess = loaded?.let { l -> { l() } },
+                // A cover that can't load shows the placeholder: that tile is drawn too (else the
+                // start-up "fully drawn" report never comes when an album has no cover).
+                onError = loaded?.let { l -> { l() } },
             )
-            else -> CpIcon(R.drawable.ic_disc_3, size = 28.dp, tint = Cp.TextFaint)
+            else -> {
+                if (loaded != null) androidx.compose.runtime.LaunchedEffect(Unit) { loaded() }
+                CpIcon(R.drawable.ic_disc_3, size = 28.dp, tint = Cp.TextFaint)
+            }
         }
     }
 }

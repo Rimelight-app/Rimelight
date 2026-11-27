@@ -32,6 +32,7 @@ import com.tonihk00.clearplay.ui.components.LocalFakeCovers
 import com.tonihk00.clearplay.ui.library.AlbumScreen
 import com.tonihk00.clearplay.ui.theme.ClearPlayTheme
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -371,6 +372,20 @@ class V161FixesTest {
         rule.onNode(androidx.compose.ui.test.hasSetTextAction()).performTextReplacement("a")
         waitForText("Glass Harbour")
         assertTrue(rule.onAllNodes(androidx.compose.ui.test.hasText("Search failed")).fetchSemanticsNodes().isEmpty())
+    }
+
+    /** Start-up's "fully drawn" waits for every visible cover; one without art must count too. */
+    @Test fun aTileWithoutCoverCountsAsDrawn() {
+        var loaded = 0
+        rule.setContent {
+            ClearPlayTheme(reduceMotion = true) {
+                CompositionLocalProvider(com.tonihk00.clearplay.ui.components.LocalCoverLoaded provides { loaded++ }) {
+                    com.tonihk00.clearplay.ui.components.Cover(null, androidx.compose.ui.Modifier.size(40.dp))
+                }
+            }
+        }
+        rule.waitForIdle()
+        assertEquals(1, loaded)
     }
 
     @Test fun oneSongIsOneSong() {
