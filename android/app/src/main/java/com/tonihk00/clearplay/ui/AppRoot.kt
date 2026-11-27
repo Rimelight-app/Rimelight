@@ -359,6 +359,7 @@ private fun MainScaffold(player: PlayerConnection, client: SubsonicClient?, onLo
     pages.onLibraryTab = { libraryTab = it }
     pages.onLogout = { logoutNow() }
     pages.onAddServer = { addingServer = true }
+    pages.covered = fullOpen || sheetHost.showing || addingServer
     val streamCap = remember(settings, online) { app.streamBitrate().takeIf { it > 0 }?.let { it to settings.format.param } }
 
     CompositionLocalProvider(
@@ -458,6 +459,8 @@ private class PageArgs {
     var onLibraryTab: (Int) -> Unit = {}
     var onLogout: () -> Unit = {}
     var onAddServer: () -> Unit = {}
+    /** The full player, a sheet or the login covers the pages: Back belongs to that, not to a page. */
+    var covered by mutableStateOf(false)
 }
 
 private fun dec(s: String?) = URLDecoder.decode(s.orEmpty(), "UTF-8")
@@ -524,7 +527,7 @@ private fun AppNavHost(nav: NavHostController, p: PageArgs) {
             }
         }
     }
-    BackDuringTransition(nav, safe)
+    BackDuringTransition(nav, safe, p)
 }
 
 /**
@@ -563,7 +566,7 @@ private fun rememberSafeBack(nav: NavHostController): SafeBack {
 }
 
 @Composable
-private fun BackDuringTransition(nav: NavHostController, safe: SafeBack) {
+private fun BackDuringTransition(nav: NavHostController, safe: SafeBack, p: PageArgs) {
     val stack by nav.currentBackStack.collectAsState()
     val top = stack.lastOrNull()
     val canPop = stack.count { it.destination !is androidx.navigation.NavGraph } > 1
@@ -573,7 +576,10 @@ private fun BackDuringTransition(nav: NavHostController, safe: SafeBack) {
         top.lifecycle.currentStateFlow.collect { settled = it.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) }
     }
     val handler = remember(safe) { TransitionBackHandler(safe::back) }
-    handler.isBackEnabled = canPop && (!settled || handler.swiping)
+    // Never while something covers the pages: this handler has overlay priority, so it would take
+    // Back from the song menu, the sleep timer or the full player (they then ignored Back) and
+    // pop a page nobody sees.
+    handler.isBackEnabled = canPop && !p.covered && (!settled || handler.swiping)
     val dispatcher = androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner.current?.navigationEventDispatcher
     androidx.compose.runtime.DisposableEffect(dispatcher, handler) {
         dispatcher?.addHandler(handler, androidx.navigationevent.NavigationEventDispatcher.PRIORITY_OVERLAY)
