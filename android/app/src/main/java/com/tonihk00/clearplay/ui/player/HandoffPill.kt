@@ -75,6 +75,9 @@ fun offerText(offer: QueueHandoff.Offer<com.tonihk00.clearplay.data.api.Song>, n
 
 fun leftBehindText(device: String) = HandoffPillText("Continued on $device", "Pause here")
 
+/** Continue couldn't start playback: the offer stays on the pill, this shows in the toast. */
+const val CONTINUE_FAILED = "Couldn't continue. Try again."
+
 /** The glass pill: text, a white button, and ×. Stays until acted on. */
 @Composable
 fun HandoffPill(text: HandoffPillText, onAction: () -> Unit, onDismiss: () -> Unit, haze: HazeState?, modifier: Modifier = Modifier) {
@@ -136,7 +139,7 @@ fun HandoffPills(handoff: Handoff, haze: HazeState?, onError: (String) -> Unit, 
         } else {
             HandoffPill(
                 last,
-                onAction = { scope.launch { if (!handoff.continueOffer()) onError("Couldn't continue") } },
+                onAction = { scope.launch { if (!handoff.continueOffer()) onError(CONTINUE_FAILED) } },
                 onDismiss = { handoff.dismissOffer() },
                 haze = haze,
             )

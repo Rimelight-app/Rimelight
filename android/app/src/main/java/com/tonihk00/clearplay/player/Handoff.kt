@@ -192,11 +192,29 @@ class Handoff(
         playbackStartedHere()
     }
 
-    /** The service stops, the app goes to the background: save right away. */
+    /**
+     * The service stops, the app goes to the background: save right away, but only if this phone
+     * has something newer than the server:
+     *  - nothing happened here and nothing plays: nothing is sent
+     *  - playing here: first ask whether the other device took over (the regular check runs only
+     *    every 60 s and on song changes); if it did, "Continued on" shows and the save is blocked.
+     *    No answer within [CHECK_BUDGET_MS]: no save (the safe side).
+     * Like the desktop's saveNow (src/service/handoff.ts, v0.6.2).
+     */
     fun saveNow(event: SaveEvent): Job? {
         if (!dirty && !player.isPlaying() && !debouncer.pending) return null
-        debouncer.cancel()
-        return scope.launch { save(event) }
+        val playing = player.isPlaying()
+        return scope.launch {
+            if (playing) {
+                val answered = withTimeoutOrNull(CHECK_BUDGET_MS) { runCatching { checkLeftBehind().await() }.isSuccess } ?: false
+                if (!answered) {
+                    Log.i(TAG, "not saved ($event): the left-behind check didn't answer in time")
+                    return@launch
+                }
+            }
+            debouncer.cancel()
+            save(event)
+        }
     }
 
     // ---------------------------------------------------------------- look
@@ -267,10 +285,6 @@ class Handoff(
         if (current == null || continuing) return false
         val (o, queue, readAt) = current
         continuing = true
-        markHandled(o.changed)
-        _offer.value = null
-        _leftBehind.value = null
-        leftBehindShown = false
         try {
             // "Continue here" on a device that is still playing: start at its live second, read
             // again now (the offer may have been on screen for a while). If that read fails,
@@ -288,13 +302,21 @@ class Handoff(
                     position = o.positionMs + (elapsed() - readAt).coerceAtLeast(0)
                 }
             }
-            val started = player.startQueueAt(queue.entries, index, position)
-            // Save straight back, so the other device doesn't offer it back.
-            if (started) {
-                debouncer.cancel()
-                save(SaveEvent.continued)
-            }
-            return started
+            val started = runCatching { player.startQueueAt(queue.entries, index, position) }
+                .onFailure { if (it is CancellationException) throw it; Log.w(TAG, "continue failed", it) }
+                .getOrDefault(false)
+            // The offer stays, so Continue can be pressed again (the pill says "Couldn't continue.
+            // Try again."). Only once playback started is the server's queue dealt with.
+            if (!started) return false
+            markHandled(o.changed)
+            _offer.value = null
+            _leftBehind.value = null
+            leftBehindShown = false
+            // Save straight back, so the other device doesn't offer it back. Not through saveNow:
+            // the player may not report playing yet.
+            debouncer.cancel()
+            save(SaveEvent.continued)
+            return true
         } finally {
             continuing = false
         }
@@ -356,6 +378,9 @@ class Handoff(
     /** "Pause here": pauses without saving; saving resumes after. */
     fun pauseHere() {
         debouncer.cancel()
+        // Left behind: this phone has nothing newer than the server (else going to the background
+        // right after would send its stale queue over the device that took over).
+        dirty = false
         pausingHere = player.isPlaying()
         _leftBehind.value = null
         player.pause()
@@ -431,5 +456,8 @@ class Handoff(
 
     companion object {
         private const val TAG = "Handoff"
+
+        /** How long going to the background / the service stopping waits for the left-behind check. */
+        const val CHECK_BUDGET_MS = 1_500L
     }
 }
