@@ -8,10 +8,7 @@
 // Run once per engine:
 //   ENGINE=html perf/xrun.sh node perf/csp.mjs
 //   ENGINE=mpv  perf/xrun.sh node perf/csp.mjs
-import { execFileSync } from 'node:child_process'
-import fs from 'node:fs'
-import http from 'node:http'
-import path from 'node:path'
+import { startLiveCoverService } from '../lib/live-cover-service.mjs'
 import {
   api,
   findAlbum,
@@ -23,61 +20,11 @@ import {
   writeResult,
 } from './lib.mjs'
 
-// ---- fake animated-artwork service + HLS stream
-const hlsDir = path.join(RIG, 'hls')
-if (!fs.existsSync(path.join(hlsDir, 'index.m3u8'))) {
-  fs.mkdirSync(hlsDir, { recursive: true })
-  execFileSync('ffmpeg', [
-    '-loglevel',
-    'error',
-    '-y',
-    '-f',
-    'lavfi',
-    '-i',
-    'testsrc2=size=320x320:rate=25:duration=8',
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-g',
-    '25',
-    '-f',
-    'hls',
-    '-hls_time',
-    '2',
-    '-hls_playlist_type',
-    'vod',
-    path.join(hlsDir, 'index.m3u8'),
-  ])
-}
-let hlsRequests = 0
-const server = http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  const url = new URL(req.url, 'http://x')
-  if (url.pathname === '/api/v1/artwork/search') {
-    res.setHeader('content-type', 'application/json')
-    res.end(
-      JSON.stringify({
-        url: `http://127.0.0.1:${server.address().port}/hls/index.m3u8`,
-      }),
-    )
-    return
-  }
-  if (url.pathname.startsWith('/hls/')) {
-    hlsRequests++
-    const file = path.join(hlsDir, path.basename(url.pathname))
-    if (!fs.existsSync(file)) return res.writeHead(404).end()
-    res.setHeader(
-      'content-type',
-      file.endsWith('.m3u8') ? 'application/vnd.apple.mpegurl' : 'video/mp2t',
-    )
-    fs.createReadStream(file).pipe(res)
-    return
-  }
-  res.writeHead(404).end()
-})
-await new Promise((r) => server.listen(0, '127.0.0.1', r))
-const artworkUrl = `http://127.0.0.1:${server.address().port}`
+// ---- fake animated-artwork service + HLS stream (any artist finds a stream)
+const service = await startLiveCoverService({ rig: RIG, clip: 'testsrc' })
+const artworkUrl = service.url
+const hlsRequests = () =>
+  Object.values(service.hls()).reduce((n, c) => n + c.playlist + c.segments, 0)
 
 const s = await launch()
 const { app, win } = s
@@ -260,11 +207,11 @@ const out = {
   cspViolations: [...s.csp, ...events],
   pageErrors: s.errors,
   hls,
-  hlsRequests,
+  hlsRequests: hlsRequests(),
   updateNotes: notes,
 }
 console.log(JSON.stringify(out, null, 2))
 writeResult('csp', out)
 await s.close()
-server.close()
+await service.close()
 process.exit(out.cspViolations.length ? 1 : 0)

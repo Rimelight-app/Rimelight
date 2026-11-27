@@ -74,4 +74,25 @@ for i, (rate, bits) in enumerate(formats):
                  "album": "Rates and Depths", "date": "2026", "tracknumber": f"{i+1}/{len(formats)}",
                  "genre": "Test"})
     tags.save()
+
+# An album with two album artists (multi-valued ID3v2.4 TPE2), for the live
+# covers (tools/dev-rig/e2e-live-covers.mjs). Songs are by Rig Artist A; one
+# features Rig Artist C. Its own random generator keeps the albums above as
+# they were.
+rnd = random.Random(11)
+duo_album, duo_artists = "Twin Signals", ["Rig Artist A", "Rig Artist B"]
+folder = os.path.join(root, "Rig Artist A", duo_album)
+os.makedirs(folder, exist_ok=True)
+cover(os.path.join(folder, "cover.jpg"), (250, 210, 70), (30, 70, 150))
+duo_songs = [("First Light", ["Rig Artist A"]), ("Crossing", ["Rig Artist A", "Rig Artist C"]),
+             ("Second Wind", ["Rig Artist A"])]
+for i, (title, artists) in enumerate(duo_songs):
+    f = os.path.join(folder, f"{i+1:02d} - {title}.mp3")
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i",
+                    f"sine=frequency={262 + 40 * i}:duration={rnd.randint(40, 60)}",
+                    "-af", "volume=0.15", "-b:a", "128k", f], check=True)
+    tags = EasyID3()
+    tags.update({"title": title, "artist": artists, "albumartist": duo_artists, "album": duo_album,
+                 "date": "2025", "tracknumber": f"{i+1}/{len(duo_songs)}", "genre": "Synthpop"})
+    tags.save(f, v2_version=4)
 print("done")
