@@ -124,6 +124,8 @@ export function initLocalLibrary() {
     const cfg = await loadConfig()
     const win = BrowserWindow.fromWebContents(event.sender) ?? undefined
     const result = await dialog.showOpenDialog(win as BrowserWindow, {
+      // Since Electron 43 the dialog opens in Downloads without this.
+      defaultPath: app.getPath('music'),
       properties: ['openDirectory', 'multiSelections'],
     })
     if (!result.canceled) {

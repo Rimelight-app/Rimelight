@@ -72,7 +72,7 @@ export default defineConfig({
         output: { format: 'cjs' },
       },
       externalizeDeps: {
-        exclude: ['@electron-toolkit/preload', 'electron-updater'],
+        exclude: ['electron-updater'],
       },
     },
   },
