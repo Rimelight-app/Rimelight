@@ -2,6 +2,8 @@ import clsx from 'clsx'
 import { ChevronDown, ListMusic, MicVocal } from 'lucide-react'
 import { memo, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { songArtworkArtists } from '@/api/artworkArtists'
+import { AnimatedCoverVideo } from '@/app/components/album/animated-cover-video'
 import { ImageLoader } from '@/app/components/image-loader'
 import { SongRating } from '@/app/components/rating/song-rating'
 import { Drawer, DrawerContent, DrawerTitle } from '@/app/components/ui/drawer'
@@ -165,7 +167,10 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
       >
         {/* Player column */}
         <div className="mx-auto flex w-full max-w-[min(540px,45vh)] flex-col gap-5">
-          <div className="aspect-square w-full overflow-hidden rounded-[24px] bg-white/5 shadow-[0_40px_80px_-30px_rgb(0_0_0/0.8)] ring-1 ring-white/10">
+          <div
+            className="relative aspect-square w-full overflow-hidden rounded-[24px] bg-white/5 shadow-[0_40px_80px_-30px_rgb(0_0_0/0.8)] ring-1 ring-white/10"
+            data-testid="fullscreen-cover"
+          >
             <ImageLoader id={song.coverArt} type="song" size={800}>
               {(src) => (
                 <img
@@ -176,6 +181,13 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
                 />
               )}
             </ImageLoader>
+            {/* Live cover over the static one once it has a frame; the same
+                shared player as the album page and player bar. */}
+            <AnimatedCoverVideo
+              artists={songArtworkArtists(song)}
+              album={song.album}
+              screen="fullscreen"
+            />
           </div>
 
           <div>

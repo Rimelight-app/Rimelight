@@ -39,7 +39,7 @@ export function albumArtworkArtists(
 }
 
 /**
- * The same question from a song (the player bar): the album
+ * The same question from a song (player bar, fullscreen player): the album
  * artists of its album first, so every song of an album asks what its album
  * page asks. Then the song's own artist, for local songs and servers without
  * the OpenSubsonic fields.

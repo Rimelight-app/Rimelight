@@ -10,7 +10,8 @@
 // "Twin Signals") and pnpm electron:build first.
 // COST=1 instead measures renderer and GPU process CPU over 60 s with the
 // album page and the player bar both showing a live cover (no checks).
-// SCREENS: the screens that draw a live cover (default album,playerBar).
+// SCREENS: the screens that draw a live cover (default album,playerBar,
+// fullscreen; album,playerBar for a build before 0.6.3).
 // The queue panel has no cover.
 import fs from 'node:fs'
 import path from 'node:path'
@@ -25,7 +26,9 @@ import { cpuByType, findAlbum, launch, RIG, sleep } from './perf/lib.mjs'
 const filter = process.argv[2] ? new RegExp(process.argv[2], 'i') : null
 const COST = process.env.COST === '1'
 const SCREENS = new Set(
-  (process.env.SCREENS || 'album,playerBar').split(',').map((x) => x.trim()),
+  (process.env.SCREENS || 'album,playerBar,fullscreen')
+    .split(',')
+    .map((x) => x.trim()),
 )
 const shots = path.join(RIG, 'live-covers')
 fs.mkdirSync(shots, { recursive: true })
@@ -98,6 +101,11 @@ const artwork = (settings) =>
     }
     if ('enabled' in o) art.setEnabled(o.enabled)
     if ('album' in o) art.screens.setAlbum(o.album)
+    if (o.screens) {
+      art.screens.setAlbum(o.screens.album)
+      art.screens.setPlayerBar(o.screens.playerBar)
+      art.screens.setFullscreen(o.screens.fullscreen)
+    }
   }, settings)
 
 // ---- what each screen shows
@@ -115,7 +123,7 @@ const videos = () =>
           ? 'album'
           : p?.querySelector('#track-song-image')
             ? 'playerBar'
-            : p?.querySelector('img.shadow-custom-5')
+            : v.closest('[data-testid=fullscreen-cover]')
               ? 'fullscreen'
               : null
         if (!screen) return null
@@ -199,7 +207,7 @@ const pageFrames = () =>
         ? 'album'
         : p?.querySelector('#track-song-image')
           ? 'playerBar'
-          : p?.querySelector('img.shadow-custom-5')
+          : v.closest('[data-testid=fullscreen-cover]')
             ? 'fullscreen'
             : null
       if (!screen || v.readyState < 2) continue
@@ -509,6 +517,7 @@ await test('in step: opening the fullscreen player', async () => {
       `fullscreen shows no clip frame: ${JSON.stringify(shot)}`,
     )
     inStep(p, ['fullscreen', 'playerBar'], 'fullscreen vs player bar (in page)')
+    inStep(p, ['fullscreen', 'album'], 'fullscreen vs album page (in page)')
   }
   await fullscreen(false)
   await sleep(800)
@@ -545,15 +554,54 @@ await test('in step: stays together for 20 s', async () => {
   return seen
 })
 
-await test('switches: album page off keeps the player bar', async () => {
-  await artwork({ album: false })
-  await sleep(1000)
-  const vs = await byScreen()
-  await artwork({ album: true })
-  await sleep(500)
-  expect(!vs.album, 'album page still has a video')
-  expect(vs.playerBar?.hasFrame, 'player bar lost its live cover')
-})
+// Every combination of the three screen switches, with live covers on:
+// a screen shows its live cover exactly when its switch is on, and the
+// screens that show one are on the same frame.
+for (const combo of [0, 1, 2, 3, 4, 5, 6, 7]) {
+  const on = {
+    album: Boolean(combo & 1),
+    playerBar: Boolean(combo & 2),
+    fullscreen: Boolean(combo & 4),
+  }
+  const label = Object.entries(on)
+    .map(([k, v]) => `${k} ${v ? 'on' : 'off'}`)
+    .join(', ')
+  await test(`switches: ${label}`, async () => {
+    await artwork({ screens: on })
+    await go(`/library/albums/${neon.id}`, 500)
+    for (const sc of ['album', 'playerBar']) {
+      if (on[sc])
+        expect(await until(() => showing(sc)), `no live cover on ${sc}`)
+    }
+    await sleep(1200)
+    const page = await byScreen()
+    for (const sc of ['album', 'playerBar'])
+      if (!on[sc])
+        expect(!page[sc], `${sc} shows a live cover with its switch off`)
+    const shot = await shotFrames(`switches-${combo}`)
+    if (on.album && on.playerBar) inStep(shot, ['album', 'playerBar'], label)
+    await fullscreen(true)
+    if (on.fullscreen)
+      expect(
+        await until(() => showing('fullscreen')),
+        'no live cover in fullscreen',
+      )
+    await sleep(1200)
+    const fs = await byScreen()
+    if (!on.fullscreen)
+      expect(
+        !fs.fullscreen,
+        'fullscreen shows a live cover with its switch off',
+      )
+    const p = await pageFrames()
+    const shown = ['album', 'playerBar', 'fullscreen'].filter((sc) => on[sc])
+    for (let i = 1; i < shown.length; i++)
+      inStep(p, [shown[0], shown[i]], `${label} (in page)`)
+    await fullscreen(false)
+    return Object.fromEntries(shown.map((sc) => [sc, p[sc]]))
+  })
+}
+await artwork({ screens: { album: true, playerBar: true, fullscreen: true } })
 
 await test('switches: global off removes every video and asks nothing', async () => {
   await artwork({ enabled: false })

@@ -4,7 +4,8 @@
  * Each stream URL gets one hidden, muted, looping <video> fed by one hls.js
  * instance. Screens don't play the stream themselves: they show this
  * player's picture through captureStream() as the srcObject of their own
- * <video>. So every screen showing an album (album page, player bar) shows
+ * <video>. So every screen showing an album (album page, player bar,
+ * fullscreen player) shows
  * the same frame, and the stream is downloaded and decoded once.
  *
  * Screens acquire a player and release it; the last release destroys it
