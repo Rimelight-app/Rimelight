@@ -179,7 +179,10 @@ private fun serverStats(client: com.tonihk00.clearplay.data.api.SubsonicClient, 
     // Gone for good (this page's ViewModel is cleared: the app was left, not just another tab):
     // stop reading pages. Like the desktop, which aborts the load when the page goes away.
     val cache = com.tonihk00.clearplay.ui.screenCache()
-    remember(client) { cache.addCloseable("stats-load", AutoCloseable { repo.cancel(client.server) }) }
+    androidx.compose.runtime.DisposableEffect(client) {
+        cache.addCloseable("stats-load", AutoCloseable { repo.cancel(client.server) })
+        onDispose { }
+    }
     LaunchedEffect(client, online) {
         val saved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { repo.saved(client.server) }
         diskChecked = true
