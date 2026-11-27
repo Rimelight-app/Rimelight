@@ -1,12 +1,8 @@
 package com.tonihk00.clearplay.player
 
-import android.util.Log
 import androidx.media3.common.C
-import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import com.tonihk00.clearplay.data.api.Song
-import com.tonihk00.clearplay.data.api.SubsonicClient
-import com.tonihk00.clearplay.data.api.SubsonicException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,8 +17,8 @@ import kotlinx.coroutines.withContext
  *   every 30 s while playing, and when the service stops ([saveBlocking]);
  * - tells [Handoff] about song changes, pauses, plays and queue edits ("Continue on other
  *   devices");
- * - tells [onSongChange] (the Resume shortcut's label) and [onEnded] (the queue played out);
- * - drops a song the server no longer has (Navidrome 0.64 gave songs new ids) and carries on.
+ * - tells [onSongChange] (the Resume shortcut's label) and [onEnded] (the queue played out).
+ * Songs that fail to play (also one the server no longer has) are [PlaybackErrors]' job.
  */
 class QueueWatcher(
     private val player: Player,
@@ -32,8 +28,6 @@ class QueueWatcher(
     private val endless: () -> Boolean,
     private val autoEdit: () -> Boolean,
     private val handoff: () -> Handoff?,
-    private val client: () -> SubsonicClient?,
-    private val online: () -> Boolean,
     private val onSongChange: (Song) -> Unit = {},
     private val onEnded: () -> Unit = {},
     private val now: () -> Long = System::currentTimeMillis,
@@ -165,42 +159,5 @@ class QueueWatcher(
         editSave?.cancel()
         ticker?.cancel()
         snapshot()?.let(store::save)
-    }
-
-    /**
-     * A song failed to load. If the server says it doesn't have that id any more (code 70, e.g.
-     * a queue saved before Navidrome 0.64's new ids), it is dropped and playback carries on with
-     * the next song. Any other failure (offline, timeout) is left to the player as before.
-     */
-    override fun onPlayerError(error: PlaybackException) {
-        val sourceError = error.errorCode in setOf(
-            PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED,
-            PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED,
-            PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
-            PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND,
-            PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
-        )
-        val item = player.currentMediaItem ?: return
-        val c = client() ?: return
-        if (!sourceError || !online() || item.toSong().isLocal) return
-        val id = item.mediaId
-        scope.launch {
-            val missing = try {
-                c.song(id); false
-            } catch (e: SubsonicException) {
-                e.code == 70
-            } catch (e: Exception) {
-                false
-            }
-            if (!missing) return@launch
-            val at = (0 until player.mediaItemCount).firstOrNull { player.getMediaItemAt(it).mediaId == id } ?: return@launch
-            Log.w("QueueWatcher", "song $id is gone from the server; dropped from the queue")
-            val resume = player.playWhenReady
-            player.removeMediaItem(at)
-            if (player.mediaItemCount > 0) {
-                player.prepare()
-                player.playWhenReady = resume
-            }
-        }
     }
 }

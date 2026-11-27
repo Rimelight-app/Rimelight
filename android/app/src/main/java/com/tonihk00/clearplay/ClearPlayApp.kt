@@ -71,6 +71,12 @@ class ClearPlayApp : Application(), SingletonImageLoader.Factory {
     /** Launcher shortcuts (Shuffle library, Resume, Downloads). */
     val shortcuts by lazy { Shortcuts(this, appScope) }
 
+    /**
+     * Playback messages from the player service ("Couldn't play …"), shown by the app's toast when
+     * the UI is open; dropped when it isn't (no replay).
+     */
+    val playbackMessages = kotlinx.coroutines.flow.MutableSharedFlow<String>(extraBufferCapacity = 4)
+
     /** Shortcut actions from MainActivity, waiting for the UI (replayed once to a late collector). */
     val shortcutRequests = kotlinx.coroutines.flow.MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 4)
 

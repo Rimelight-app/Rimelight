@@ -121,11 +121,33 @@ class PlaybackService : MediaLibraryService() {
             endless = { app.queueFiller.endless.value },
             autoEdit = { app.queueFiller.adding },
             handoff = { app.handoff },
-            client = { app.client },
-            online = { app.connection.online.value },
             onSongChange = { app.shortcuts.songChanged(it) },
         ).also(player::addListener)
         app.servicePlayer = player
+        // Songs that can't be played: retry once, then skip with a message; pause when the server
+        // can't be reached; stop after 3 in a row or on the last song (PlaybackErrors).
+        player.addListener(
+            PlaybackErrors(
+                player, scope,
+                isLocalItem = { item -> item.toSong().isLocal || app.playsFromDownload(item.mediaId) },
+                serverAnswers = {
+                    val c = app.client
+                    c != null && (kotlinx.coroutines.withTimeoutOrNull(5_000) { runCatching { c.ping() }.isSuccess } ?: false)
+                },
+                songGone = { id ->
+                    val c = app.client
+                    c != null && try {
+                        c.song(id); false
+                    } catch (e: com.tonihk00.clearplay.data.api.SubsonicException) {
+                        e.code == 70
+                    } catch (e: Exception) {
+                        false
+                    }
+                },
+                markUnreachable = { app.connection.recheck() },
+                message = { app.playbackMessages.tryEmit(it) },
+            ),
+        )
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) { noteBits(player) }
             override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) { noteBits(player) }
@@ -134,7 +156,7 @@ class PlaybackService : MediaLibraryService() {
                 if (isPlaying) setForegroundServiceTimeoutMs(DEFAULT_FOREGROUND_SERVICE_TIMEOUT_MS)
             }
             override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_ENDED) playbackEnded()
+                if (state == Player.STATE_ENDED) playbackEnded(player)
             }
         })
         // Turning bit-perfect on or off, or plugging a USB DAC in, takes effect at once: re-seeking
@@ -185,11 +207,16 @@ class PlaybackService : MediaLibraryService() {
     }
 
     /**
-     * The queue played to its end: playback is over, so the service leaves the foreground now
-     * instead of after Media3's 10-minute grace (Android 17's background-audio rules). Playing
-     * again (a user action: notification, media button, the app) brings it back.
+     * The queue played to its end (repeat off): stop on the last song, paused at its start, the
+     * queue kept (like the desktop), so Resume, the notification and media buttons play it from
+     * the beginning, also after the app was killed (the saved position is 0, not the song's end).
+     * Being a pause, it is saved, also to the server with Continue on other devices on.
+     * Playback is over, so the service leaves the foreground now instead of after Media3's
+     * 10-minute grace (Android 17's background-audio rules). Playing again (a user action:
+     * notification, media button, the app) brings it back.
      */
-    private fun playbackEnded() {
+    private fun playbackEnded(player: Player) {
+        stopOnLastSong(player)
         setForegroundServiceTimeoutMs(0)
     }
 
