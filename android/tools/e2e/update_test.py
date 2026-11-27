@@ -99,14 +99,23 @@ def pin_shortcut(label="Shuffle library"):
     if not icon:
         raise RuntimeError(f"app icon not on the home screen: {ui.texts()[:60]}")
     x, y = icon["center"]
-    ui.swipe(x, y, x, y, 1200)  # long-press: shortcut popup
-    time.sleep(2)
-    nodes = ui.dump()
-    item = ui.find(label, exact=True, nodes=nodes)
+    item = None
+    for _ in range(3):  # a slow (software-rendered) launcher sometimes misses the long-press
+        ui.swipe(x, y, x, y, 1200)  # long-press: shortcut popup
+        time.sleep(2)
+        nodes = ui.dump()
+        item = ui.find(label, exact=True, nodes=nodes)
+        if item:
+            break
+        launcher_home()
     assert item, f"no {label!r} in the popup: {ui.texts(nodes)}"
     adds = [n for n in nodes if n["text"] == "Add to home screen" or n["desc"] == "Add to home screen"]
-    add = min(adds, key=lambda n: abs(n["center"][1] - item["center"][1]))
-    ui.tap_xy(*add["center"])
+    if adds:
+        add = min(adds, key=lambda n: abs(n["center"][1] - item["center"][1]))
+        ui.tap_xy(*add["center"])
+    else:  # Pixel Launcher on API 36: no button, drag the shortcut onto an empty part of the home screen
+        x, y = item["center"]
+        ui.shell(f"input draganddrop {x} {y} 300 700 1500")
     time.sleep(2.5)
     launcher_home()
     pinned = [n for n in ui.dump() if n["text"] == label or n["desc"] == label]
@@ -130,7 +139,14 @@ def pinned_shortcuts():
 def launcher_label():
     launcher_home()
     icon = app_icon()
-    return icon and (icon["text"] or icon["desc"])
+    if icon:
+        return icon["text"] or icon["desc"]
+    # Pixel Launcher (API 36) only suggests the app in the bottom row: read it in the app drawer.
+    ui.swipe(540, 1800, 540, 400, 300)
+    time.sleep(2)
+    names = [n["text"] or n["desc"] for n in ui.dump() if (n["text"] or n["desc"]) in ("ClearPlay", "Rimelight")]
+    launcher_home()
+    return names[0] if names else None
 
 
 
