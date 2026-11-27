@@ -8,6 +8,26 @@ Same design tokens as the desktop `.glass` theme (`src/themes.css`).
 
 Status: **1.6.1** — see `CHANGELOG.md`.
 
+## Install and update with F-Droid
+
+Releases are also published to an F-Droid repository, signed with the same app key as the APKs on the
+GitHub release, so it installs and updates over a GitHub install (and the other way round).
+
+In F-Droid (or Droid-ify, Neo Store): Settings → Repositories → add
+
+```
+https://rimelight-app.github.io/Rimelight/repo
+```
+
+Fingerprint of the repository key (check it matches when F-Droid asks):
+
+```
+C8DCE8F319249C51F8FD1C7421BF96A90F90D8B073364CB33B4CA9317D26A661
+```
+
+The repository is rebuilt by the `fdroid-repo` job in `.github/workflows/android.yml` on every `android-v*`
+release (`android/tools/fdroid/publish.sh`). The listing text comes from `android/fastlane/metadata/`.
+
 ## Build
 
 Needs JDK 17 and the Android SDK (platform 37, build-tools 36).

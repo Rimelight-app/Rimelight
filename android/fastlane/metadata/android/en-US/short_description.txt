@@ -1,0 +1,1 @@
+A frosted-glass music player for your Navidrome / OpenSubsonic server

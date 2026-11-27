@@ -1,0 +1,16 @@
+Rimelight is a native Android player for your own Navidrome or any OpenSubsonic server. It needs a server of your own; the app has no music of its own and no account with anyone else.
+
+What it does:
+- Plays your library in the background, with notification, lock-screen and headset controls.
+- Continue on other devices: pick up where Rimelight on your computer left off, and the other way round.
+- Remembers your queue and resumes it after Android closes the app.
+- Downloads songs for offline listening, and plays the music stored on the phone.
+- Synced lyrics, ratings and likes, scrobbling that waits for the server when you are offline, and a statistics page.
+- Bit-perfect output to a USB DAC on Android 14 and later.
+- A sleep timer and home-screen shortcuts.
+
+The interface uses a frosted-glass look. Live blur can be switched off in Settings if your phone struggles with it.
+
+Privacy: the app talks only to the server you enter. It has no ads, no analytics and no tracking. Your password is never stored; the app keeps only the login token for your server.
+
+Rimelight is free software under the MIT licence. It was called ClearPlay for Android up to version 1.6.0.
