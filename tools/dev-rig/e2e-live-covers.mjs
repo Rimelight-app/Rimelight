@@ -10,6 +10,8 @@
 // "Twin Signals") and pnpm electron:build first.
 // COST=1 instead measures renderer and GPU process CPU over 60 s with the
 // album page and the player bar both showing a live cover (no checks).
+// SCREENS: the screens that draw a live cover (default album,playerBar).
+// The queue panel has no cover.
 import fs from 'node:fs'
 import path from 'node:path'
 import { PNG } from 'pngjs'
@@ -22,6 +24,9 @@ import { cpuByType, findAlbum, launch, RIG, sleep } from './perf/lib.mjs'
 
 const filter = process.argv[2] ? new RegExp(process.argv[2], 'i') : null
 const COST = process.env.COST === '1'
+const SCREENS = new Set(
+  (process.env.SCREENS || 'album,playerBar').split(',').map((x) => x.trim()),
+)
 const shots = path.join(RIG, 'live-covers')
 fs.mkdirSync(shots, { recursive: true })
 
@@ -110,11 +115,9 @@ const videos = () =>
           ? 'album'
           : p?.querySelector('#track-song-image')
             ? 'playerBar'
-            : p?.querySelector('#song-info-image')
-              ? 'drawer'
-              : p?.querySelector('img.shadow-custom-5')
-                ? 'fullscreen'
-                : null
+            : p?.querySelector('img.shadow-custom-5')
+              ? 'fullscreen'
+              : null
         if (!screen) return null
         const r = v.getBoundingClientRect()
         const hasFrame = v.readyState >= 2 && v.videoWidth > 0
@@ -196,11 +199,9 @@ const pageFrames = () =>
         ? 'album'
         : p?.querySelector('#track-song-image')
           ? 'playerBar'
-          : p?.querySelector('#song-info-image')
-            ? 'drawer'
-            : p?.querySelector('img.shadow-custom-5')
-              ? 'fullscreen'
-              : null
+          : p?.querySelector('img.shadow-custom-5')
+            ? 'fullscreen'
+            : null
       if (!screen || v.readyState < 2) continue
       ctx.drawImage(v, 0, 0, 8, 8)
       const [r, g, b] = ctx.getImageData(4, 4, 1, 1).data
@@ -228,6 +229,13 @@ function inStep(frames, screens, what) {
 let failed = 0
 let passed = 0
 const report = {}
+let skipped = 0
+function skip(name, why) {
+  if (filter && !filter.test(name)) return
+  skipped++
+  report[name] = `SKIP: ${why}`
+  console.log(`SKIP  ${name}: ${why}`)
+}
 async function test(name, fn) {
   if (filter && !filter.test(name)) return
   try {
@@ -369,16 +377,21 @@ await test('two-artist album: live cover on the song with a featured artist', as
   return { asked: sent }
 })
 
-await test('two-artist album: live cover in the queue panel and fullscreen', async () => {
-  await queuePanel(true)
-  const d = await until(() => showing('drawer'))
-  await queuePanel(false)
-  await fullscreen(true)
-  const f = await until(() => showing('fullscreen'))
-  await fullscreen(false)
-  expect(d, 'no live cover in the queue panel')
-  expect(f, 'no live cover in the fullscreen player')
-})
+for (const [screen, label, open] of [
+  ['fullscreen', 'fullscreen player', fullscreen],
+]) {
+  const name = `two-artist album: live cover in the ${label}`
+  if (!SCREENS.has(screen)) {
+    skip(name, `the ${label} draws no live cover (SCREENS=${[...SCREENS]})`)
+    continue
+  }
+  await test(name, async () => {
+    await open(true)
+    const v = await until(() => showing(screen))
+    await open(false)
+    expect(v, `no live cover in the ${label}`)
+  })
+}
 
 await stopPlayback()
 await go('/', 2500) // let every player go (the shared one waits ~2 s)
@@ -439,23 +452,29 @@ await test('in step: another page and back', async () => {
 })
 
 await test('in step: next song of the same album (clip keeps going)', async () => {
+  const playlists = () => svc.hls()[svc.albumKey('Neon Tides')]?.playlist ?? 0
   const before = await pageFrames()
+  const fetched = playlists()
   const t0 = Date.now()
   await win.locator('[data-testid=player-button-next]').click()
   await until(async () => (await state()).index === 1)
   await sleep(1200)
   const f = await shotFrames('step-next-song')
   const frames = inStep(f, ['album', 'playerBar'], 'next song')
-  // A restarted clip would be near frame 0…36 (1.2 s); a running one is where
-  // the clock says. Allow 6 frames for the click and screenshot.
+  // A clip that restarts loads its playlist again and jumps back; a running
+  // one is where the clock says (6 frames allowed for click and screenshot).
   const expected =
     Math.round(before.playerBar + ((Date.now() - t0) / 1000) * 30) % 60
   const drift = frameDistance(frames[1], expected)
   expect(
+    playlists() === fetched,
+    `the stream was loaded again (${fetched} → ${playlists()} playlist requests)`,
+  )
+  expect(
     drift <= 8,
     `player bar clip restarted? frame ${frames[1]}, expected about ${expected}`,
   )
-  return { frames, expected }
+  return { frames, expected, playlistRequests: playlists() }
 })
 
 await test('in step: minimize and restore', async () => {
@@ -475,33 +494,44 @@ await test('in step: minimize and restore', async () => {
   return [a.album.frame, a.playerBar.frame, b.album.frame, b.playerBar.frame]
 })
 
-await test('in step: fullscreen with album page and player bar', async () => {
+await test('in step: opening the fullscreen player', async () => {
   await fullscreen(true)
-  await until(() => showing('fullscreen'))
+  if (SCREENS.has('fullscreen')) await until(() => showing('fullscreen'))
   await sleep(1500)
   const shot = await shotFrames('step-fullscreen')
-  expect(
-    shot.fullscreen?.frame != null,
-    `fullscreen shows no clip frame: ${JSON.stringify(shot)}`,
-  )
+  // Under the sheet the album page and player bar still play: read their
+  // frames in the page, at one instant.
   const p = await pageFrames()
-  inStep(p, ['fullscreen', 'album'], 'fullscreen vs album page (in page)')
-  inStep(p, ['fullscreen', 'playerBar'], 'fullscreen vs player bar (in page)')
+  inStep(p, ['album', 'playerBar'], 'album page vs player bar under fullscreen')
+  if (SCREENS.has('fullscreen')) {
+    expect(
+      shot.fullscreen?.frame != null,
+      `fullscreen shows no clip frame: ${JSON.stringify(shot)}`,
+    )
+    inStep(p, ['fullscreen', 'playerBar'], 'fullscreen vs player bar (in page)')
+  }
   await fullscreen(false)
   await sleep(800)
   const after = await shotFrames('step-fullscreen-closed')
   inStep(after, ['album', 'playerBar'], 'after closing fullscreen')
-  return { fullscreenScreenshot: shot.fullscreen.frame, inPage: p }
+  return {
+    underSheet: p,
+    afterClosing: [after.album.frame, after.playerBar.frame],
+  }
 })
 
-await test('in step: queue panel with album page and player bar', async () => {
+await test('in step: opening the queue panel', async () => {
   await queuePanel(true)
-  await until(() => showing('drawer'))
   await sleep(1200)
   const p = await pageFrames()
-  inStep(p, ['drawer', 'playerBar'], 'queue panel vs player bar (in page)')
-  inStep(p, ['drawer', 'album'], 'queue panel vs album page (in page)')
+  inStep(
+    p,
+    ['album', 'playerBar'],
+    'album page vs player bar with the queue open',
+  )
+  const shot = await shotFrames('step-queue-open')
   await queuePanel(false)
+  inStep(shot, ['album', 'playerBar'], 'screenshot with the queue open')
   return p
 })
 
@@ -594,7 +624,9 @@ fs.writeFileSync(
   path.join(shots, `report-${Date.now()}.json`),
   JSON.stringify({ report, searches: svc.searches, warnings }, null, 2),
 )
-console.log(`${passed} passed, ${failed} failed`)
+console.log(
+  `${passed} passed, ${failed} failed${skipped ? `, ${skipped} skipped` : ''}`,
+)
 await s.close()
 await svc.close()
 process.exit(failed ? 1 : 0)

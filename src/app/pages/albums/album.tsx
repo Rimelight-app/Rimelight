@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
+import { albumArtworkArtists } from '@/api/artworkArtists'
 import { AlbumComment } from '@/app/components/album/comment'
 import ImageHeader from '@/app/components/album/image-header'
 import { AlbumInfo } from '@/app/components/album/info'
@@ -116,6 +117,7 @@ export default function Album() {
       : null
 
   const albumComment = album.song.length > 0 ? album.song[0].comment : null
+  const animatedArtworkArtists = albumArtworkArtists(album)
 
   return (
     <div className="w-full relative">
@@ -131,7 +133,7 @@ export default function Album() {
         coverArtType="album"
         coverArtSize="700"
         coverArtAlt={album.name}
-        animatedArtworkArtist={album.artist}
+        animatedArtworkArtists={animatedArtworkArtists}
         animatedArtworkAlbum={album.name}
         badges={badges}
       />

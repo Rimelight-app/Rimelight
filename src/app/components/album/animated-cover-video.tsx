@@ -1,4 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import {
+  acquireCoverPlayer,
+  canShareCoverPlayers,
+  releaseCoverPlayer,
+} from '@/app/components/album/shared-cover-player'
 import { useAnimatedAlbumArtwork } from '@/app/hooks/use-animated-album-artwork'
 import { cn } from '@/lib/utils'
 import { useAppAnimatedCovers } from '@/store/app.store'
@@ -7,14 +12,18 @@ import { isDesktop } from '@/utils/desktop'
 type AnimatedCoverScreen = 'album' | 'fullscreen' | 'playerBar'
 
 interface AnimatedCoverVideoProps {
-  artist?: string
+  /**
+   * Artist names to look the album up with, in order: albumArtworkArtists
+   * or songArtworkArtists (src/api/artworkArtists.ts).
+   */
+  artists: string[]
   album?: string
   className?: string
   screen?: AnimatedCoverScreen
 }
 
 export function AnimatedCoverVideo({
-  artist,
+  artists,
   album,
   className,
   screen = 'album',
@@ -37,7 +46,7 @@ export function AnimatedCoverVideo({
 
   const effectiveEnabled = globalEnabled && isScreenEnabled
   const { data: streamUrl } = useAnimatedAlbumArtwork(
-    artist,
+    artists,
     album,
     effectiveEnabled,
   )
@@ -54,6 +63,40 @@ export function AnimatedCoverVideo({
     }
 
     const video = videoRef.current
+
+    // Desktop: show the stream's shared player (shared-cover-player.ts), so
+    // every screen is on the same frame.
+    if (canShareCoverPlayers()) {
+      const player = acquireCoverPlayer(streamUrl)
+      const sync = () => {
+        if (player.status === 'failed') {
+          setHasVideoError(true)
+          return
+        }
+        if (player.stream && video.srcObject !== player.stream) {
+          video.srcObject = player.stream
+          video.play().catch(() => {})
+        }
+      }
+      const resume = () => {
+        if (document.visibilityState === 'visible' && video.paused) {
+          video.play().catch(() => {})
+        }
+      }
+      sync()
+      const unsubscribe = player.subscribe(sync)
+      document.addEventListener('visibilitychange', resume)
+
+      return () => {
+        document.removeEventListener('visibilitychange', resume)
+        unsubscribe()
+        video.pause()
+        video.srcObject = null
+        releaseCoverPlayer(player)
+      }
+    }
+
+    // A browser without captureStream(): this screen plays its own copy.
     const canPlayNativeHls =
       video.canPlayType('application/vnd.apple.mpegurl') !== ''
     let hlsInstance: { destroy: () => void } | null = null
@@ -105,15 +148,10 @@ export function AnimatedCoverVideo({
       })
 
       hls.loadSource(streamUrl)
-      hls.attachMedia(videoRef.current)
+      hls.attachMedia(video)
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        const currentVideo = videoRef.current
-        if (!currentVideo) {
-          return
-        }
-
-        currentVideo.play().catch(() => {
+        video.play().catch(() => {
           if (cancelled) {
             return
           }

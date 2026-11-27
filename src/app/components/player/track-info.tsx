@@ -5,6 +5,7 @@ import { Fragment } from 'react/jsx-runtime'
 import { useTranslation } from 'react-i18next'
 import { LazyLoadImage } from 'react-lazy-load-image-component'
 import { Link } from 'react-router-dom'
+import { songArtworkArtists } from '@/api/artworkArtists'
 import { AnimatedCoverVideo } from '@/app/components/album/animated-cover-video'
 import { MarqueeTitle } from '@/app/components/fullscreen/marquee-title'
 import { ImageLoader } from '@/app/components/image-loader'
@@ -107,7 +108,7 @@ export function TrackInfo({ song }: { song: ISong | undefined }) {
           </ImageLoader>
 
           <AnimatedCoverVideo
-            artist={song.artist}
+            artists={songArtworkArtists(song)}
             album={song.album}
             screen="playerBar"
           />
