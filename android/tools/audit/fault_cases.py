@@ -178,11 +178,13 @@ def a2_three_in_a_row():
     play_row(1)
     wait_state(lambda x: x["state"] == "PLAYING", 20)
     media("next")
-    msgs = watch_messages(15)
+    # Each failing song is tried again before it is skipped: on a slow emulator (API 36, busy host)
+    # the third failure came after ~25 s.
+    msgs = watch_messages(30)
     st = state()
     pause()
     ok = st and st["state"] != "PLAYING" and any("3 songs in a row" in m for m in msgs)
-    return result("a2_three_in_a_row", bool(ok), f"after 15 s: {st}; messages {msgs}")
+    return result("a2_three_in_a_row", bool(ok), f"after 30 s: {st}; messages {msgs}")
 
 
 def a3_last_song_fails():
