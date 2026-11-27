@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { useAppAnimatedCovers } from '@/store/app.store'
 import { isDesktop } from '@/utils/desktop'
 
-type AnimatedCoverScreen = 'album' | 'fullscreen' | 'playerBar' | 'drawer'
+type AnimatedCoverScreen = 'album' | 'fullscreen' | 'playerBar'
 
 interface AnimatedCoverVideoProps {
   artist?: string
@@ -29,8 +29,6 @@ export function AnimatedCoverVideo({
         return screens.fullscreen
       case 'playerBar':
         return screens.playerBar
-      case 'drawer':
-        return screens.drawer
       case 'album':
       default:
         return screens.album
