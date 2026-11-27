@@ -240,6 +240,40 @@ class V161UiTest {
         assertEquals("the page stays", "album", nav.currentBackStackEntry?.destination?.route)
     }
 
+    /**
+     * Regression (emulator, 1.6.1): a normal-priority Back handler registered after the sheet opened
+     * (the full player's or the page stack's, registering again) took Back before the sheet.
+     */
+    @Test fun backClosesTheSheetBeforeAHandlerRegisteredAfterIt() {
+        var late by mutableStateOf(false)
+        var lateBacks = 0
+        rule.setContent {
+            ClearPlayTheme(reduceMotion = false) {
+                CompositionLocalProvider(
+                    LocalActions provides Recorder(), LocalSheetHost provides SheetHost().also { h -> sheetHostForLate = h },
+                    LocalClient provides FakeServer.client, LocalFakeCovers provides FakeServer::cover,
+                ) {
+                    Box(Modifier.fillMaxSize()) {
+                        Text("Page behind")
+                        if (open) SongMenu(song) { open = false; dismissed++ }
+                        sheetHostForLate?.Overlay()
+                        if (late) androidx.activity.compose.BackHandler { lateBacks++ }
+                    }
+                }
+            }
+        }
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.waitForIdle()
+        rule.onNodeWithText("Play next").assertExists()
+        late = true
+        rule.waitForIdle()
+        rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
+        assertClosed()
+        assertEquals("the later handler must not take Back", 0, lateBacks)
+    }
+
+    private var sheetHostForLate: SheetHost? = null
+
     @Test fun dragDownCloses() {
         showMenu()
         rule.onNodeWithTag("sheet").performTouchInput { swipeDown(startY = top + 20f, endY = bottom, durationMillis = 300) }

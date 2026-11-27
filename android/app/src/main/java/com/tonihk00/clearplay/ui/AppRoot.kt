@@ -576,11 +576,17 @@ private fun BackDuringTransition(nav: NavHostController, safe: SafeBack, p: Page
         top.lifecycle.currentStateFlow.collect { settled = it.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) }
     }
     val handler = remember(safe) { TransitionBackHandler(safe::back) }
-    // Never while something covers the pages: this handler has overlay priority, so it would take
-    // Back from the song menu, the sleep timer or the full player (they then ignored Back) and
-    // pop a page nobody sees.
-    handler.isBackEnabled = canPop && !p.covered && (!settled || handler.swiping)
     val dispatcher = androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner.current?.navigationEventDispatcher
+    val idle = remember { kotlinx.coroutines.flow.MutableStateFlow<androidx.navigationevent.NavigationEventTransitionState>(androidx.navigationevent.NavigationEventTransitionState.Idle) }
+    val transition by (dispatcher?.transitionState ?: idle).collectAsState()
+    // Not while another handler's back is under way: NavHost's own back makes the page unsettled
+    // (STARTED) as soon as it starts, and switching this overlay handler on then took the "back
+    // done" away from NavHost. The page stayed half-popped and no Back reached the app any more
+    // (the "stuck page"; in 1.6.1 also: the song menu over the full player ignored Back).
+    val othersBack = transition is androidx.navigationevent.NavigationEventTransitionState.InProgress && !handler.swiping
+    // Never while something covers the pages: this handler has overlay priority, so it would take
+    // Back from the song menu, the sleep timer or the full player and pop a page nobody sees.
+    handler.isBackEnabled = canPop && !p.covered && !othersBack && (!settled || handler.swiping)
     androidx.compose.runtime.DisposableEffect(dispatcher, handler) {
         dispatcher?.addHandler(handler, androidx.navigationevent.NavigationEventDispatcher.PRIORITY_OVERLAY)
         onDispose { handler.remove() }

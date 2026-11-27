@@ -150,7 +150,20 @@ fun GlassSheetLayout(haze: HazeState?, paneTitle: String, onDismiss: () -> Unit,
         if (reduce) hidden.snapTo(0f) else hidden.animateTo(0f, tween(Cp.ScreenMs, easing = Cp.EaseOutSoft))
     }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    BackHandler { close() }
+    // Overlay priority: the sheet is on top of everything, so it takes Back before the full player
+    // and the page stack, whose handlers (normal priority) can register again after the sheet opened
+    // and would then take Back first (1.6.1: the menu over the full player's queue ignored a Back).
+    val dispatcher = androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner.current?.navigationEventDispatcher
+    if (dispatcher == null) {
+        BackHandler { close() }
+    } else {
+        val onBack by rememberUpdatedState({ close() })
+        val handler = remember { SheetBackHandler { onBack() } }
+        DisposableEffect(dispatcher, handler) {
+            dispatcher.addHandler(handler, androidx.navigationevent.NavigationEventDispatcher.PRIORITY_OVERLAY)
+            onDispose { handler.remove() }
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
         Box(
@@ -213,4 +226,12 @@ fun GlassSheetLayout(haze: HazeState?, paneTitle: String, onDismiss: () -> Unit,
             content = content,
         )
     }
+}
+
+/** The sheet's Back (button, key and gesture), registered with overlay priority (GlassSheetLayout). */
+private class SheetBackHandler(private val back: () -> Unit) :
+    androidx.navigationevent.NavigationEventHandler<androidx.navigationevent.NavigationEventInfo>(
+        androidx.navigationevent.NavigationEventInfo.None, true,
+    ) {
+    override fun onBackCompleted() { back() }
 }

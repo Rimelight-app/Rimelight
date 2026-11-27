@@ -22,6 +22,9 @@ for k in range(N):
     ui.key("KEYCODE_BACK"); time.sleep(1.5)
     t = ui.texts()
     closed = "Go to artist" not in t
+    if not closed:  # which window had the focus (a system window would take Back)
+        w = ui.shell("dumpsys window displays", check=False)
+        print("   focus:", [l.strip() for l in w.splitlines() if "mCurrentFocus" in l or "mFocusedApp" in l][:2], flush=True)
     player = "Lyrics" in t and "Sleep timer" in t  # the full player is still there behind it
     # a second Back must then close the full player
     ui.key("KEYCODE_BACK"); time.sleep(2)
