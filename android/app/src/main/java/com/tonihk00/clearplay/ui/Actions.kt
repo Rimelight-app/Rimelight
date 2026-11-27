@@ -98,8 +98,26 @@ fun Song.edited(): Song {
 sealed interface Load<out T> {
     data object Loading : Load<Nothing>
     data class Done<T>(val value: T) : Load<T>
-    data class Failed(val message: String) : Load<Nothing>
+    /** [retry] loads the page again ([PageError.Server]); null where trying again can't help. */
+    data class Failed(val message: String, val kind: PageError = PageError.Server, val retry: (() -> Unit)? = null) : Load<Nothing>
 }
+
+/** How a failed page load looks to the user (like the desktop's classifyPageError). */
+enum class PageError { NotFound, Server, Auth }
+
+/**
+ * "Not found" only for Subsonic error 70; 40 / 41 / 44 mean the login is no longer accepted;
+ * everything else (an HTTP error, a timeout, an answer that isn't JSON) is a server error that a
+ * Retry may fix.
+ */
+fun classifyPageError(e: Throwable): PageError = when {
+    e is com.tonihk00.clearplay.data.api.SubsonicException && e.code == 70 -> PageError.NotFound
+    e is com.tonihk00.clearplay.data.api.SubsonicException && e.code in setOf(40, 41, 44) -> PageError.Auth
+    else -> PageError.Server
+}
+
+/** Opens the login screen for the current server ("Log in again" on an auth error); null in previews. */
+val LocalLogInAgain = staticCompositionLocalOf<(() -> Unit)?> { null }
 
 /** Where screens read music from: the server, or downloads/phone music when offline. */
 val LocalLibrary = compositionLocalOf<MusicLibrary?> { null }
@@ -158,14 +176,17 @@ fun <T> rememberLoad(vararg keys: Any?, disk: DiskCached<T>? = null, block: susp
     @Suppress("UNCHECKED_CAST")
     val cached = cache.map[cacheKey] as Load.Done<T>?
     val server = (library as? SubsonicClient)?.server
+    // Retry on a failed page: a new attempt is a new key for produceState.
+    var attempt by remember(cacheKey) { androidx.compose.runtime.mutableIntStateOf(0) }
     val fromDisk: T? = remember(cacheKey) {
         if (cached != null || disk == null || server == null) null
         else libraryCache()?.read(server, disk.name, disk.serializer, (library as SubsonicClient).serverVersion)
     }
-    return produceState<Load<T>>(cached ?: fromDisk?.let { Load.Done(it) } ?: Load.Loading, library, *keys) {
+    return produceState<Load<T>>(cached ?: fromDisk?.let { Load.Done(it) } ?: Load.Loading, library, attempt, *keys) {
         if (cached != null) return@produceState
+        if (attempt > 0 && value is Load.Failed) value = Load.Loading
         if (library == null) {
-            value = Load.Failed("Not connected")
+            value = Load.Failed("Not connected", PageError.NotFound)
             return@produceState
         }
         runCatching { library.block() }.fold({ fresh ->
@@ -179,7 +200,22 @@ fun <T> rememberLoad(vararg keys: Any?, disk: DiskCached<T>? = null, block: susp
         }, {
             if (library.isRemote && it !is com.tonihk00.clearplay.data.api.SubsonicException) lost()
             // With the list from disk on screen, keep showing it.
-            if (fromDisk == null) value = Load.Failed(com.tonihk00.clearplay.ui.login.friendlyError(it))
+            if (fromDisk == null) {
+                value = if (!library.isRemote) {
+                    // Offline (downloads and phone music): the page loads again by itself once the
+                    // server answers (the library switches), so no Retry.
+                    Load.Failed(com.tonihk00.clearplay.ui.login.friendlyError(it), PageError.NotFound)
+                } else {
+                    when (val kind = classifyPageError(it)) {
+                        PageError.NotFound -> Load.Failed(it.message ?: "Not found", kind)
+                        PageError.Auth -> Load.Failed("Your username or password is no longer accepted.", kind)
+                        PageError.Server -> Load.Failed(
+                            "The server didn't answer properly. Check that it's running, then try again.", kind,
+                            retry = { attempt++ },
+                        )
+                    }
+                }
+            }
         })
     }
 }
@@ -195,12 +231,25 @@ fun <T> LoadBox(state: Load<T>, modifier: Modifier = Modifier, content: @Composa
         Load.Loading -> Box(modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(Modifier.size(28.dp), color = Cp.TextSoft, strokeWidth = 2.dp, trackColor = Cp.Muted)
         }
-        is Load.Failed -> EmptyState(R.drawable.ic_circle_alert, "Couldn't load", state.message, modifier)
+        is Load.Failed -> {
+            val logIn = LocalLogInAgain.current
+            when (state.kind) {
+                PageError.Server -> EmptyState(
+                    R.drawable.ic_circle_alert, "Couldn't load this page", state.message, modifier,
+                    action = state.retry?.let { "Retry" to it },
+                )
+                PageError.Auth -> EmptyState(
+                    R.drawable.ic_circle_alert, "The server rejected your login", state.message, modifier,
+                    action = logIn?.let { "Log in again" to it },
+                )
+                PageError.NotFound -> EmptyState(R.drawable.ic_circle_alert, "Couldn't load", state.message, modifier)
+            }
+        }
     }
 }
 
 @Composable
-fun EmptyState(icon: Int, title: String, subtitle: String? = null, modifier: Modifier = Modifier) {
+fun EmptyState(icon: Int, title: String, subtitle: String? = null, modifier: Modifier = Modifier, action: Pair<String, () -> Unit>? = null) {
     Column(
         modifier.fillMaxSize().padding(40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -210,6 +259,10 @@ fun EmptyState(icon: Int, title: String, subtitle: String? = null, modifier: Mod
         Text(title, style = MaterialTheme.typography.titleMedium, color = Cp.TextSoft)
         if (subtitle != null) {
             Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Cp.TextFaint, textAlign = TextAlign.Center)
+        }
+        if (action != null) {
+            androidx.compose.foundation.layout.Spacer(Modifier.padding(top = 4.dp))
+            com.tonihk00.clearplay.ui.components.PrimaryPill(action.first, null, action.second)
         }
     }
 }

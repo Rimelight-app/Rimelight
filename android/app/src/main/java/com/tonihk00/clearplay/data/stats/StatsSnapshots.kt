@@ -49,8 +49,9 @@ class StatsStore(private val dir: File) {
  * Statistics per server account. Online, [refresh] reads every song from the server,
  * computes the numbers and saves them as the new snapshot. Offline, screens show [saved]
  * unchanged (plays made offline are not added; the numbers update on the next refresh).
- * A refresh runs in [scope], so leaving the screen doesn't throw away a half-done fetch,
- * and two callers asking at once share one fetch.
+ * A refresh runs in [scope], so moving to another tab doesn't throw away a half-done fetch,
+ * and two callers asking at once share one fetch. When the screen is gone for good (the app
+ * left, not just another tab), it [cancel]s the fetch: nothing is saved, no more pages are read.
  */
 class StatsRepository(
     private val store: StatsStore,
@@ -107,6 +108,12 @@ class StatsRepository(
             running[key] = job
             return job
         }
+    }
+
+    /** Stops a running refresh for this account (nothing is saved; the last snapshot stays). */
+    fun cancel(server: ServerConfig) {
+        val key = StatsStore.keyOf(server)
+        synchronized(running) { running[key] }?.cancel()
     }
 
     companion object {

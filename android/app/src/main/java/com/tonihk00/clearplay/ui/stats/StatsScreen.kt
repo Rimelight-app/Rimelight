@@ -176,6 +176,10 @@ private fun serverStats(client: com.tonihk00.clearplay.data.api.SubsonicClient, 
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var failed by remember(client) { mutableStateOf(false) }
     var diskChecked by remember(client) { mutableStateOf(false) }
+    // Gone for good (this page's ViewModel is cleared: the app was left, not just another tab):
+    // stop reading pages. Like the desktop, which aborts the load when the page goes away.
+    val cache = com.tonihk00.clearplay.ui.screenCache()
+    remember(client) { cache.addCloseable("stats-load", AutoCloseable { repo.cancel(client.server) }) }
     LaunchedEffect(client, online) {
         val saved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { repo.saved(client.server) }
         diskChecked = true

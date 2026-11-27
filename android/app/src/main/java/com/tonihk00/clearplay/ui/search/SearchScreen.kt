@@ -50,16 +50,27 @@ fun SearchScreen(bottomPadding: Dp, playingId: String?, autoFocus: Boolean = tru
     fun key(q: String) = "search@${System.identityHashCode(client)}:$q"
     var result by remember(client) { mutableStateOf(cache.map[key(query.trim())] as SearchResult?) }
     var failed by remember { mutableStateOf(false) }
+    // Retry after a failed search: the same query again (it only re-ran when the text changed).
+    var attempt by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val focus = remember { FocusRequester() }
 
-    LaunchedEffect(query, client) {
+    LaunchedEffect(query, client, attempt) {
         val q = query.trim()
         if (q.isEmpty() || client == null) { result = null; return@LaunchedEffect }
-        (cache.map[key(q)] as SearchResult?)?.let { result = it; return@LaunchedEffect }
+        (cache.map[key(q)] as SearchResult?)?.let { result = it; failed = false; return@LaunchedEffect }
         delay(220)
-        runCatching { client.search(q) }
-            .onSuccess { result = it; failed = false; cache.map[key(q)] = it }
-            .onFailure { failed = true }
+        try {
+            val found = client.search(q)
+            result = found
+            failed = false
+            cache.map[key(q)] = found
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // Typing on cancels the search before: that isn't a failure (it used to leave
+            // "Search failed" on screen, even over results already found for this query).
+            throw e
+        } catch (e: Exception) {
+            failed = true
+        }
     }
     LaunchedEffect(Unit) { if (autoFocus && query.isEmpty()) runCatching { focus.requestFocus() } }
 
@@ -71,16 +82,16 @@ fun SearchScreen(bottomPadding: Dp, playingId: String?, autoFocus: Boolean = tru
             leadingIcon = R.drawable.ic_search,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         )
-        SearchResults(result, query, failed, bottomPadding, playingId)
+        SearchResults(result, query, failed, bottomPadding, playingId, onRetry = { failed = false; attempt++ })
     }
 }
 
 @Composable
-fun SearchResults(result: SearchResult?, query: String, failed: Boolean, bottomPadding: Dp, playingId: String?) {
+fun SearchResults(result: SearchResult?, query: String, failed: Boolean, bottomPadding: Dp, playingId: String?, onRetry: (() -> Unit)? = null) {
     val actions = LocalActions.current
     when {
         query.isBlank() -> return EmptyState(R.drawable.ic_search, "Find something to play", "Search your whole library as you type.")
-        failed -> return EmptyState(R.drawable.ic_circle_alert, "Search failed", "Check the connection to your server.")
+        failed -> return EmptyState(R.drawable.ic_circle_alert, "Search failed", "Check the connection to your server.", action = onRetry?.let { "Retry" to it })
         result == null -> return
         result.songs.isEmpty() && result.albums.isEmpty() && result.artists.isEmpty() ->
             return EmptyState(R.drawable.ic_search, "Nothing found", "No songs, albums or artists match “${query.trim()}”.")
