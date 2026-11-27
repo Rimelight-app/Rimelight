@@ -45,6 +45,8 @@ class HandoffTest {
         val calls: MutableList<Req> = Collections.synchronizedList(mutableListOf())
         var queue = ""
         var nowPlaying = ""
+        /** getNowPlaying answers after this long (virtual time). */
+        var nowPlayingDelayMs = 0L
         val client: SubsonicClient
 
         init {
@@ -55,6 +57,7 @@ class HandoffTest {
                     val url = req.url.parameters.names().associateWith { req.url.parameters.getAll(it).orEmpty() }
                     val form = (req.body as? FormDataContent)?.formData?.let { f -> f.names().associateWith { f.getAll(it).orEmpty() } }.orEmpty()
                     calls += Req(endpoint, req.method, url, form)
+                    if (endpoint == "getNowPlaying" && nowPlayingDelayMs > 0) kotlinx.coroutines.delay(nowPlayingDelayMs)
                     val ext = if (indexBased) """{"name":"indexBasedQueue","versions":[1]},{"name":"playbackReport","versions":[1]}""" else """{"name":"playbackReport","versions":[1]}"""
                     val body = when (endpoint) {
                         "getOpenSubsonicExtensions" -> ""","openSubsonicExtensions":[$ext]"""
@@ -83,11 +86,14 @@ class HandoffTest {
         var playing = false
         var started: Triple<List<Song>, Int, Long>? = null
         var pauses = 0
+        /** startQueueAt fails (the controller couldn't start the queue). */
+        var failStart = false
         override fun songs() = queue
         override fun currentIndex() = index
         override fun positionMs() = position
         override fun isPlaying() = playing
         override suspend fun startQueueAt(songs: List<Song>, index: Int, positionMs: Long): Boolean {
+            if (failStart) return false
             started = Triple(songs, index, positionMs)
             queue = songs; this.index = index; position = positionMs; playing = true
             return true
@@ -102,6 +108,7 @@ class HandoffTest {
     }
 
     private val songs = (1..12).map { Song(id = "s$it", title = "Song $it") }
+    private val handledStore = Handled()
 
     private fun TestScope.setup(
         enabled: Boolean = true,
@@ -112,7 +119,7 @@ class HandoffTest {
         val server = Server(this, indexBased)
         val player = FakePlayer().apply { queue = songs; index = 3; position = 42_000; playing = true }
         var on = online
-        val h = Handoff(backgroundScope, { server.client }, { on }, { enabled }, player, Handled(), now)
+        val h = Handoff(backgroundScope, { server.client }, { on }, { enabled }, player, handledStore, now)
         return Triple(server, player, h)
     }
 
@@ -418,6 +425,86 @@ class HandoffTest {
         h.lookOnForeground(); runCurrent()
         assertEquals(2, server.calls.count { it.endpoint == "getPlayQueueByIndex" })
         assertEquals("queue and Now Playing read together", 2, server.calls.count { it.endpoint == "getNowPlaying" })
+    }
+
+    // ---------------------------------------------------------------- 1.6.1 section H
+
+    /** The desktop plays s5 from this phone's queue and saved the server's queue last. */
+    private fun Server.desktopTookOver() {
+        nowPlaying = """{"id":"s5","title":"Song 5","username":"toni","playerName":"Rimelight","state":"playing","positionMs":5000}"""
+        queue = queueJson("Rimelight", "2026-11-27T18:05:00Z", ids = songs.map { it.id })
+    }
+
+    @Test fun h1LeftBehindThenPauseHereThenBackgroundSendsNothing() = runTest {
+        val (server, player, h) = setup()
+        h.played() // something happened here: dirty
+        server.desktopTookOver()
+        player.index = 4
+        h.songChanged(natural = true)
+        runCurrent()
+        assertNotNull("left behind", h.leftBehind.value)
+        h.pauseHere()
+        assertEquals(1, player.pauses)
+        // The app goes to the background right after.
+        h.saveNow(SaveEvent.lock)
+        advanceTimeBy(10_000); runCurrent()
+        assertEquals("the stale queue must not overwrite the device that took over", 0, server.saves().size)
+    }
+
+    @Test fun h2PlayingDesktopTookOverNoCheckYetBackgroundSendsNothing() = runTest {
+        val (server, player, h) = setup()
+        h.played()
+        server.desktopTookOver()
+        // No left-behind check has run yet (the regular one is every 60 s).
+        h.saveNow(SaveEvent.lock)
+        advanceTimeBy(10_000); runCurrent()
+        assertEquals("checked first: left behind, so nothing is sent", 0, server.saves().size)
+        assertEquals("Rimelight desktop", h.leftBehind.value?.device)
+        assertTrue(player.playing)
+    }
+
+    @Test fun h2CheckSlowerThanTheBudgetSendsNothing() = runTest {
+        val (server, player, h) = setup()
+        h.played()
+        server.desktopTookOver()
+        server.nowPlayingDelayMs = Handoff.CHECK_BUDGET_MS + 1_000
+        h.saveNow(SaveEvent.lock)
+        advanceTimeBy(Handoff.CHECK_BUDGET_MS + 5_000); runCurrent()
+        assertEquals("no answer within the budget: no save (the safe side)", 0, server.saves().size)
+    }
+
+    @Test fun h2PlayingNobodyTookOverBackgroundSavesOnce() = runTest {
+        val (server, player, h) = setup()
+        h.played()
+        server.nowPlaying = """{"id":"x9","title":"Other","username":"toni","playerName":"Rimelight","state":"playing","positionMs":5000}"""
+        server.queue = queueJson("Rimelight-Android", "2026-11-27T18:05:00Z", ids = songs.map { it.id })
+        h.saveNow(SaveEvent.lock)
+        advanceTimeBy(10_000); runCurrent()
+        assertEquals(1, server.saves().size)
+        assertNull(h.leftBehind.value)
+    }
+
+    @Test fun h3ContinueThatFailsKeepsTheOfferAndSaysTryAgain() = runTest {
+        val (server, player, h) = setup()
+        player.playing = false
+        server.queue = queueJson("Rimelight", "2026-11-27T18:05:00Z", index = 1)
+        server.nowPlaying = """{"id":"b","title":"Title b","username":"toni","playerName":"Rimelight","state":"paused","positionMs":9000}"""
+        h.look(); runCurrent()
+        val offered = h.offer.value
+        assertNotNull(offered)
+        player.failStart = true
+        assertFalse(h.continueOffer())
+        runCurrent()
+        assertEquals("the offer stays, so Continue can be pressed again", offered, h.offer.value)
+        assertTrue("not marked handled", handledStore.map.isEmpty())
+        assertEquals(0, server.saves().size)
+        assertEquals("Couldn't continue. Try again.", com.tonihk00.clearplay.ui.player.CONTINUE_FAILED)
+        // Pressed again, and it works now.
+        player.failStart = false
+        assertTrue(h.continueOffer())
+        runCurrent()
+        assertNull(h.offer.value)
+        assertEquals(1, server.saves().size)
     }
 
     @Test fun nanosecondChangedIsComparedAsAnInstant() {

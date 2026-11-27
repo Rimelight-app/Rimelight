@@ -108,6 +108,27 @@ object FakeServer {
         SubsonicClient(ServerConfig("http://demo.local", "demo", "t", "s"), HttpClient(engine))
     }
 
+    /**
+     * Like [client], but [fault] may answer a request instead: given the endpoint and how many
+     * times it was asked before (0 the first time), an HTTP status and body, or null for the
+     * normal answer.
+     */
+    fun faultyClient(fault: (endpoint: String, n: Int) -> Pair<Int, String>?): SubsonicClient {
+        val asked = HashMap<String, Int>()
+        val engine = MockEngine { req ->
+            val endpoint = req.url.encodedPath.substringAfterLast('/')
+            val params = req.url.parameters.names().associateWith { req.url.parameters[it].orEmpty() }
+            val n = synchronized(asked) { asked.getOrDefault(endpoint, 0).also { asked[endpoint] = it + 1 } }
+            val f = fault(endpoint, n)
+            if (f != null) {
+                respond(f.second, io.ktor.http.HttpStatusCode.fromValue(f.first), headersOf(HttpHeaders.ContentType, "application/json"))
+            } else {
+                respond(answer(endpoint, params), headers = headersOf(HttpHeaders.ContentType, "application/json"))
+            }
+        }
+        return SubsonicClient(ServerConfig("http://demo.local", "demo", "t", "s"), HttpClient(engine))
+    }
+
     /** Gradient "covers" in the demo library's colours. */
     fun cover(id: String): Brush = when (id.take(3)) {
         "al1" -> Brush.linearGradient(listOf(Color(0xFF6D3BD8), Color(0xFFE0479E), Color(0xFFF25AA8)))

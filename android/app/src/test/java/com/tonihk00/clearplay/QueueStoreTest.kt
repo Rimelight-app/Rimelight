@@ -111,16 +111,23 @@ class QueueStoreTest {
         val client = SubsonicClient(server, HttpClient(engine))
         val player = ExoPlayer.Builder(context).setLooper(Looper.getMainLooper()).build()
         player.setMediaItems(songs.take(3).map { it.toMediaItem(client) }, 1, 0)
-        val watcher = QueueWatcher(
-            player, this, QueueStore(dir.resolve("q.json")), { QueueStore.keyOf(server) }, { false }, { false },
-            handoff = { null }, client = { client }, online = { true }, io = Dispatchers.Unconfined,
+        // 1.6.1: the player service's PlaybackErrors does this (it was QueueWatcher's job before).
+        val errors = com.tonihk00.clearplay.player.PlaybackErrors(
+            player, this,
+            isLocalItem = { false },
+            serverAnswers = { true },
+            songGone = { id ->
+                try { client.song(id); false } catch (e: com.tonihk00.clearplay.data.api.SubsonicException) { e.code == 70 }
+            },
+            markUnreachable = {},
+            message = {},
         )
-        watcher.onPlayerError(PlaybackException("not audio", null, PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED))
+        errors.onPlayerError(PlaybackException("not audio", null, PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED))
         withTimeout(5_000) { while (player.mediaItemCount != 2) delay(20) }
         assertEquals(listOf("id1", "id3"), (0 until player.mediaItemCount).map { player.getMediaItemAt(it).mediaId })
 
         // A song that is still there (e.g. a network hiccup) stays.
-        watcher.onPlayerError(PlaybackException("io", null, PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED))
+        errors.onPlayerError(PlaybackException("io", null, PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED))
         delay(300)
         assertEquals(2, player.mediaItemCount)
         player.release()
@@ -135,7 +142,7 @@ class QueueStoreTest {
         val store = QueueStore(dir.resolve("w.json"))
         val watcher = QueueWatcher(
             player, this, store, { "k" }, { true }, { false },
-            handoff = { null }, client = { null }, online = { false }, now = { 5L }, io = Dispatchers.Unconfined,
+            handoff = { null }, now = { 5L }, io = Dispatchers.Unconfined,
         )
         val snap = watcher.snapshot()!!
         assertEquals(4, snap.index)
