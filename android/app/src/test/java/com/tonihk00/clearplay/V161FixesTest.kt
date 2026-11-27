@@ -274,6 +274,22 @@ class V161FixesTest {
         assertTrue(excludes("cloud-backup").contains("file" to "."))
     }
 
+    /** setPreferredMixerAttributes (bit-perfect, BitPerfect.kt) needs MODIFY_AUDIO_SETTINGS declared. */
+    @Test fun theMixerPermissionIsDeclared() {
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        assertTrue(manifest.contains("""<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />"""))
+        val ctx = RuntimeEnvironment.getApplication()
+        val info = ctx.packageManager.getPackageInfo(ctx.packageName, android.content.pm.PackageManager.GET_PERMISSIONS)
+        assertTrue(info.requestedPermissions!!.contains(android.Manifest.permission.MODIFY_AUDIO_SETTINGS))
+    }
+
+    /** Phone-music covers on Android 8 / 9: MediaMetadataRetriever isn't AutoCloseable there (no `use {}`). */
+    @Test fun phoneArtDoesNotRelyOnAutoCloseable() {
+        val src = File("src/main/java/com/tonihk00/clearplay/data/PhoneArt.kt").readText()
+        assertFalse("MediaMetadataRetriever().use needs API 29", Regex("""MediaMetadataRetriever\(\)\.use""").containsMatchIn(src))
+        assertTrue(src.contains("r.release()"))
+    }
+
     // ---------------------------------------------------------------- F. errors on a page
 
     @Test fun pageErrorsAreClassifiedLikeTheDesktop() {

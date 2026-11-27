@@ -26,7 +26,10 @@ class PhoneArtFetcher(private val context: Context, private val data: PhoneArt) 
         } else {
             null
         } ?: runCatching {
-            MediaMetadataRetriever().use { r ->
+            // Not `use {}`: MediaMetadataRetriever is AutoCloseable only from Android 10, so on
+            // Android 8 and 9 that failed (and phone songs had no cover); release() is on all.
+            val r = MediaMetadataRetriever()
+            try {
                 r.setDataSource(context, uri)
                 r.embeddedPicture?.let { bytes ->
                     val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -35,6 +38,8 @@ class PhoneArtFetcher(private val context: Context, private val data: PhoneArt) 
                     while (opts.outWidth / (sample * 2) >= px) sample *= 2
                     BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
                 }
+            } finally {
+                r.release()
             }
         }.getOrNull()
         return bmp?.let { ImageFetchResult(it.asImage(), isSampled = true, dataSource = DataSource.DISK) }
