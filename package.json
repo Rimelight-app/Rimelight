@@ -1,7 +1,7 @@
 {
   "name": "rimelight",
   "private": true,
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "A frosted-glass desktop player for Navidrome (OpenSubsonic) servers.",
   "author": {
     "name": "tonihk00"
