@@ -627,7 +627,64 @@ def case12():
     return "reads wait until changed has moved on (helper wait_changed)"
 
 
-CASES = {1: case1, 2: case2, 3: case3, 4: case4, 5: case5, 6: case6, 7: case7, 8: case8, 9: case9, 10: case10, 11: case11, 12: case12}
+def desktop_takes_over(ids, item):
+    """The desktop continues the phone's queue: saves it and plays the phone's current song."""
+    cur = ids[item]
+    desktop("save", {"ids": ids, "index": item, "position": 1000})
+    desktop("report", {"id": cur, "state": "playing", "positionMs": 1000})
+    return cur
+
+
+def case13():
+    """1.6.1 H1: left behind → Pause here → the app goes to the background → the phone's queue
+    must not overwrite the desktop's (before 1.6.1 it did: Pause here left the phone "dirty")."""
+    s = album_songs("Neon Tides")
+    ids = [x["id"] for x in s]
+    start_fresh()
+    play_album("Neon Tides")
+    time.sleep(5)
+    st = wait_state("PLAYING", 5)
+    cur = desktop_takes_over(ids, st["item"])
+    t = None
+    end = time.time() + 140
+    while time.time() < end and not (t or "").startswith("Continued on"):
+        desktop("report", {"id": cur, "state": "playing", "positionMs": 1000})
+        t = pill(5)
+    assert t == f"Continued on {DESKTOP}", f"pill {t!r}"
+    stored = server_queue()
+    tap_pill_button("Pause here")
+    wait_state("PAUSED", 5)
+    background()
+    time.sleep(8)
+    q = server_queue()
+    assert q["changed"] == stored["changed"] and q["changedBy"] == stored["changedBy"], f"overwritten: {stored['changedBy']} → {q['changedBy']}"
+    foreground()
+    return f"Pause here, then background: server still {q['changedBy']} at {q['changed']}"
+
+
+def case14():
+    """1.6.1 H2: the desktop takes over while the phone still plays, and the phone goes to the
+    background before its 60 s check: the left-behind check runs first, nothing is sent."""
+    s = album_songs("Neon Tides")
+    ids = [x["id"] for x in s]
+    start_fresh()
+    play_album("Neon Tides")
+    time.sleep(5)
+    st = wait_state("PLAYING", 5)
+    desktop_takes_over(ids, st["item"])
+    stored = server_queue()
+    background()  # within seconds: no song change, no 60 s check yet
+    time.sleep(8)
+    q = server_queue()
+    assert q["changed"] == stored["changed"] and q["changedBy"] == stored["changedBy"], f"overwritten: {stored['changedBy']} → {q['changedBy']}"
+    foreground()
+    t = pill(10)
+    ui.shell("cmd media_session dispatch pause")
+    return f"background right after the desktop took over: server still {q['changedBy']}; pill on return: {t!r}"
+
+
+CASES = {1: case1, 2: case2, 3: case3, 4: case4, 5: case5, 6: case6, 7: case7, 8: case8, 9: case9, 10: case10, 11: case11, 12: case12,
+         13: case13, 14: case14}
 
 
 def main():

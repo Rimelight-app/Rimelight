@@ -13,6 +13,28 @@ def adb(*args, check=True, timeout=60):
     return r.stdout
 
 
+_size = None
+
+
+def screen_size():
+    """(width, height) in pixels of the device under test."""
+    global _size
+    if _size is None:
+        m = re.search(r"(\d+)x(\d+)", adb("shell", "wm size"))
+        _size = (int(m.group(1)), int(m.group(2))) if m else (1080, 2400)
+    return _size
+
+
+def sx(x):
+    """A 1080x2400 x coordinate scaled to this screen."""
+    return int(x * screen_size()[0] / 1080)
+
+
+def sy(y):
+    """A 1080x2400 y coordinate scaled to this screen."""
+    return int(y * screen_size()[1] / 2400)
+
+
 def shell(cmd, **kw):
     return adb("shell", cmd, **kw)
 
@@ -103,9 +125,9 @@ def scroll_to(label, exact=False, tries=12, up=False):
         if n:
             return n
         if up:
-            swipe(540, 700, 540, 1700, 350)
+            swipe(sx(540), sy(700), sx(540), sy(1700), 350)
         else:
-            swipe(540, 1700, 540, 700, 350)
+            swipe(sx(540), sy(1700), sx(540), sy(700), 350)
         time.sleep(0.8)
     raise TimeoutError(f"'{label}' not found after scrolling")
 
