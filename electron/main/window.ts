@@ -38,8 +38,8 @@ export function createWindow(): void {
     trafficLightPosition: { x: 15, y: 14 },
     icon: appIcon(),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.mjs'),
-      sandbox: false,
+      preload: join(__dirname, '../preload/index.cjs'),
+      sandbox: true,
     },
   })
 

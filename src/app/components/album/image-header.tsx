@@ -22,7 +22,7 @@ interface ImageHeaderProps {
   coverArtType: CoverArt
   coverArtSize: string
   coverArtAlt: string
-  animatedArtworkArtist?: string
+  animatedArtworkArtists?: string[]
   animatedArtworkAlbum?: string
   badges: BadgesData
   isPlaylist?: boolean
@@ -43,7 +43,7 @@ export default function ImageHeader({
   coverArtType,
   coverArtSize,
   coverArtAlt,
-  animatedArtworkArtist,
+  animatedArtworkArtists,
   animatedArtworkAlbum,
   badges,
   isPlaylist = false,
@@ -100,7 +100,7 @@ export default function ImageHeader({
             )}
           </ImageLoader>
           <AnimatedCoverVideo
-            artist={animatedArtworkArtist}
+            artists={animatedArtworkArtists ?? []}
             album={animatedArtworkAlbum}
             screen="album"
           />

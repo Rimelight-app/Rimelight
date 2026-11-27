@@ -1,4 +1,3 @@
-import { electronAPI } from '@electron-toolkit/preload'
 import { contextBridge, ipcRenderer } from 'electron'
 import {
   IpcChannels,
@@ -142,7 +141,6 @@ const api: IRimelightAPI = {
 // just add to the DOM global.
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
     contextBridge.exposeInMainWorld('envVars', {
       XDG_CURRENT_DESKTOP: process.env.XDG_CURRENT_DESKTOP,
@@ -154,7 +152,6 @@ if (process.contextIsolated) {
   // Without context isolation. Object.assign type-checks in both projects
   // that include this file (only the web one declares these on Window).
   Object.assign(window, {
-    electron: electronAPI,
     api,
     envVars: { XDG_CURRENT_DESKTOP: process.env.XDG_CURRENT_DESKTOP },
   })

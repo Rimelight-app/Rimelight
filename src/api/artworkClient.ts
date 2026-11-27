@@ -71,3 +71,45 @@ export async function getAnimatedArtworkUrl(
     return null
   }
 }
+
+/**
+ * One lookup per service, artist and album for the session, shared by every
+ * screen even when their candidate lists differ (a song with a featured
+ * artist adds a name its album page doesn't have). Found URLs also stay in
+ * IndexedDB; "not found" only lives here, like it did in the query cache.
+ */
+const lookups = new Map<string, Promise<string | null>>()
+
+function lookup(artist: string, album: string): Promise<string | null> {
+  const key = [
+    getArtworkSearchUrl().origin,
+    artist.toLowerCase(),
+    album.toLowerCase(),
+  ].join('\n')
+  let pending = lookups.get(key)
+  if (!pending) {
+    pending = getAnimatedArtworkUrl(artist, album)
+    lookups.set(key, pending)
+  }
+  return pending
+}
+
+/** Forgets the session's lookups (Settings → clear caches). */
+export function clearAnimatedArtworkLookups() {
+  lookups.clear()
+}
+
+/**
+ * The album's live-cover stream: tries each artist name in order
+ * (src/api/artworkArtists.ts) and stops at the first that has one.
+ */
+export async function findAnimatedArtworkUrl(
+  artists: string[],
+  album: string,
+): Promise<string | null> {
+  for (const artist of artists) {
+    const url = await lookup(artist, album)
+    if (url) return url
+  }
+  return null
+}

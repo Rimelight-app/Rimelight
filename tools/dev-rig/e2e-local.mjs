@@ -14,11 +14,14 @@ const music = path.join(rig, 'local-music')
 const userData = path.join(rig, 'userdata-local')
 fs.rmSync(music, { recursive: true, force: true })
 fs.rmSync(userData, { recursive: true, force: true })
-// The hi-res "Test Signals" album is for the mpv engine tests; leave it out
-// so the counts below stay those of the 4 generated albums.
+// The hi-res "Test Signals" album is for the mpv engine tests and "Rig Artist
+// A" (Twin Signals) for the live covers; leave them out so the counts below
+// stay those of the 4 generated albums.
 fs.cpSync(path.join(rig, 'music'), music, {
   recursive: true,
-  filter: (src) => !src.includes(`${path.sep}Test Signals`),
+  filter: (src) =>
+    !src.includes(`${path.sep}Test Signals`) &&
+    !src.includes(`${path.sep}Rig Artist A`),
 })
 
 let electronApp

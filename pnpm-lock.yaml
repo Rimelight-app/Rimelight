@@ -17,12 +17,9 @@ importers:
       '@chriscodesthings/random-css-hex-color':
         specifier: ^1.1.0
         version: 1.1.0
-      '@electron-toolkit/preload':
-        specifier: ^3.0.1
-        version: 3.0.1(electron@42.11.18(supports-color@8.1.1))
       '@electron-toolkit/utils':
         specifier: ^4.0.0
-        version: 4.0.0(electron@42.11.18(supports-color@8.1.1))
+        version: 4.0.0(electron@45.5.0(supports-color@8.1.1))
       '@fontsource-variable/inter':
         specifier: ^5.3.0
         version: 5.3.0
@@ -295,8 +292,8 @@ importers:
         specifier: ^1.15.0
         version: 1.15.0(cypress@15.18.1)
       electron:
-        specifier: ^42.11.18
-        version: 42.11.18(supports-color@8.1.1)
+        specifier: ^45.5.0
+        version: 45.5.0(supports-color@8.1.1)
       electron-builder:
         specifier: ^26.4.0
         version: 26.4.0(electron-builder-squirrel-windows@26.4.0)
@@ -600,11 +597,6 @@ packages:
   '@electron-internal/extract-zip@1.0.4':
     resolution: {integrity: sha512-Zr1Vs7E9tpCNhZHDAbFVXc2gEVCG9RqPDjrno5+bdgB6LRAuvgyMHJut4NCVyYwtAieapMzc3fiQ3CSTi75ARg==}
     engines: {node: '>=22.12.0'}
-
-  '@electron-toolkit/preload@3.0.1':
-    resolution: {integrity: sha512-EzoQmpK8jqqU8YnM5jRe0GJjGVJPke2KtANqz8QtN2JPT96ViOvProBdK5C6riCm0j1T8jjAGVQCZLQy9OVoIA==}
-    peerDependencies:
-      electron: '>=13.0.0'
 
   '@electron-toolkit/tsconfig@1.0.1':
     resolution: {integrity: sha512-M0Mol3odspvtCuheyujLNAW7bXq7KFNYVMRtpjFa4ZfES4MuklXBC7Nli/omvc+PRKlrklgAGx3l4VakjNo8jg==}
@@ -2622,8 +2614,8 @@ packages:
     resolution: {integrity: sha512-bO3y10YikuUwUuDUQRM4KfwNkKhnpVO7IPdbsrejwN9/AABJzzTQ4GeHwyzNSrVO+tEH3/Np255a3sVZpZDjvg==}
     engines: {node: '>=8.0.0'}
 
-  electron@42.11.18:
-    resolution: {integrity: sha512-hbzodG06x/l7uq+oeyob5ugv6qZBmJRWC7Uto5QEE99xSHUARz6d+++Rz+79T/ssTYTQkONW4ciTTcJuAbXKIQ==}
+  electron@45.5.0:
+    resolution: {integrity: sha512-rBQ0Czu1Qrtrs6Fygq7Qtfcgkhpt79SylMkaFb1AhtXItdxh0Wq3ERQoPfBYECYf+FxptAiXKCZ7p+H/39CWIA==}
     engines: {node: '>= 22.12.0'}
     hasBin: true
 
@@ -5093,17 +5085,13 @@ snapshots:
 
   '@electron-internal/extract-zip@1.0.4': {}
 
-  '@electron-toolkit/preload@3.0.1(electron@42.11.18(supports-color@8.1.1))':
-    dependencies:
-      electron: 42.11.18(supports-color@8.1.1)
-
   '@electron-toolkit/tsconfig@1.0.1(@types/node@22.14.0)':
     dependencies:
       '@types/node': 22.14.0
 
-  '@electron-toolkit/utils@4.0.0(electron@42.11.18(supports-color@8.1.1))':
+  '@electron-toolkit/utils@4.0.0(electron@45.5.0(supports-color@8.1.1))':
     dependencies:
-      electron: 42.11.18(supports-color@8.1.1)
+      electron: 45.5.0(supports-color@8.1.1)
 
   '@electron/asar@3.4.1':
     dependencies:
@@ -7106,7 +7094,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  electron@42.11.18(supports-color@8.1.1):
+  electron@45.5.0(supports-color@8.1.1):
     dependencies:
       '@electron-internal/extract-zip': 1.0.4
       '@electron/get': 5.0.0(supports-color@8.1.1)

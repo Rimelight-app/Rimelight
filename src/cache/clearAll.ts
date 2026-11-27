@@ -1,4 +1,5 @@
 import { del, keys } from 'idb-keyval'
+import { clearAnimatedArtworkLookups } from '@/api/artworkClient'
 import { queryClient } from '@/lib/queryClient'
 import { queryKeys } from '@/utils/queryKeys'
 
@@ -27,6 +28,7 @@ async function clearImageCacheStorage() {
 function invalidateInMemoryCaches() {
   queryClient.removeQueries({ queryKey: [queryKeys.song.lyrics] })
   queryClient.removeQueries({ queryKey: [queryKeys.album.animatedArtwork] })
+  clearAnimatedArtworkLookups()
 }
 
 export async function clearAllCaches() {

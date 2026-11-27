@@ -155,22 +155,6 @@ export function AnimatedCoversSettings() {
         </ContentItemForm>
       </ContentItem>
 
-      <ContentItem>
-        <ContentItemTitle
-          info={t(
-            'settings.privacy.services.animatedCover.screens.drawer.info',
-          )}
-        >
-          {t('settings.privacy.services.animatedCover.screens.drawer.label')}
-        </ContentItemTitle>
-        <ContentItemForm>
-          <Switch
-            checked={screens.drawer}
-            onCheckedChange={screens.setDrawer}
-          />
-        </ContentItemForm>
-      </ContentItem>
-
       <ContentSeparator className="!mt-3" />
     </>
   )

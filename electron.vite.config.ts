@@ -67,9 +67,12 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, 'electron/preload/index.ts'),
         },
+        // Sandboxed preloads run as plain scripts, not ES modules, and
+        // package.json's "type": "module" would make this one ESM.
+        output: { format: 'cjs' },
       },
       externalizeDeps: {
-        exclude: ['@electron-toolkit/preload', 'electron-updater'],
+        exclude: ['electron-updater'],
       },
     },
   },

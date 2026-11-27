@@ -2,6 +2,23 @@
 
 All notable changes to Rimelight (called ClearPlay up to 0.6.1). Format loosely follows Keep a Changelog.
 
+## [0.6.3] - 2026-11-27
+
+### Changed
+- Updated the app engine (Electron 45) for current security fixes. The app now runs its pages in a sandbox.
+- The Linux package is about 40 MB smaller.
+- Add folder (Music on this computer) opens in your Music folder.
+
+### Added
+- Live covers now play in the fullscreen player too, with their own switch (Settings → Privacy & Security → "Big Player" under animated covers).
+
+### Fixed
+- Live album covers now show on the album page for albums with more than one album artist.
+- Live covers on the album page and player bar now move in step.
+
+### Removed
+- Removed the "Queue and Lyrics" switch under animated covers; it had no effect.
+
 ## [0.6.2] - 2026-11-26
 
 ### Changed

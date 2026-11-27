@@ -4,14 +4,20 @@
 // as % of one core.
 // VARIANT=asis (default) | noblur | blur forces the fullscreen sheet's
 // backdrop-filter with an injected style, to compare in one build.
+// LIVE_COVER=none | fs-off | fs-on runs it with a fake live-cover service
+// that has a cover for every album: live covers off; on with the fullscreen
+// switch off (album page and player bar on); on everywhere. Unset: the app's
+// default settings (live covers off), as before.
 // Usage (from tools/dev-rig): SIZE=1920x1080 perf/xrun.sh node perf/fullscreen.mjs
 //                             SIZE=1280x720  perf/xrun.sh node perf/fullscreen.mjs
+import { startLiveCoverService } from '../lib/live-cover-service.mjs'
 import {
   cpuByType,
   findAlbum,
   go,
   HEIGHT,
   launch,
+  RIG,
   sleep,
   WIDTH,
   writeResult,
@@ -19,9 +25,27 @@ import {
 
 const SECS = Number(process.env.SECS || 15)
 const VARIANT = process.env.VARIANT || 'asis'
+const LIVE_COVER = process.env.LIVE_COVER || ''
 
+const service = LIVE_COVER
+  ? await startLiveCoverService({ rig: RIG, clip: 'testsrc' })
+  : null
 const s = await launch()
 const { app, win } = s
+if (service) {
+  await win.evaluate(
+    ([url, mode]) => {
+      const art = window.__cp.app.getState().artwork
+      art.setCustomUrlEnabled(true)
+      art.setBaseUrl(url)
+      art.setEnabled(mode !== 'none')
+      art.screens.setAlbum(true)
+      art.screens.setPlayerBar(true)
+      art.screens.setFullscreen(mode === 'fs-on')
+    },
+    [service.url, LIVE_COVER],
+  )
+}
 
 const album = await findAlbum('Three Hours')
 await go(win, `/library/albums/${album.id}`, 2500)
@@ -59,6 +83,22 @@ const drawer = await win.evaluate(() => {
 const playing = await win.evaluate(
   () => window.__cp.player.getState().playerState.isPlaying,
 )
+// Live-cover videos with a picture: in the fullscreen cover, and elsewhere
+// (album page and player bar, under the sheet).
+const liveCovers = await win.evaluate(() => {
+  const vs = [...document.querySelectorAll('video')].filter(
+    (v) =>
+      v.readyState >= 2 &&
+      v.videoWidth > 0 &&
+      !v.closest('[data-live-cover-players]'),
+  )
+  return {
+    fullscreen: vs.filter((v) => v.closest('[data-testid=fullscreen-cover]'))
+      .length,
+    other: vs.filter((v) => !v.closest('[data-testid=fullscreen-cover]'))
+      .length,
+  }
+})
 
 await win.evaluate(() => {
   window.__frames = 0
@@ -80,6 +120,8 @@ const gpuInfo = await app.evaluate(({ app: a }) => a.getGPUFeatureStatus())
 const out = {
   size: `${WIDTH}x${HEIGHT}`,
   variant: VARIANT,
+  liveCover: LIVE_COVER || 'default',
+  liveCovers,
   fps: Math.round((frames / secs) * 10) / 10,
   gpuProcessCpu: cpu.procPercentOfCore.GPU ?? null,
   cpu,
@@ -90,3 +132,4 @@ const out = {
 console.log(JSON.stringify(out))
 writeResult(`fullscreen-${WIDTH}x${HEIGHT}-${VARIANT}`, out)
 await s.close()
+await service?.close()

@@ -92,6 +92,10 @@ interface IAppArtworkScreens {
   setFullscreen: (value: boolean) => void
   playerBar: boolean
   setPlayerBar: (value: boolean) => void
+  /**
+   * The old Queue switch. No screen uses it (the queue panel has no cover);
+   * kept so settings saved by older versions still load.
+   */
   drawer: boolean
   setDrawer: (value: boolean) => void
 }
