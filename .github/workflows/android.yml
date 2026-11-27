@@ -14,6 +14,10 @@ on:
       - 'android/**'
       - '.github/workflows/android.yml'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to (re)publish to the F-Droid repo, e.g. android-v1.6.1'
+        required: false
 
 concurrency:
   group: android-${{ github.ref }}
@@ -124,3 +128,71 @@ jobs:
           files: dist/*.apk
           body_path: release-notes.md
           make_latest: 'false'
+
+  # Publishes the release APK to the project's own F-Droid repo (GitHub Pages, branch gh-pages).
+  # Same APK, same signature as the GitHub release, so it updates in place over a GitHub install.
+  # Needs two secrets: FDROID_KEYSTORE_BASE64 and FDROID_KEYSTORE_PASSWORD (the key that signs the
+  # repo index, not the APK). Run by hand (Actions > Android > Run workflow, branch android, tag
+  # input) to publish a release that already exists.
+  fdroid-repo:
+    needs: release
+    if: ${{ !cancelled() && (needs.release.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.tag != '')) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: fdroid-repo
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: .
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the tag and secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.FDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}
+        run: |
+          [[ "$TAG" == android-v* ]] || { echo "::error::'$TAG' is not an android-v* tag"; exit 1; }
+          [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASS" ] || {
+            echo "::error::FDROID_KEYSTORE_BASE64 / FDROID_KEYSTORE_PASSWORD are not set"; exit 1; }
+
+      - name: Release APK
+        run: |
+          mkdir -p "$RUNNER_TEMP/apks"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.apk' --dir "$RUNNER_TEMP/apks"
+          ls -l "$RUNNER_TEMP/apks"
+
+      - name: Current repo (branch gh-pages)
+        run: |
+          mkdir pages && cd pages
+          git init -q -b gh-pages
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git fetch -q --depth=1 origin gh-pages; then git checkout -q -B gh-pages FETCH_HEAD; fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Update the repo
+        env:
+          KEYSTORE_B64: ${{ secrets.FDROID_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}
+        run: |
+          pip install fdroidserver==2.4.6
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/repo.jks"
+          PAGES="$PWD/pages" APKS="$RUNNER_TEMP/apks" KEYSTORE="$RUNNER_TEMP/repo.jks" \
+            REPO_SLUG="$GITHUB_REPOSITORY" bash android/tools/fdroid/publish.sh
+          rm -f "$RUNNER_TEMP/repo.jks"
+
+      - name: Publish
+        run: |
+          cd pages
+          git add -A
+          git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com \
+            commit -q -m "F-Droid repo: ${TAG}" || { echo "Nothing changed"; exit 0; }
+          git push origin gh-pages
