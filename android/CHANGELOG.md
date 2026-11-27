@@ -2,13 +2,38 @@
 
 Called ClearPlay for Android up to 1.6.0.
 
-## [1.6.1] - 2026-11-26
+## [1.6.1] - 2026-11-27
 
 ### Changed
 - **ClearPlay for Android is now Rimelight for Android.** Same app, new name, to match Rimelight on the computer. It updates over 1.6.0 and keeps your login, queue, downloads and settings (and your statistics and home-screen shortcuts).
 - **Continue on other devices** works with Rimelight on the computer (0.6.2) at the live second again, and still works with a computer on ClearPlay 0.6.1: the pill then says "ClearPlay desktop". A queue this phone saved before the update is still recognised as its own, so it isn't offered back to you.
 - Navidrome's list of players shows the phone as "Rimelight-Android".
 - **The song menu** (hold down a song, or tap ⋯) **and the sleep timer are now frosted glass**, like the player bar: the page behind shows through, blurred. Text stays readable over a white cover. With Settings → Appearance → Live glass blur off, they are solid dark glass like the player bar.
+
+### Fixed
+- **Continue on other devices:** a phone that was left behind no longer overwrites the newer queue when you lock it or switch apps, also right after *Pause here* and before the phone noticed that the computer took over.
+- **Continue that couldn't start** keeps the offer on the pill and says "Couldn't continue. Try again.", so you can press it again.
+- **A song that can't be played** is tried once more, then skipped with "Couldn't play <song>", instead of stopping the queue. After three in a row, playback stops with a message. This also covers a damaged download or a damaged file on the phone.
+- **With no connection, Rimelight pauses on the song** (and says it can't reach your server) instead of skipping through the queue; Play works again once the server answers.
+- **The queue stays when the last song ends.** Rimelight stops on that song, ready to play it again from the start; Resume, the notification and the headset button do that too, also after Android closed the app.
+- **A page that couldn't load** (album, playlist, artist, genre) now has *Retry*. A server error no longer says the address isn't a Navidrome server, and when the server no longer accepts your login, the page offers *Log in again*.
+- **A page could get stuck after Back:** pressing Back on a page (an album, for example) could leave it half-closed, and then Back and the back swipe did nothing anywhere in the app until it was restarted. Seen most with the Back button.
+- **Search** no longer keeps saying "Search failed" for something it already found (it happened after typing quickly), and a search that really failed has *Retry*.
+- **Statistics stop loading in the background** once you leave the app while they load.
+- At the **largest font sizes** the tab bar's labels stay on one line, and an album with one song says "1 song".
+- **Bit-perfect / no-resampling output to a USB DAC:** Rimelight now declares the audio-settings permission Android lists for setting the DAC's format. It was missing, which can make that request fail quietly on some phones. (No prompt: Android grants it by itself.)
+- **Covers of the phone's own music** show on Android 8 and 9 again.
+- **Your login doesn't move to a new phone** with Android's device-to-device transfer (it was already kept out of cloud backups); sign in once on the new phone.
+
+### Faster
+Measured on an **emulator** (Android 17, software rendering, a 50 000-song test library), before and after:
+- **Starting the app no longer downloads your whole library again for Statistics.** Once you had opened Statistics, every cold start read every song from the server again (104 requests for 50 000 songs; on the slow emulator profile, a quarter of a CPU core for a whole minute). Now: 0.
+- **No more "is the server there?" every few seconds:** 20 requests a minute with the app idle, and 17 while playing in the background → 0.
+- **With the screen off, lyrics are no longer loaded for every song** nobody looks at: 2 requests a song → 0 (they load when you open the app).
+
+### Known limits
+- With the phone set to a right-to-left language such as Arabic, some English text is shown in the wrong order (for example "songs 500"); the layout itself is mirrored correctly.
+- When the phone's storage is completely full, a download waits and tries again without saying why.
 
 ## [1.6.0] - 2026-11-25
 
